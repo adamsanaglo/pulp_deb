@@ -1,0 +1,52 @@
+version: "3"
+
+services:
+
+    app:
+      build: .
+      container_name: pmcserver
+      depends_on:
+        pulp:
+          condition: service_healthy
+        db:
+          condition: service_started
+      volumes:
+        - ./app:/pmcserver/app
+        - ./setup.cfg:/pmcserver/setup.cfg
+        - ./tests:/pmcserver/tests
+      ports:
+        - "8000:8000"
+
+    pulp:
+      image: pulp/pulp
+      container_name: pulp
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost/pulp/api/v3/status/"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+      ports:
+        - "8080:80"
+      volumes:
+        - ./pulp/settings.py:/etc/pulp/settings.py
+        - pulp_storage:/var/lib/pulp
+        - pgsql:/var/lib/pgsql
+        - containers:/var/lib/containers
+      devices:
+        - /dev/fuse
+
+    db:
+      image: postgres
+      container_name: postgres
+      ports:
+        - 5432:5432
+      volumes:
+        - postgres-data:/var/lib/postgresql/data
+      env_file:
+        - .env
+
+volumes:
+  pulp_storage:
+  pgsql:
+  containers:
+  postgres-data:

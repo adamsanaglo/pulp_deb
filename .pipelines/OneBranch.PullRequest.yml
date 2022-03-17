@@ -75,6 +75,6 @@ extends:
               targetType: 'inline'
               script: |
                 mkdir -p $(Build.SourcesDirectory)/out
-                cp -a $(Build.SourcesDirectory)/linux_deploy $(Build.SourcesDirectory)/out
-                cp $(Build.SourcesDirectory)/*.tgz $(Build.SourcesDirectory)/out
-                cp $(Build.SourcesDirectory)/*.tgz.sha256 $(Build.SourcesDirectory)/out
+                #cp -a $(Build.SourcesDirectory)/linux_deploy $(Build.SourcesDirectory)/out
+                #cp $(Build.SourcesDirectory)/*.tgz $(Build.SourcesDirectory)/out
+                #cp $(Build.SourcesDirectory)/*.tgz.sha256 $(Build.SourcesDirectory)/out
