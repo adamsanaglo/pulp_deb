@@ -16,13 +16,6 @@ http :8000/api/v4/repositories
 http :8000/api/v4/repositories name=test type=yum
 ```
 
-### Connecting to the PMC database
-
-```
-sudo apt install postgresql-client
-make dbconsole
-```
-
 ## Generating .env
 
 To manually generate an env file, you can run:

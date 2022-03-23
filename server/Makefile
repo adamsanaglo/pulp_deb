@@ -33,4 +33,4 @@ lint: run
 	docker exec -it pmcserver mypy --strict .
 
 dbconsole:
-	@psql postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/postgres
+	docker exec -it postgres psql -U ${POSTGRES_USER}

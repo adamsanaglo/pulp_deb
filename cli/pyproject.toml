@@ -15,11 +15,15 @@ pmc = "pmc.main:app"
 python = "^3.8"
 typer = "^0.4.0"
 httpx = "^0.22.0"
+Pygments = {version = "^2.11.2", optional = true}
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
 flake8 = "^4.0.1"
 mypy = "^0.940"
+
+[tool.poetry.extras]
+pygments = ["Pygments"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
