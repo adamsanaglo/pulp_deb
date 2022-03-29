@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
 
+    LOGGING_CONFIG: str = "/pmcserver/app/logging.conf"
+
     class Config:
         env_file = ".env"
 
