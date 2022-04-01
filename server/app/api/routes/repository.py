@@ -1,43 +1,62 @@
 import logging
-
-from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter
-from pydantic import BaseModel
 
-from services.pulp import get_pulp_client
+from core.schemas import RepoId, Repository, RepositoryPackageUpdate, RepositoryUpdate
+from services.pulp.api import PackageApi, RepositoryApi
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-class RepoTypeEnum(str, Enum):
-    apt = "apt"
-    yum = "yum"
-
-
-class Repository(BaseModel):
-    name: str
-    type: RepoTypeEnum
-
 
 @router.get("/repositories/")
-async def list_repos() -> Any:
-    logger.info("GET /repositories")
-    async with get_pulp_client() as pulp_client:
-        resp = await pulp_client.get("/repositories/")
-        return resp.json()
+async def list_repos(name: Optional[str] = None) -> Any:
+    params = dict()
+    if name:
+        params = {"name": name}
+
+    async with RepositoryApi() as api:
+        return await api.list(params)
 
 
 @router.post("/repositories/")
 async def create_repository(repo: Repository) -> Any:
-    logger.info("POST /repositories")
-    # TODO: better way to construct paths?
-    if repo.type == "yum":
-        path = "/repositories/rpm/rpm/"
-    elif repo.type == "apt":
-        path = "/repositories/deb/apt/"
+    async with RepositoryApi() as api:
+        return await api.create(repo.dict())
 
-    async with get_pulp_client() as pulp_client:
-        resp = await pulp_client.post(path, json={"name": repo.name})
-        return resp.json()
+
+@router.get("/repositories/{id}/")
+async def read_repository(id: RepoId) -> Any:
+    async with RepositoryApi() as api:
+        return await api.read(id)
+
+
+@router.patch("/repositories/{id}/")
+async def update_repository(id: RepoId, repo: RepositoryUpdate) -> Any:
+    async with RepositoryApi() as api:
+        return await api.update(id, repo.dict(exclude_unset=True))
+
+
+@router.delete("/repositories/{id}/")
+async def delete_repository(id: RepoId) -> Any:
+    async with RepositoryApi() as api:
+        return await api.destroy(id)
+
+
+@router.get("/repositories/{id}/packages/")
+async def get_packages(id: RepoId) -> Any:
+    async with PackageApi() as api:
+        return await api.repository_packages(id)
+
+
+@router.patch("/repositories/{id}/packages/")
+async def update_packages(id: RepoId, repo_update: RepositoryPackageUpdate) -> Any:
+    async with RepositoryApi() as api:
+        return await api.update_packages(**repo_update.dict())
+
+
+@router.post("/repositories/{id}/publish/")
+async def publish_repository(id: RepoId) -> Any:
+    async with RepositoryApi() as api:
+        return await api.publish(id)

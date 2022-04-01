@@ -21,6 +21,8 @@ Pygments = {version = "^2.11.2", optional = true}
 isort = "^5.10.1"
 flake8 = "^4.0.1"
 mypy = "^0.940"
+pytest = "^7.1.1"
+types-Pygments = "^2.9.17"
 
 [tool.poetry.extras]
 pygments = ["Pygments"]

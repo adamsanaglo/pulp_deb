@@ -22,15 +22,18 @@ rebuild:
 	docker-compose up -d --build
 	@docker exec -it pulp bash -c 'pulpcore-manager reset-admin-password -p ${PULP_PASSWORD}'
 
-reset: down rebuild
-
 down:
 	docker-compose down
+
+teardown: down
+	for vol in pulp_storage pgsql containers postgres-data; do \
+		docker volume rm pmcserver_$$vol ; \
+	done
 
 lint: run
 	docker exec -it pmcserver flake8 .
 	docker exec -it pmcserver isort -c .
-	docker exec -it pmcserver mypy --strict .
+	docker exec -it pmcserver mypy .
 
 dbconsole:
 	docker exec -it postgres psql -U ${POSTGRES_USER}

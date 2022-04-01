@@ -3,11 +3,11 @@ import logging.config
 import random
 import string
 import time
-from typing import Any, Dict
+from typing import Any, Awaitable, Callable, Dict
 
 from fastapi import APIRouter, FastAPI
 from fastapi.requests import Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 
 from api.routes.api import router as api_router
 from core.config import settings
@@ -22,16 +22,20 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
-    idem = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+async def log_requests(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    idem = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
     logger.info(f"rid={idem} start request path={request.url.path}")
     start_time = time.time()
 
     response = await call_next(request)
 
     process_time = (time.time() - start_time) * 1000
-    formatted_process_time = '{0:.2f}'.format(process_time)
-    logger.info(f"rid={idem} completed_in={formatted_process_time}ms status_code={response.status_code}")
+    formatted_process_time = "{0:.2f}".format(process_time)
+    logger.info(
+        f"rid={idem} completed_in={formatted_process_time}ms status_code={response.status_code}"
+    )
 
     return response
 
@@ -42,9 +46,9 @@ def root() -> str:
     return "/api"
 
 
-@root_router.get("/api", status_code=200)
+@root_router.get("/api/", status_code=200)
 def api() -> Dict[str, Any]:
-    logger.info("Received request for /api")
+    logger.info("Received request for /api/")
     return {
         "server": {"version": settings.VERSION},
         "versions": {"v4": "v4/"},
