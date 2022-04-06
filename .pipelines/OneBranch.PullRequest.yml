@@ -12,7 +12,7 @@ trigger: none
 
 variables:
   CDP_DEFINITION_BUILD_COUNT: $[counter('', 0)] # needed for onebranch.pipeline.version task https://aka.ms/obpipelines/versioning
-  LinuxContainerImage: 'centos:centos7' # Docker image which is used to build the project https://aka.ms/obpipelines/containers
+  LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004:latest' # Docker image which is used to build the project https://aka.ms/obpipelines/containers
   DEBIAN_FRONTEND: noninteractive
 
 resources:
@@ -78,3 +78,27 @@ extends:
                 #cp -a $(Build.SourcesDirectory)/linux_deploy $(Build.SourcesDirectory)/out
                 #cp $(Build.SourcesDirectory)/*.tgz $(Build.SourcesDirectory)/out
                 #cp $(Build.SourcesDirectory)/*.tgz.sha256 $(Build.SourcesDirectory)/out
+
+          - script: |
+              apt-get update
+              apt-get install -y python3.8 python3-pip
+              python3.8 -m pip install poetry
+            displayName: 'Install dependencies'
+
+          - script: |
+              cd server
+              poetry env use 3.8
+              poetry install
+              poetry run flake8 .
+              poetry run isort -c .
+              poetry run mypy --strict .
+            displayName: "Lint server files"
+
+          - script: |
+              cd cli
+              poetry env use 3.8
+              poetry install
+              poetry run flake8 .
+              poetry run isort -c .
+              poetry run mypy --strict .
+            displayName: "Lint cli files"
