@@ -1,6 +1,7 @@
 import json
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from time import sleep
 from typing import Any, Callable, List, Optional, Union
 
@@ -8,8 +9,10 @@ import httpx
 import typer
 
 from .client import client
+from .commands import config as config_cmd
 from .commands import distribution, package, repository, task
-from .schemas import Format
+from .schemas import CONFIG_PATHS, FINISHED_TASK_STATES, Format
+from .utils import parse_config, validate_config
 
 try:
     from pygments import highlight
@@ -23,9 +26,9 @@ else:
 
 TaskHandler = Optional[Callable[[str], Any]]
 
-FINISHED_TASK_STATES = ("skipped", "completed", "failed", "canceled")
 
 app = typer.Typer()
+app.add_typer(config_cmd.app, name="config")
 app.add_typer(distribution.app, name="distro")
 app.add_typer(package.app, name="package")
 app.add_typer(repository.app, name="repo")
@@ -38,6 +41,7 @@ class PMCContext:
     id_only: bool = False
     no_wait: bool = False
     format: str = "json"
+    config_path: Optional[Path] = None
     isatty: bool = sys.stdout.isatty()
 
     @staticmethod
@@ -85,7 +89,7 @@ class PMCContext:
             resp.raise_for_status()
 
         if self.id_only and (id := self._extract_ids(resp.json())):
-            typer.echo(id)
+            typer.echo(id, nl=self.isatty)
         else:
             if not self.isatty:
                 # do not format output if it's not going to a terminal
@@ -98,15 +102,55 @@ class PMCContext:
                 typer.echo(output)
 
 
+def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
+    """Callback that attempts to load config."""
+    path: Optional[Path] = None
+
+    if value:
+        if not value.is_file():
+            typer.echo(f"Error: file '{value}' does not exist or is not a file.", err=True)
+            raise typer.Exit(code=1)
+        else:
+            path = value
+    else:
+        path = next(filter(lambda fp: fp and fp.is_file(), CONFIG_PATHS), None)
+
+    if path:
+        try:
+            config = parse_config(path)
+            ctx.default_map = config.dict(exclude_unset=True)
+        except Exception:
+            # ignore parse exceptions for now. validate later once we can exclude config subcommands
+            pass
+
+    return path
+
+
 @app.callback()
 def main(
     ctx: typer.Context,
+    config: Path = typer.Option(
+        None,
+        callback=_load_config,
+        help="Config file location. Defaults: \n" + ("\n").join(map(str, CONFIG_PATHS)),
+        envvar="PMC_CLI_CONFIG",
+    ),
     no_wait: bool = typer.Option(False, "--no-wait", help="Don't wait for any background tasks."),
     no_color: bool = typer.Option(False, "--no-color", help="Suppress color output if enabled."),
     id_only: bool = typer.Option(False, "--id-only", help="Show ids instead of full responses."),
     resp_format: Format = typer.Option(Format.json, "--format", hidden=True),  # TODO: more formats
 ) -> None:
-    ctx.obj = PMCContext(no_wait=no_wait, no_color=no_color, id_only=id_only, format=resp_format)
+    if config and ctx.invoked_subcommand != "config":
+        # validate config. allow users to still edit/recreate their config even if it's invalid.
+        validate_config(config)
+
+    ctx.obj = PMCContext(
+        no_wait=no_wait,
+        no_color=no_color,
+        id_only=id_only,
+        format=resp_format,
+        config_path=config,
+    )
 
 
 if __name__ == "__main__":

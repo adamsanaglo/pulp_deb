@@ -1,4 +1,6 @@
 import json
+import os
+from pathlib import Path
 from typing import Any, Generator
 
 import pytest
@@ -12,7 +14,15 @@ runner = CliRunner(mix_stderr=False)
 
 
 @pytest.fixture(autouse=True)
-def check_connection() -> None:
+def set_config() -> Path:
+    settings = Path.cwd() / "tests" / "settings.toml"
+    assert settings.is_file(), f"Could not find {settings}."
+    os.environ["PMC_CLI_CONFIG"] = str(settings)
+    return settings
+
+
+@pytest.fixture(autouse=True)
+def check_connection(set_config: Path) -> None:
     try:
         result = runner.invoke(app, ["repo", "list"])
         assert result.exit_code == 0, f"repo list failed: {result.stderr}"

@@ -5,5 +5,8 @@ lint:
 	isort -c .
 	mypy .
 
-make tests:
+tests/settings.toml:
+	cp tests/assets/settings.example.toml tests/settings.toml
+
+test: tests/settings.toml
 	pytest
