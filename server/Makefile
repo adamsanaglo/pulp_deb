@@ -1,7 +1,7 @@
 include .env
 SHELL := /bin/bash
-PULP_PASSWORD ?= $(openssl rand -base64 12)
-POSTGRES_PASSWORD ?= $(openssl rand -base64 12)
+PULP_PASSWORD ?= $(shell openssl rand -base64 12)
+POSTGRES_PASSWORD ?= $(shell openssl rand -base64 12)
 
 .PHONY: generate_env run build reset down lint dbconsole
 
