@@ -13,7 +13,6 @@ def test_list(distro: Any) -> None:
     result = runner.invoke(app, ["distro", "list"])
     assert result.exit_code == 0
     response = json.loads(result.stdout)
-    response = response[1]  # TODO: remove when we support /distributions/ endpoint
     assert "count" in response
     assert response["count"] > 0
 

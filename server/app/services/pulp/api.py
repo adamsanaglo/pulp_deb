@@ -177,16 +177,6 @@ class DistributionApi(PulpApi):
             data["repository"] = id_to_pulp_href(data["repository"])
         return await super().update(id, data)
 
-    async def list(self, params: Optional[Dict[str, Any]] = None) -> Any:
-        """Call the distro list endpoint."""
-        # TODO: once https://github.com/pulp/pulpcore/pull/2380 is released we can ditch this method
-        distros = []
-        yum_resp = await self.get(self._detail_uri(DistroType.yum))
-        distros.append(translate_response(yum_resp.json()))
-        apt_resp = await self.get(self._detail_uri(DistroType.apt))
-        distros.append(translate_response(apt_resp.json()))
-        return distros
-
     @staticmethod
     def _detail_uri(type: Any) -> str:
         assert isinstance(type, (str, DistroType))
