@@ -49,11 +49,29 @@ http --pretty=all :8000/openapi.json | less -R
 ```
 
 
+### Managing the database
+
+To make changes to the database schema such as adding a new table or column, you'll need to create a
+migration using alembic. First run `make shell` and then you can interact directly with alembic:
+
+```
+$ make shell
+pmc@958ac5018afc:/pmcserver# alembic revision --autogenerate -m "something"
+```
+
+Once you've created the migration, you can then run `alembic upgrade head` to apply it.
+Alternatively, there is a `make migrate` command that will run `alembic upgrade head` in the api
+container.
+
+Note that you will also need to run `make migrate` if you pull changes where a new migration was
+added.
+
+
 ### Interacting directly with Pulp
 
 With a dev setup, it's possible to interact directly with Pulp on port 8080 on localhost.
 
-Note: You'll want to set your Pulp username and password in your
+Note: You'll need to set your Pulp username and password in your
 [`.netrc`](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) file or
 use httpie's `--auth` option.
 
@@ -68,23 +86,14 @@ http --pretty=all :8080/pulp/api/v3/docs/api.json | less -R
 Sometimes it may be helpful to run the API server outside of a container to make it easier to
 interact with.
 
-First, open `.env` and configure PULP_HOST to point to `http://localhost:8080` or wherever you you
-are serving Pulp.
+First, open `.env` and configure PULP_HOST to point to `http://localhost:8080` or wherever you are
+serving Pulp. You'll also need to update POSTGRES_SERVER to point to `localhost`
+or update your `/etc/hosts` file to point `db` to `127.0.0.1`.
 
-Now install the API server dependencies using poetry:
+Assuming you have the docker containers already running, you can run:
 
 ```
+docker-compose stop api
 poetry install
-```
-
-Next, start the pulp and db services:
-
-```
-docker-compose up -d pulp db
-```
-
-Now run the api server:
-
-```
 poetry run python app/main.py
 ```

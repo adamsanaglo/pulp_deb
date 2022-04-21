@@ -1,12 +1,30 @@
 import re
+from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, Generator, List, Match, Optional, Pattern, Type, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Match,
+    Optional,
+    Pattern,
+    Type,
+    TypeVar,
+    Union,
+)
+from uuid import UUID
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, EmailStr, StrictStr, root_validator, validator
 
 uuid_regex = re.compile(r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}")
 
 T = TypeVar("T", bound="Identifier")
+
+
+class NonEmptyStr(StrictStr):
+    min_length = 1
 
 
 class DistroType(str, Enum):
@@ -48,14 +66,17 @@ class Identifier(str):
         )
 
     @classmethod
-    def validate(cls: Type[T], val: str) -> T:
+    def validate(cls: Type[T], val: Union[str, UUID]) -> T:
         """Validate an id and return a new Identifier instance."""
-        if not isinstance(val, str):
+        if isinstance(val, str):
+            match = cls.pattern.fullmatch(val)
+            if not match:
+                raise ValueError("invalid id")
+            return cls(val)
+        elif isinstance(val, UUID):
+            return cls.build_from_uuid(val)
+        else:
             raise TypeError("string required")
-        match = cls.pattern.fullmatch(val)
-        if not match:
-            raise ValueError("invalid id")
-        return cls(val)
 
     @property
     def _pieces(self) -> Match[str]:
@@ -69,6 +90,10 @@ class Identifier(str):
     def uuid(self) -> str:
         """Extract a uuid part from the id."""
         return self._pieces.groups()[-1]
+
+    @classmethod
+    def build_from_uuid(cls: Type[T], uuid: UUID) -> T:
+        raise NotImplementedError
 
 
 class RepoId(Identifier):
@@ -118,10 +143,19 @@ class PackageId(Identifier):
         return PackageType(self._pieces.group(1))
 
 
+class PublisherId(Identifier):
+    pattern = re.compile(rf"^publishers-({uuid_regex.pattern})$")
+    examples = ["publishers-749b9daa-2c0c-4ef6-a60d-8da32a78b169"]
+
+    @classmethod
+    def build_from_uuid(cls: Type[T], uuid: UUID) -> T:
+        return cls(f"publishers-{uuid}")
+
+
 class Distribution(BaseModel):
-    name: str
+    name: NonEmptyStr
     type: DistroType
-    base_path: str
+    base_path: NonEmptyStr
     repository: Optional[RepoId]
 
 
@@ -132,7 +166,7 @@ class DistributionUpdate(BaseModel):
 
 
 class Repository(BaseModel):
-    name: str
+    name: NonEmptyStr
     type: RepoType
 
 
@@ -150,3 +184,32 @@ class RepositoryPackageUpdate(BaseModel):
         if not values["add_packages"] and not values["remove_packages"]:
             raise ValueError("Fields add_packages and remove_packages cannot both be empty.")
         return values
+
+
+class PublisherCreate(BaseModel):
+    name: NonEmptyStr
+    is_enabled: bool
+    is_account_admin: bool
+    is_repo_admin: bool
+    is_package_admin: bool
+    icm_service: NonEmptyStr
+    icm_team: NonEmptyStr
+    contact_email: NonEmptyStr
+
+    @validator("contact_email")
+    def valid_email(cls, v: str) -> str:
+        """Validate email address(es)."""
+        for email in v.split(";"):
+            EmailStr.validate(email)
+        return v
+
+
+class PublisherUpdate(BaseModel):
+    # reuse PublisherCreate but make fields optional
+    __annotations__ = {k: Optional[v] for k, v in PublisherCreate.__annotations__.items()}
+
+
+class PublisherResponse(PublisherCreate):
+    id: PublisherId
+    created_at: datetime
+    last_edited: datetime

@@ -1,4 +1,6 @@
-from pydantic import BaseSettings
+from typing import Any
+
+from pydantic import BaseSettings, PostgresDsn
 
 
 class Settings(BaseSettings):
@@ -19,7 +21,16 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
 
-    LOGGING_CONFIG: str = "/pmcserver/app/logging.conf"
+    LOGGING_CONFIG: str = "app/logging.conf"
+
+    def db_uri(self) -> Any:
+        return PostgresDsn.build(
+            scheme="postgresql+asyncpg",
+            user=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_SERVER,
+            path=f"/{self.POSTGRES_DB or ''}",
+        )
 
     class Config:
         env_file = ".env"

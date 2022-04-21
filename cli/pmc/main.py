@@ -10,7 +10,7 @@ import typer
 
 from .client import client
 from .commands import config as config_cmd
-from .commands import distribution, package, repository, task
+from .commands import distribution, package, publisher, repository, task
 from .schemas import CONFIG_PATHS, FINISHED_TASK_STATES, Format
 from .utils import parse_config, validate_config
 
@@ -33,6 +33,7 @@ app.add_typer(distribution.app, name="distro")
 app.add_typer(package.app, name="package")
 app.add_typer(repository.app, name="repo")
 app.add_typer(task.app, name="task")
+app.add_typer(publisher.app, name="publisher")
 
 
 @dataclass
@@ -83,6 +84,10 @@ class PMCContext:
 
     def handle_response(self, resp: httpx.Response, task_handler: TaskHandler = None) -> None:
         resp.raise_for_status()
+
+        if not resp.content:
+            # empty response
+            return
 
         if isinstance(resp.json(), dict) and (task_id := resp.json().get("task")):
             resp = self.poll_task(task_id, task_handler)

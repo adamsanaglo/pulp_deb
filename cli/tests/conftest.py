@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 
 from pmc.main import app
 
-from .utils import gen_distro_attrs, gen_repo_attrs
+from .utils import gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs
 
 runner = CliRunner(mix_stderr=False)
 
@@ -61,4 +61,28 @@ def distro() -> Generator[Any, None, None]:
     finally:
         if response:
             result = runner.invoke(app, ["distro", "delete", response["id"]])
+            assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
+
+
+@pytest.fixture()
+def publisher() -> Generator[Any, None, None]:
+    attrs = gen_publisher_attrs()
+    response = None
+
+    try:
+        cmd = [
+            "publisher",
+            "create",
+            attrs["name"],
+            attrs["contact_email"],
+            attrs["icm_service"],
+            attrs["icm_team"],
+        ]
+        result = runner.invoke(app, cmd)
+        assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
+        response = json.loads(result.stdout)
+        yield response
+    finally:
+        if response:
+            result = runner.invoke(app, ["publisher", "delete", response["id"]])
             assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
