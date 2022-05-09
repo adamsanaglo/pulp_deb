@@ -12,7 +12,7 @@ def gen_distro_attrs() -> Dict[str, str]:
     return dict(
         name=f"pmc_cli_test_distro_{uuid4()}",
         type=DistroType.apt,
-        path=f"{uuid4()}/{uuid4()}",
+        base_path=f"{uuid4()}/{uuid4()}",
     )
 
 

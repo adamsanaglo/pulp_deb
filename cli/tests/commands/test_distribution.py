@@ -24,6 +24,12 @@ def test_show(distro: Any) -> None:
     assert distro["id"] == response["id"]
 
 
+def test_duplicate_path(distro: Any) -> None:
+    cmd = ["distro", "create", "pmc_cli_test_name", "apt", distro["base_path"]]
+    result = runner.invoke(app, cmd)
+    assert result.exit_code != 0
+
+
 def test_update(distro: Any) -> None:
     new_name = gen_distro_attrs()["name"]
     cmd = ["distro", "update", distro["id"], "--name", new_name]

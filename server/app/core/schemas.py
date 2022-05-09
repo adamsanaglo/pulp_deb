@@ -188,10 +188,10 @@ class RepositoryPackageUpdate(BaseModel):
 
 class PublisherCreate(BaseModel):
     name: NonEmptyStr
-    is_enabled: bool
-    is_account_admin: bool
-    is_repo_admin: bool
-    is_package_admin: bool
+    is_enabled: bool = True
+    is_account_admin: bool = False
+    is_repo_admin: bool = False
+    is_package_admin: bool = False
     icm_service: NonEmptyStr
     icm_team: NonEmptyStr
     contact_email: NonEmptyStr

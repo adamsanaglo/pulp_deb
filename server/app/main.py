@@ -6,11 +6,19 @@ import time
 from typing import Any, Awaitable, Callable, Dict
 
 from fastapi import APIRouter, FastAPI
+from fastapi.exceptions import RequestValidationError as ValidationError
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse, Response
+from httpx import HTTPStatusError, RequestError
 
 from api.routes.api import router as api_router
 from core.config import settings
+from core.exception import (
+    exception_handler,
+    httpx_exception_handler,
+    pulp_exception_handler,
+    validation_exception_handler,
+)
 
 # setup loggers
 logging.config.fileConfig(settings.LOGGING_CONFIG, disable_existing_loggers=False)
@@ -58,6 +66,10 @@ def api() -> Dict[str, Any]:
 app.include_router(api_router, prefix=settings.API_PREFIX)
 app.include_router(root_router)
 
+app.add_exception_handler(HTTPStatusError, pulp_exception_handler)
+app.add_exception_handler(RequestError, httpx_exception_handler)
+app.add_exception_handler(ValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, exception_handler)
 
 if __name__ == "__main__":
     # Use this for debugging purposes only

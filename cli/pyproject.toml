@@ -29,6 +29,9 @@ types-Pygments = "^2.9.17"
 [tool.poetry.extras]
 pygments = ["Pygments"]
 
+[tool.black]
+line-length = 100
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

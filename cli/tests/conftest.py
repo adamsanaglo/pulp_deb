@@ -53,7 +53,7 @@ def distro() -> Generator[Any, None, None]:
     response = None
 
     try:
-        cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["path"]]
+        cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
         result = runner.invoke(app, cmd)
         assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
         response = json.loads(result.stdout)
