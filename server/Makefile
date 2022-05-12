@@ -14,20 +14,20 @@ default: help
 	@sed -i 's#POSTGRES_PASSWORD=""#POSTGRES_PASSWORD="${POSTGRES_PASSWORD}"#' .env
 
 run:				## run the containers
-	docker-compose up -d
+	docker compose up -d
 	docker exec -it pmcserver alembic upgrade head
 	@docker exec -it pulp bash -c 'pulpcore-manager reset-admin-password -p ${PULP_PASSWORD}'
 
 build:				## build the container images
-	docker-compose build
+	docker compose build
 
 rebuild:			## rebuild the container images and run them
-	docker-compose up -d --build
+	docker compose up -d --build
 	docker exec -it pmcserver alembic upgrade head
 	@docker exec -it pulp bash -c 'pulpcore-manager reset-admin-password -p ${PULP_PASSWORD}'
 
 down:				## stop and remove the containers
-	docker-compose down
+	docker compose down
 
 teardown: down		## stop the containers and remove the container volumes
 	for vol in pulp_storage pgsql containers postgres-data; do \
@@ -35,13 +35,13 @@ teardown: down		## stop the containers and remove the container volumes
 	done
 
 update:				## pull the latest images and run the containers
-	docker-compose pull
-	docker-compose up -d
+	docker compose pull
+	docker compose up -d
 	docker exec -it pmcserver alembic upgrade head
 	@docker exec -it pulp bash -c 'pulpcore-manager reset-admin-password -p ${PULP_PASSWORD}'
 
 reset: teardown		## remove container volumes and restart containers
-	docker-compose up -d
+	docker compose up -d
 	docker exec -it pmcserver alembic upgrade head
 	@docker exec -it pulp bash -c 'pulpcore-manager reset-admin-password -p ${PULP_PASSWORD}'
 

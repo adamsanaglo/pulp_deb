@@ -11,13 +11,16 @@ Alternatively, you can copy .env.example to .env and fill in the values.
 
 ## Dev environment
 
-First ensure you have docker and docker-compose installed.
-- If you're using WSL, [install the special WSL-ready version of Docker](https://docs.docker.com/desktop/windows/wsl).
-- You must run docker-compose 1.27 or newer. Any distro older than November 2021 will have an older version of docker-compose, so you'll need to [install it from docker.com](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository).
+First ensure you have docker and docker compose installed. You must run docker-compose 1.27 or
+newer. Any distro older than November 2021 will have an older version of docker-compose, so you'll
+need to [install it from
+docker.com](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository).
+
+If you're using WSL, [install the special WSL-ready version of Docker](https://docs.docker.com/desktop/windows/wsl).
 
 ```
 sudo apt-get update
-sudo apt-get install docker docker-compose
+sudo apt-get install docker docker-compose-plugin
 ```
 
 Then run:
@@ -93,7 +96,7 @@ or update your `/etc/hosts` file to point `db` to `127.0.0.1`.
 Assuming you have the docker containers already running, you can run:
 
 ```
-docker-compose stop api
+docker compose stop api
 poetry install
 poetry run python app/main.py
 ```
