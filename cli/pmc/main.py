@@ -1,9 +1,10 @@
 import json
 import sys
+import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import httpx
 import typer
@@ -60,7 +61,6 @@ class PMCContext:
 
     def poll_task(self, task_id: str, task_handler: TaskHandler = None) -> Any:
         resp = client.get(f"/tasks/{task_id}/")
-        resp.raise_for_status()
         task = resp.json()
 
         if self.no_wait:
@@ -71,7 +71,6 @@ class PMCContext:
         while task["state"] not in FINISHED_TASK_STATES:
             sleep(1)
             resp = client.get(f"/tasks/{task['id']}/")
-            resp.raise_for_status()
             task = resp.json()
             typer.echo(".", err=True, nl=False)
 
@@ -83,15 +82,12 @@ class PMCContext:
         return resp
 
     def handle_response(self, resp: httpx.Response, task_handler: TaskHandler = None) -> None:
-        resp.raise_for_status()
-
         if not resp.content:
             # empty response
             return
 
         if isinstance(resp.json(), dict) and (task_id := resp.json().get("task")):
             resp = self.poll_task(task_id, task_handler)
-            resp.raise_for_status()
 
         if self.id_only and (id := self._extract_ids(resp.json())):
             typer.echo(id, nl=self.isatty)
@@ -131,6 +127,29 @@ def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
     return path
 
 
+def format_exception(exception: BaseException) -> Dict[str, Any]:
+    """Build an error dict from an exception."""
+    if isinstance(exception, httpx.HTTPStatusError):
+        resp_json = exception.response.json()
+        assert isinstance(resp_json, Dict)
+        err = resp_json
+        err["http_status"] = exception.response.status_code
+    elif isinstance(exception, httpx.RequestError):
+        err = {
+            "http_status": -1,
+            "message": str(exception),
+            "url": str(exception.request.url),
+        }
+    else:
+        err = {
+            "http_status": -1,
+            "message": str(exception),
+        }
+
+    err["command_traceback"] = "".join(traceback.format_tb(exception.__traceback__))
+    return err
+
+
 @app.callback()
 def main(
     ctx: typer.Context,
@@ -158,5 +177,20 @@ def main(
     )
 
 
-if __name__ == "__main__":
-    app()
+def run() -> None:
+    command = typer.main.get_command(app)
+
+    try:
+        command(standalone_mode=False)
+    except Exception as exc:
+        traceback.print_exc()
+        typer.echo("")
+
+        err = format_exception(exc)
+        if sys.stdout.isatty():
+            output = json.dumps(err, indent=3)
+        else:
+            output = str(err)
+        typer.echo(output)
+
+        exit(1)

@@ -4,7 +4,7 @@ from typing import Any
 from typer.testing import CliRunner
 
 from pmc.main import app
-from tests.utils import gen_distro_attrs
+from tests.utils import gen_distro_attrs, invoke_command
 
 runner = CliRunner(mix_stderr=False)
 
@@ -26,8 +26,12 @@ def test_show(distro: Any) -> None:
 
 def test_duplicate_path(distro: Any) -> None:
     cmd = ["distro", "create", "pmc_cli_test_name", "apt", distro["base_path"]]
-    result = runner.invoke(app, cmd)
+    result = invoke_command(runner, cmd)
+
     assert result.exit_code != 0
+    error = json.loads(result.stdout)
+    assert "Invalid request" in error["message"]
+    assert "must be unique" in error["details"]["base_path"]
 
 
 def test_update(distro: Any) -> None:
