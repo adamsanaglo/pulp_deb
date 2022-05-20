@@ -23,6 +23,11 @@ T = TypeVar("T", bound="PulpApi")
 logger = logging.getLogger(__name__)
 
 
+class TaskCancelException(Exception):
+    """Exception raised when a user tries to cancel a task that can't be canceled."""
+    pass
+
+
 class PulpApi:
     """
     Base class used for interacting with Pulp's API.
@@ -261,12 +266,24 @@ class PackageApi(PulpApi):
 
 
 class TaskApi(PulpApi):
+    async def cancel(self, id: TaskId) -> Any:
+        """Call the task cancel endpoint."""
+        path = self.endpoint("cancel", id=id)
+        try:
+            resp = await self.patch(path, data={"state": "canceled"})
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 409:
+                raise TaskCancelException(id)
+            else:
+                raise exc
+        return translate_response(resp.json())
+
     @staticmethod
     def endpoint(action: str, **kwargs: Any) -> str:
         """Construct a task endpoint based on action and id."""
         if action == "list":
             return "/tasks/"
-        elif action == "read":
+        elif action in ("read", "cancel"):
             assert isinstance((id := kwargs["id"]), TaskId)
             return f"/tasks/{id.uuid}/"
         else:
