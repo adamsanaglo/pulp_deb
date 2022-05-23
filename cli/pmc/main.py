@@ -1,32 +1,19 @@
 import json
 import sys
 import traceback
-from dataclasses import dataclass
 from pathlib import Path
-from time import sleep
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 import httpx
 import typer
+from pydantic import AnyHttpUrl
+from pydantic.tools import parse_obj_as
 
-from .client import client
 from .commands import config as config_cmd
 from .commands import distribution, package, publisher, repository, task
-from .schemas import CONFIG_PATHS, FINISHED_TASK_STATES, Format
+from .context import PMCContext
+from .schemas import CONFIG_PATHS, Config, Format
 from .utils import parse_config, validate_config
-
-try:
-    from pygments import highlight
-    from pygments.formatters import Terminal256Formatter
-    from pygments.lexers import JsonLexer
-except ImportError:
-    PYGMENTS = False
-else:
-    PYGMENTS = True
-    PYGMENTS_STYLE = "solarized-light"
-
-TaskHandler = Optional[Callable[[str], Any]]
-
 
 app = typer.Typer()
 app.add_typer(config_cmd.app, name="config")
@@ -35,72 +22,6 @@ app.add_typer(package.app, name="package")
 app.add_typer(repository.app, name="repo")
 app.add_typer(task.app, name="task")
 app.add_typer(publisher.app, name="publisher")
-
-
-@dataclass
-class PMCContext:
-    no_color: bool = False
-    id_only: bool = False
-    no_wait: bool = False
-    format: str = "json"
-    config_path: Optional[Path] = None
-    isatty: bool = sys.stdout.isatty()
-
-    @staticmethod
-    def _extract_ids(resp_json: Any) -> Union[str, List[str], None]:
-        if not isinstance(resp_json, dict):
-            return None
-        elif id := resp_json.get("id"):
-            return str(id)
-        elif task_id := resp_json.get("task"):
-            return str(task_id)
-        elif results := resp_json.get("results"):
-            return [r["id"] for r in results]
-        else:
-            return None
-
-    def poll_task(self, task_id: str, task_handler: TaskHandler = None) -> Any:
-        resp = client.get(f"/tasks/{task_id}/")
-        task = resp.json()
-
-        if self.no_wait:
-            return task
-
-        typer.echo(f"Waiting for {task['id']}...", nl=False, err=True)
-
-        while task["state"] not in FINISHED_TASK_STATES:
-            sleep(1)
-            resp = client.get(f"/tasks/{task['id']}/")
-            task = resp.json()
-            typer.echo(".", err=True, nl=False)
-
-        typer.echo("", err=True)
-
-        if task_handler:
-            resp = task_handler(task)
-
-        return resp
-
-    def handle_response(self, resp: httpx.Response, task_handler: TaskHandler = None) -> None:
-        if not resp.content:
-            # empty response
-            return
-
-        if isinstance(resp.json(), dict) and (task_id := resp.json().get("task")):
-            resp = self.poll_task(task_id, task_handler)
-
-        if self.id_only and (id := self._extract_ids(resp.json())):
-            typer.echo(id, nl=self.isatty)
-        else:
-            if not self.isatty:
-                # do not format output if it's not going to a terminal
-                typer.echo(json.dumps(resp.json()))
-            else:
-                output = json.dumps(resp.json(), indent=3)
-                if PYGMENTS and not self.no_color:
-                    formatter = Terminal256Formatter(style=PYGMENTS_STYLE)
-                    output = highlight(output, JsonLexer(), formatter)
-                typer.echo(output)
 
 
 def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
@@ -153,8 +74,10 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
 @app.callback()
 def main(
     ctx: typer.Context,
-    config: Path = typer.Option(
+    config_path: Path = typer.Option(
         None,
+        "--config",
+        "-c",
         callback=_load_config,
         help="Config file location. Defaults: \n" + ("\n").join(map(str, CONFIG_PATHS)),
         envvar="PMC_CLI_CONFIG",
@@ -163,18 +86,22 @@ def main(
     no_color: bool = typer.Option(False, "--no-color", help="Suppress color output if enabled."),
     id_only: bool = typer.Option(False, "--id-only", help="Show ids instead of full responses."),
     resp_format: Format = typer.Option(Format.json, "--format", hidden=True),  # TODO: more formats
+    base_url: str = typer.Option(""),
 ) -> None:
-    if config and ctx.invoked_subcommand != "config":
+    if config_path and ctx.invoked_subcommand != "config":
         # validate config. allow users to still edit/recreate their config even if it's invalid.
-        validate_config(config)
+        validate_config(config_path)
 
-    ctx.obj = PMCContext(
+    config = Config(
         no_wait=no_wait,
         no_color=no_color,
         id_only=id_only,
         format=resp_format,
-        config_path=config,
     )
+    if base_url:
+        config.base_url = parse_obj_as(AnyHttpUrl, base_url)
+
+    ctx.obj = PMCContext(config=config, config_path=config_path)
 
 
 def run() -> None:

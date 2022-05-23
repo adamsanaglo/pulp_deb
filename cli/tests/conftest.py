@@ -6,9 +6,7 @@ from typing import Any, Generator
 import pytest
 from typer.testing import CliRunner
 
-from pmc.main import app
-
-from .utils import gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs
+from .utils import gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs, invoke_command
 
 runner = CliRunner(mix_stderr=False)
 
@@ -24,7 +22,7 @@ def set_config() -> Path:
 @pytest.fixture(autouse=True)
 def check_connection(set_config: Path) -> None:
     try:
-        result = runner.invoke(app, ["repo", "list"])
+        result = invoke_command(["repo", "list"])
         assert result.exit_code == 0, f"repo list failed: {result.stderr}"
     except Exception as exc:
         raise Exception(f"{exc}. Is your server running?")
@@ -37,13 +35,13 @@ def repo() -> Generator[Any, None, None]:
 
     try:
         cmd = ["repo", "create", attrs["name"], attrs["type"]]
-        result = runner.invoke(app, cmd)
+        result = invoke_command(cmd)
         assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
         response = json.loads(result.stdout)
         yield response
     finally:
         if response:
-            result = runner.invoke(app, ["repo", "delete", response["id"]])
+            result = invoke_command(["repo", "delete", response["id"]])
             assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
 
 
@@ -54,13 +52,13 @@ def distro() -> Generator[Any, None, None]:
 
     try:
         cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
-        result = runner.invoke(app, cmd)
+        result = invoke_command(cmd)
         assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
         response = json.loads(result.stdout)
         yield response
     finally:
         if response:
-            result = runner.invoke(app, ["distro", "delete", response["id"]])
+            result = invoke_command(["distro", "delete", response["id"]])
             assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
 
 
@@ -78,11 +76,11 @@ def publisher() -> Generator[Any, None, None]:
             attrs["icm_service"],
             attrs["icm_team"],
         ]
-        result = runner.invoke(app, cmd)
+        result = invoke_command(cmd)
         assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
         response = json.loads(result.stdout)
         yield response
     finally:
         if response:
-            result = runner.invoke(app, ["publisher", "delete", response["id"]])
+            result = invoke_command(["publisher", "delete", response["id"]])
             assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."

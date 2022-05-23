@@ -30,7 +30,7 @@ def gen_publisher_attrs() -> Dict[str, str]:
     )
 
 
-def invoke_command(runner: CliRunner, *args: Any, **kwargs: Any) -> Result:
+def invoke_command(*args: Any, **kwargs: Any) -> Result:
     """
     Invoke a command and handle any exception that gets thrown.
 
@@ -38,7 +38,12 @@ def invoke_command(runner: CliRunner, *args: Any, **kwargs: Any) -> Result:
     This function emulates the logic in run() by appending the formatted error dict to
     result.stdout_bytes.
     """
-    result = runner.invoke(app, *args, **kwargs)
+    if "runner" in kwargs:
+        runner = kwargs.pop("runner")
+    else:
+        runner = CliRunner(mix_stderr=False)
+
+    result: Result = runner.invoke(app, *args, **kwargs)
     if result.exception:
         err = format_exception(result.exception)
         result.stdout_bytes += json.dumps(err).encode("utf-8")

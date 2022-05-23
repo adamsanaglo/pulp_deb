@@ -2,7 +2,8 @@ from enum import Enum
 from pathlib import Path
 
 import click
-from pydantic import BaseModel
+from pydantic import AnyHttpUrl, BaseModel
+from pydantic.tools import parse_obj_as
 
 FINISHED_TASK_STATES = ("skipped", "completed", "failed", "canceled")
 CONFIG_PATHS = [
@@ -48,3 +49,4 @@ class Config(BaseModel):
     no_color: bool = False
     id_only: bool = False
     format: Format = Format.json
+    base_url: AnyHttpUrl = parse_obj_as(AnyHttpUrl, "http://localhost:8000/api/v4")
