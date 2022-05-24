@@ -55,17 +55,17 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
         assert isinstance(resp_json, Dict)
         err = resp_json
         err["http_status"] = exception.response.status_code
-    elif isinstance(exception, httpx.RequestError):
-        err = {
-            "http_status": -1,
-            "message": str(exception),
-            "url": str(exception.request.url),
-        }
     else:
+        exc_message = type(exception).__name__
+        if message := str(exception):
+            exc_message += f": {message}"
+
         err = {
             "http_status": -1,
-            "message": str(exception),
+            "message": exc_message,
         }
+        if isinstance(exception, httpx.RequestError):
+            err["url"] = str(exception.request.url)
 
     err["command_traceback"] = "".join(traceback.format_tb(exception.__traceback__))
     return err
