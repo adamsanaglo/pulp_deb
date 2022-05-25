@@ -31,6 +31,9 @@ def create(
         typer.echo(f"File '{location}' already exists.", err=True)
         raise typer.Exit(code=1)
 
+    # create the parent folder if necessary
+    location.parents[0].mkdir(parents=True, exist_ok=True)
+
     if location.suffix == ".toml":
         with location.open("wb") as f:
             tomli_w.dump({"cli": config.dict()}, f)
