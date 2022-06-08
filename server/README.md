@@ -16,7 +16,10 @@ newer. Any distro older than November 2021 will have an older version of docker-
 need to [install it from
 docker.com](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository).
 
-If you're using WSL, [install the special WSL-ready version of Docker](https://docs.docker.com/desktop/windows/wsl).
+If you're using WSL, [install Docker Desktop with the WSL 2 engine](https://docs.docker.com/desktop/windows/wsl).
+
+Note that Microsoft has a site license for Docker Desktop so any warnings about having to buy a
+commercial license can safely be ignored.
 
 ```
 sudo apt-get update
