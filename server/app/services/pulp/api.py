@@ -225,9 +225,9 @@ class PackageApi(PulpApi):
     async def repository_packages(self, repo_id: RepoId) -> Any:
         """Call the package list endpoint and filter by repo id."""
         if repo_id.type == "apt":
-            self.type = PackageType.deb
+            type = PackageType.deb
         elif repo_id.type == "yum":
-            self.type = PackageType.rpm
+            type = PackageType.rpm
         else:
             raise TypeError(f"Unsupported repository type: {repo_id.type.value}")
 
@@ -235,7 +235,7 @@ class PackageApi(PulpApi):
             repo = await repo_api.read(repo_id)
         version_href = repo["latest_version_href"]
 
-        resp = await self.get(self.endpoint("list"), params={"repository_version": version_href})
+        resp = await self.get(self.endpoint("list", type=type), params={"repository_version": version_href})
         return translate_response(resp.json())
 
     async def create(self, data: Dict[str, Any]) -> Any:
