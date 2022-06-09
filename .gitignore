@@ -33,6 +33,13 @@ bld/
 # Visual Studio 2017 auto generated files
 Generated\ Files/
 
+# Visual Studio Code auto generated files
+.vscode
+
+# Visual Studio Code assumes a cwd of the root of the repo, therefore
+# conftest.py says that this file should go here.
+tests/settings.toml
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*

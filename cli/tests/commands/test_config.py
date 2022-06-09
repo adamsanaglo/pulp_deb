@@ -12,7 +12,7 @@ runner = CliRunner(mix_stderr=False)
 def test_missing_config() -> None:
     result = invoke_command(["--config", "missing.json", "repo", "list"])
     assert result.exit_code == 1
-    assert "does not exist" in result.stderr
+    assert "does not exist" in result.stdout
 
 
 def test_config_with_invalid_value() -> None:
@@ -21,7 +21,7 @@ def test_config_with_invalid_value() -> None:
     config.flush()
     result = invoke_command(["--config", config.name, "repo", "list"])
     assert result.exit_code == 1
-    assert "validation error" in result.stderr
+    assert "DecodeError" in result.stdout
 
 
 def test_config_id_only(repo: Any) -> None:

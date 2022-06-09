@@ -30,8 +30,7 @@ def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
 
     if value:
         if not value.is_file():
-            typer.echo(f"Error: file '{value}' does not exist or is not a file.", err=True)
-            raise typer.Exit(code=1)
+            raise ValueError(f"Error: file '{value}' does not exist or is not a file.")
         else:
             path = value
     else:

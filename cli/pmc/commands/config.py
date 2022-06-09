@@ -28,8 +28,7 @@ def create(
     config = Config()
 
     if location.is_file() and not overwrite:
-        typer.echo(f"File '{location}' already exists.", err=True)
-        raise typer.Exit(code=1)
+        raise click.UsageError(f"file '{location}' already exists.")
 
     # create the parent folder if necessary
     location.parents[0].mkdir(parents=True, exist_ok=True)
@@ -41,8 +40,7 @@ def create(
         with location.open("w") as f:
             json.dump(config.dict(), f, indent=3)
     else:
-        typer.echo(f"Error: invalid file extension for '{location}'.", err=True)
-        raise typer.Exit(code=1)
+        raise click.UsageError(f"invalid file extension for '{location}'.")
 
     if edit:
         _edit_config(location)
@@ -53,10 +51,8 @@ def edit(ctx: typer.Context) -> None:
     """Edit config in a text editor."""
     config_path = ctx.obj.config_path
     if not config_path:
-        typer.echo("Error: config not found.", err=True)
-        raise typer.Exit(code=1)
+        raise click.UsageError("config file not provided.")
     if not config_path.is_file():
-        typer.echo(f"Error: location '{config_path}' is not a file.", err=True)
-        raise typer.Exit(code=1)
+        raise click.UsageError(f"location '{config_path}' is not a file.")
 
     _edit_config(config_path)
