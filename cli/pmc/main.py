@@ -10,7 +10,7 @@ from pydantic import AnyHttpUrl
 from pydantic.tools import parse_obj_as
 
 from .commands import config as config_cmd
-from .commands import distribution, package, publisher, repository, task
+from .commands import distribution, orphan, package, publisher, repository, task
 from .context import PMCContext
 from .schemas import CONFIG_PATHS, Config, Format
 from .utils import parse_config, validate_config
@@ -22,6 +22,7 @@ app.add_typer(package.app, name="package")
 app.add_typer(repository.app, name="repo")
 app.add_typer(task.app, name="task")
 app.add_typer(publisher.app, name="publisher")
+app.add_typer(orphan.app, name="orphan")
 
 
 def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:

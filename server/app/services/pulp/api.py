@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class TaskCancelException(Exception):
     """Exception raised when a user tries to cancel a task that can't be canceled."""
+
     pass
 
 
@@ -288,3 +289,10 @@ class TaskApi(PulpApi):
             return f"/tasks/{id.uuid}/"
         else:
             raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
+
+
+class OrphanApi(PulpApi):
+    async def cleanup(self) -> Any:
+        """Call the orphan cleanup endpoint."""
+        resp = await self.post("/orphans/cleanup/")
+        return translate_response(resp.json())
