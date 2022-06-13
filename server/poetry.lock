@@ -33,6 +33,14 @@ test = ["coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "pytest (>=6.0)", "pytes
 trio = ["trio (>=0.16)"]
 
 [[package]]
+name = "asgi-correlation-id"
+version = "3.0.0"
+description = "Middleware correlating project logs to individual requests"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[[package]]
 name = "asgiref"
 version = "3.5.0"
 description = "ASGI specs, helper code, and adapters"
@@ -623,7 +631,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "ef5fa958757c7fc2ad32a91d731511f96be7b8b5b332142d815d339885ebd8b1"
+content-hash = "794253a0b4a1e28eed39ece5f32916969d64fca04d78846d8519f397d4d70bc8"
 
 [metadata.files]
 alembic = [
@@ -633,6 +641,10 @@ alembic = [
 anyio = [
     {file = "anyio-3.5.0-py3-none-any.whl", hash = "sha256:b5fa16c5ff93fa1046f2eeb5bbff2dad4d3514d6cda61d02816dba34fa8c3c2e"},
     {file = "anyio-3.5.0.tar.gz", hash = "sha256:a0aeffe2fb1fdf374a8e4b471444f0f3ac4fb9f5a5b542b48824475e0042a5a6"},
+]
+asgi-correlation-id = [
+    {file = "asgi-correlation-id-3.0.0.tar.gz", hash = "sha256:cbcf46e5d166d26998311899cd02779549d1a47fd9a9910cf1f87ffe64918fb0"},
+    {file = "asgi_correlation_id-3.0.0-py3-none-any.whl", hash = "sha256:0f5eb0602e5f199aa4c5f5ebeb72651c28a69961cfd886c1d87cb23df48fd00e"},
 ]
 asgiref = [
     {file = "asgiref-3.5.0-py3-none-any.whl", hash = "sha256:88d59c13d634dcffe0510be048210188edd79aeccb6a6c9028cdad6f31d730a9"},

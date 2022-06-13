@@ -1,6 +1,6 @@
 import typer
 
-from pmc.client import get_client
+from pmc.client import get_client, handle_response
 
 app = typer.Typer()
 
@@ -20,9 +20,9 @@ PUBLISHER_FIELDS = {
 @app.command()
 def list(ctx: typer.Context) -> None:
     """List publishers."""
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.get("/publishers/")
-        ctx.obj.handle_response(resp)
+        handle_response(ctx.obj, resp)
 
 
 @app.command()
@@ -41,17 +41,17 @@ def create(
     ld = locals()
     data = {field: ld[field] for field in PUBLISHER_FIELDS}
 
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.post("/publishers/", json=data)
-        ctx.obj.handle_response(resp)
+        handle_response(ctx.obj, resp)
 
 
 @app.command()
 def show(ctx: typer.Context, id: str) -> None:
     """Show details for a particular publisher."""
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.get(f"/publishers/{id}/")
-        ctx.obj.handle_response(resp)
+        handle_response(ctx.obj, resp)
 
 
 @app.command()
@@ -71,14 +71,14 @@ def update(
     ld = locals()
     data = {field: ld[field] for field in PUBLISHER_FIELDS if ld[field] is not None}
 
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.patch(f"/publishers/{id}/", json=data)
-        ctx.obj.handle_response(resp)
+        handle_response(ctx.obj, resp)
 
 
 @app.command()
 def delete(ctx: typer.Context, id: str) -> None:
     """Delete a publisher."""
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.delete(f"/publishers/{id}/")
-        ctx.obj.handle_response(resp)
+        handle_response(ctx.obj, resp)

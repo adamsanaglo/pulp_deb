@@ -53,8 +53,11 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
     if isinstance(exception, httpx.HTTPStatusError):
         resp_json = exception.response.json()
         assert isinstance(resp_json, Dict)
+
         err = resp_json
         err["http_status"] = exception.response.status_code
+        if "x-correlation-id" in exception.response.headers:
+            err["correlation_id"] = exception.response.headers["x-correlation-id"]
     else:
         exc_message = type(exception).__name__
         if message := str(exception):

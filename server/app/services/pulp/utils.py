@@ -1,6 +1,7 @@
 from typing import Any
 
 import httpx
+from asgi_correlation_id.context import correlation_id
 
 from core.config import settings
 from core.schemas import Identifier
@@ -9,6 +10,7 @@ from core.schemas import Identifier
 def get_client() -> httpx.AsyncClient:
     """Intiatiate a new httpx for interacting with Pulp."""
     return httpx.AsyncClient(
+        headers={"Correlation-ID": str(correlation_id.get())},
         base_url=f"{settings.PULP_HOST}{settings.PULP_API_PATH}",
         auth=(settings.PULP_USERNAME, settings.PULP_PASSWORD),
     )

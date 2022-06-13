@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseSettings, PostgresDsn
 
@@ -20,8 +20,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
-
-    LOGGING_CONFIG: str = "app/logging.conf"
+    LOGGING_CONFIG: Optional[str]
 
     def db_uri(self) -> Any:
         return PostgresDsn.build(

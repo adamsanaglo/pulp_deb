@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 import httpx
 import typer
 
-from pmc.client import get_client
+from pmc.client import get_client, handle_response
 from pmc.schemas import DistroType
 
 app = typer.Typer()
@@ -12,9 +12,9 @@ app = typer.Typer()
 @app.command()
 def list(ctx: typer.Context) -> None:
     """List distributions."""
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.get("/distributions/")
-        ctx.obj.handle_response(resp)
+        handle_response(ctx.obj, resp)
 
 
 @app.command()
@@ -30,7 +30,7 @@ def create(
     def show_func(task: Any) -> httpx.Response:
         assert isinstance(task, Dict) and task.get("created_resources")
         new_id = task["created_resources"][0]
-        with get_client(ctx.obj.config) as client:
+        with get_client(ctx.obj) as client:
             return client.get(f"/distributions/{new_id}/")
 
     data = {
@@ -42,17 +42,17 @@ def create(
     if repository:
         data["repository"] = repository
 
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.post("/distributions/", json=data)
-        ctx.obj.handle_response(resp, task_handler=show_func)
+        handle_response(ctx.obj, resp, task_handler=show_func)
 
 
 @app.command()
 def show(ctx: typer.Context, id: str) -> None:
     """Show details for a distribution."""
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.get(f"/distributions/{id}/")
-        ctx.obj.handle_response(resp)
+        handle_response(ctx.obj, resp)
 
 
 @app.command()
@@ -66,7 +66,7 @@ def update(
     """Update a distribution."""
 
     def show_func(task: Any) -> httpx.Response:
-        with get_client(ctx.obj.config) as client:
+        with get_client(ctx.obj) as client:
             return client.get(f"/distributions/{id}/")
 
     data = {}
@@ -77,14 +77,14 @@ def update(
     if repository_id:
         data["repository"] = repository_id
 
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.patch(f"/distributions/{id}/", json=data)
-        ctx.obj.handle_response(resp, task_handler=show_func)
+        handle_response(ctx.obj, resp, task_handler=show_func)
 
 
 @app.command()
 def delete(ctx: typer.Context, id: str) -> None:
     """Delete a distribution."""
-    with get_client(ctx.obj.config) as client:
+    with get_client(ctx.obj) as client:
         resp = client.delete(f"/distributions/{id}/")
-        ctx.obj.handle_response(resp)
+        handle_response(ctx.obj, resp)

@@ -1,10 +1,9 @@
 import logging
 import logging.config
-import random
-import string
 import time
 from typing import Any, Awaitable, Callable, Dict
 
+from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError as ValidationError
 from fastapi.requests import Request
@@ -19,9 +18,15 @@ from core.exception import (
     pulp_exception_handler,
     validation_exception_handler,
 )
+from core.log_config import DEFAULT_LOG_CONFIG
 
 # setup loggers
-logging.config.fileConfig(settings.LOGGING_CONFIG, disable_existing_loggers=False)
+if settings.LOGGING_CONFIG:
+    LOG_CONFIG = settings.LOGGING_CONFIG
+    logging.config.fileConfig(settings.LOGGING_CONFIG, disable_existing_loggers=False)
+else:
+    LOG_CONFIG = DEFAULT_LOG_CONFIG
+    logging.config.dictConfig(DEFAULT_LOG_CONFIG)
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +38,10 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
 async def log_requests(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    idem = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    logger.info(f"rid={idem} start request path={request.url.path}")
+    logger.info(
+        f"request from {request.client.host}:{request.client.port} - "
+        f"'{request.method} {request.url.path}'."
+    )
     start_time = time.time()
 
     response = await call_next(request)
@@ -42,7 +49,7 @@ async def log_requests(
     process_time = (time.time() - start_time) * 1000
     formatted_process_time = "{0:.2f}".format(process_time)
     logger.info(
-        f"rid={idem} completed_in={formatted_process_time}ms status_code={response.status_code}"
+        f"request completed_in={formatted_process_time}ms status_code={response.status_code}."
     )
 
     return response
@@ -56,7 +63,6 @@ def root() -> str:
 
 @root_router.get("/api/", status_code=200)
 def api() -> Dict[str, Any]:
-    logger.info("Received request for /api/")
     return {
         "server": {"version": settings.VERSION},
         "versions": {"v4": "v4/"},
@@ -65,6 +71,7 @@ def api() -> Dict[str, Any]:
 
 app.include_router(api_router, prefix=settings.API_PREFIX)
 app.include_router(root_router)
+app.add_middleware(CorrelationIdMiddleware, header_name="X-Correlation-ID")
 
 app.add_exception_handler(HTTPStatusError, pulp_exception_handler)
 app.add_exception_handler(RequestError, httpx_exception_handler)
@@ -80,6 +87,5 @@ if __name__ == "__main__":
         host=settings.SERVER_HOST,
         port=settings.SERVER_PORT,
         reload=settings.DEBUG,
-        log_level=("debug" if settings.DEBUG else "info"),
-        log_config=settings.LOGGING_CONFIG,
+        log_config=LOG_CONFIG,
     )
