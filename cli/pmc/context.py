@@ -1,7 +1,7 @@
-from uuid import uuid4
 import sys
 from pathlib import Path
 from typing import Optional
+from uuid import uuid4
 
 from .schemas import Config
 

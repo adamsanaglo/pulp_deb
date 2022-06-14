@@ -236,7 +236,9 @@ class PackageApi(PulpApi):
             repo = await repo_api.read(repo_id)
         version_href = repo["latest_version_href"]
 
-        resp = await self.get(self.endpoint("list", type=type), params={"repository_version": version_href})
+        resp = await self.get(
+            self.endpoint("list", type=type), params={"repository_version": version_href}
+        )
         return translate_response(resp.json())
 
     async def create(self, data: Dict[str, Any]) -> Any:

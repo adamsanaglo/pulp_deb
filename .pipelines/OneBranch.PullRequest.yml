@@ -88,17 +88,17 @@ extends:
           - script: |
               cd server
               poetry env use 3.8
-              poetry install
-              poetry run flake8 .
-              poetry run isort -c .
+              poetry install && \
+              poetry run flake8 . && \
+              poetry run isort -c . && \
               poetry run mypy --strict .
             displayName: "Lint server files"
 
           - script: |
               cd cli
               poetry env use 3.8
-              poetry install
-              poetry run flake8 .
-              poetry run isort -c .
+              poetry install && \
+              poetry run flake8 . && \
+              poetry run isort -c . && \
               poetry run mypy --strict .
             displayName: "Lint cli files"
