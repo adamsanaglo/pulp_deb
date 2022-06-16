@@ -45,6 +45,15 @@ http :8000/api/v4/repositories/
 http :8000/api/v4/repositories/ name=test type=yum
 ```
 
+### Managing your dev environment
+
+The dev environment is set up to automatically reload the web server when it detects any code
+changes. If you need to install new python dependencies or change your configuration, you can
+rebuild your container with `make rebuild`.
+
+The make file should provide commands for most of the things you will need to manage your server dev
+environment. To see a list of all make commands, run `make` without any arguments.
+
 
 ### Viewing the API schema
 

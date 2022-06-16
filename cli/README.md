@@ -21,6 +21,14 @@ pip install pipx
 pipx install poetry
 ```
 
+By default poetry creates the virtual environment inside your home folder which can sometimes be
+problematic for tools such as IDEs which may need to be aware of your dependencies so you may choose
+to configure poetry to create your virtual environment inside your project folder:
+
+```
+poetry config virtualenvs.in-project true
+```
+
 And then install the cli dependencies:
 
 ```
