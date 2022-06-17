@@ -54,7 +54,12 @@ shell:				## open a bash console to the api container
 lint: run			## run the lint checks in the api container
 	docker exec -it pmcserver flake8 .
 	docker exec -it pmcserver isort -c .
+	docker exec -it pmcserver black --check .
 	docker exec -it pmcserver mypy .
+
+format: run			## format code using formatters black and isort
+	docker exec -it pmcserver isort .
+	docker exec -it pmcserver black .
 
 dbconsole:			## open a psql console and connect to the database
 	docker exec -it db psql -U ${POSTGRES_USER}

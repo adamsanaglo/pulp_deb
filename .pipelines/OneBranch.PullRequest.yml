@@ -91,6 +91,7 @@ extends:
               poetry install && \
               poetry run flake8 . && \
               poetry run isort -c . && \
+              poetry run black --check . && \
               poetry run mypy --strict .
             displayName: "Lint server files"
 
@@ -100,5 +101,6 @@ extends:
               poetry install && \
               poetry run flake8 . && \
               poetry run isort -c . && \
+              poetry run black --check . && \
               poetry run mypy --strict .
             displayName: "Lint cli files"
