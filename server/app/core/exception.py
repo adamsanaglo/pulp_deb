@@ -57,6 +57,13 @@ async def pulp_exception_handler(request: Request, exc: HTTPStatusError) -> JSON
             source="pulp",
             status_code=400,
         )
+    elif exc.response.status_code == 404:
+        return _exception_response(
+            request,
+            "Requested resource not found.",
+            source="pulp",
+            status_code=404,
+        )
     else:
         return _exception_response(
             request,
