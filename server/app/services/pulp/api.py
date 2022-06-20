@@ -248,6 +248,10 @@ class PackageApi(PulpApi):
         type = PackageType(extension)
         path = self.endpoint("create", type=type)
 
+        force_name = data.pop("force_name")
+        if force_name:
+            data["relative_path"] = file.filename
+
         resp = await self.post(path, files={"file": file.file}, data=data)
         return translate_response(resp.json())
 
@@ -294,7 +298,10 @@ class TaskApi(PulpApi):
 
 
 class OrphanApi(PulpApi):
-    async def cleanup(self) -> Any:
+    async def cleanup(self, protection_time: Optional[int] = None) -> Any:
         """Call the orphan cleanup endpoint."""
-        resp = await self.post("/orphans/cleanup/")
+        data = {}
+        if protection_time is not None:
+            data["orphan_protection_time"] = protection_time
+        resp = await self.post("/orphans/cleanup/", data=data)
         return translate_response(resp.json())

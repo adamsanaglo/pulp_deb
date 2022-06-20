@@ -1,10 +1,14 @@
 import json
 from pathlib import Path
+from typing import Dict, Any
 
 import tomli
 from pydantic import ValidationError
 
 from pmc.schemas import Config
+
+
+PulpTask = Dict[str, Any]
 
 
 class UnsupportedFileType(Exception):
@@ -13,6 +17,14 @@ class UnsupportedFileType(Exception):
 
 class DecodeError(Exception):
     pass
+
+
+class PulpTaskFailure(Exception):
+    def __init__(self, task: PulpTask) -> None:
+        error = task["error"]
+        self.original_traceback = error["traceback"]
+        self.original_message = error["description"]
+        super().__init__()
 
 
 def parse_config(path: Path) -> Config:
@@ -39,3 +51,9 @@ def validate_config(path: Path) -> None:
         parse_config(path)
     except (json.decoder.JSONDecodeError, tomli.TOMLDecodeError, ValidationError) as e:
         raise DecodeError(f"Parse error when parsing '{path}': {e}.")
+
+
+def raise_if_task_failed(task: PulpTask) -> None:
+    """Throw an appropriate error if the Pulp task failed."""
+    if task["state"] == "failed":
+        raise PulpTaskFailure(task)

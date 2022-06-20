@@ -1,14 +1,15 @@
 import json
 import os
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator
+from random import choice
+from typing import Any, Generator, List, Optional
 
 import pytest
-from typer.testing import CliRunner
+from pmc.schemas import RepoType
 
-from .utils import gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs, invoke_command
-
-runner = CliRunner(mix_stderr=False)
+from .utils import (gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs,
+                    invoke_command)
 
 
 @pytest.fixture(autouse=True)
@@ -28,59 +29,117 @@ def check_connection(set_config: Path) -> None:
         raise Exception(f"{exc}. Is your server running?")
 
 
-@pytest.fixture()
-def repo() -> Generator[Any, None, None]:
-    attrs = gen_repo_attrs()
+@contextmanager
+def _object_manager(
+    cmd: List[str], cleanup_cmd: Optional[List[str]] = None
+) -> Generator[Any, None, None]:
+    """
+    Create, yield, and clean up an object given the command to create it.
+    If "{type} delete {id}" does not suffice to clean it up you can pass a custom cleanup command.
+    """
     response = None
-
     try:
-        cmd = ["repo", "create", attrs["name"], attrs["type"]]
         result = invoke_command(cmd)
         assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
         response = json.loads(result.stdout)
         yield response
     finally:
         if response:
-            result = invoke_command(["repo", "delete", response["id"]])
+            if cleanup_cmd is None:
+                type = cmd[0]  # "repo", "distro", "publisher"
+                cleanup_cmd = [type, "delete", response["id"]]
+            result = invoke_command(cleanup_cmd)
             assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
+
+
+@pytest.fixture()
+def repo() -> Generator[Any, None, None]:
+    attrs = gen_repo_attrs()
+    cmd = ["repo", "create", attrs["name"], attrs["type"]]
+    with _object_manager(cmd) as r:
+        yield r
+
+
+@pytest.fixture()
+def apt_repo() -> Generator[Any, None, None]:
+    attrs = gen_repo_attrs(RepoType.apt)
+    cmd = ["repo", "create", attrs["name"], attrs["type"]]
+    with _object_manager(cmd) as r:
+        yield r
+
+
+@pytest.fixture()
+def yum_repo() -> Generator[Any, None, None]:
+    attrs = gen_repo_attrs(RepoType.yum)
+    cmd = ["repo", "create", attrs["name"], attrs["type"]]
+    with _object_manager(cmd) as r:
+        yield r
 
 
 @pytest.fixture()
 def distro() -> Generator[Any, None, None]:
     attrs = gen_distro_attrs()
-    response = None
-
-    try:
-        cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
-        result = invoke_command(cmd)
-        assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
-        response = json.loads(result.stdout)
-        yield response
-    finally:
-        if response:
-            result = invoke_command(["distro", "delete", response["id"]])
-            assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
+    cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
+    with _object_manager(cmd) as d:
+        yield d
 
 
 @pytest.fixture()
 def publisher() -> Generator[Any, None, None]:
-    attrs = gen_publisher_attrs()
-    response = None
+    p = gen_publisher_attrs()
+    cmd = ["publisher", "create", p["name"], p["contact_email"], p["icm_service"], p["icm_team"]]
+    with _object_manager(cmd) as o:
+        yield o
 
-    try:
-        cmd = [
-            "publisher",
-            "create",
-            attrs["name"],
-            attrs["contact_email"],
-            attrs["icm_service"],
-            attrs["icm_team"],
-        ]
-        result = invoke_command(cmd)
-        assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
-        response = json.loads(result.stdout)
-        yield response
-    finally:
-        if response:
-            result = invoke_command(["publisher", "delete", response["id"]])
-            assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
+
+@contextmanager
+def _package_manager(type: Optional[RepoType] = None) -> Generator[Any, None, None]:
+    # We cannot simply delete packages once created (Pulp doesn't have API for that) so instead
+    # we must call the "orphan cleanup" api endpoint with a time of zero, forcing all orphans
+    # (including our fixture-added package) to be cleaned up. This has a side effect of deleting
+    # all other orphans from the database, so we should never run tests against a production db.
+    assets = Path.cwd() / "tests" / "assets"
+    packages = []
+    if not type or type == RepoType.apt:
+        packages.extend(assets.glob("*.deb"))
+    if not type or type == RepoType.yum:
+        packages.extend(assets.glob("*.rpm"))
+
+    package = str(choice(packages))
+    cmd = ["package", "upload", package]
+
+    # Required until https://github.com/pulp/pulp_rpm/pull/2537 is in current Pulp.
+    if package.endswith(".rpm"):
+        cmd.append("--force-name")
+
+    cleanup_cmd = ["orphan", "cleanup", "--protection-time", "0"]
+    with _object_manager(cmd, cleanup_cmd) as p:
+        yield p
+
+
+@pytest.fixture()
+def package() -> Generator[Any, None, None]:
+    with _package_manager() as p:
+        yield p
+
+
+@pytest.fixture()
+def deb_package() -> Generator[Any, None, None]:
+    with _package_manager(RepoType.apt) as p:
+        yield p
+
+
+@pytest.fixture()
+def rpm_package() -> Generator[Any, None, None]:
+    with _package_manager(RepoType.yum) as p:
+        yield p
+
+
+@pytest.fixture()
+def task() -> Generator[Any, None, None]:
+    # do something, anything, that results in at least one task being created
+    cmd = ["orphan", "cleanup"]
+    result = invoke_command(cmd)
+    assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    yield response

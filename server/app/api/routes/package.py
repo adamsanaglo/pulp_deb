@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, UploadFile
 
@@ -15,9 +15,9 @@ async def list_packages() -> Any:
 
 
 @router.post("/packages/")
-async def create_package(file: UploadFile) -> Any:
+async def create_package(file: UploadFile, force_name: Optional[bool] = False) -> Any:
     async with PackageApi() as api:
-        return await api.create({"file": file})
+        return await api.create({"file": file, "force_name": force_name})
 
 
 @router.get("/packages/{id}/")

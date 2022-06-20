@@ -2,11 +2,7 @@ import json
 import tempfile
 from typing import Any
 
-from typer.testing import CliRunner
-
 from tests.utils import invoke_command
-
-runner = CliRunner(mix_stderr=False)
 
 
 def test_missing_config() -> None:

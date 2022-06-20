@@ -13,7 +13,7 @@ from .commands import config as config_cmd
 from .commands import distribution, orphan, package, publisher, repository, task
 from .context import PMCContext
 from .schemas import CONFIG_PATHS, Config, Format
-from .utils import parse_config, validate_config
+from .utils import PulpTaskFailure, parse_config, validate_config
 
 app = typer.Typer()
 app.add_typer(config_cmd.app, name="config")
@@ -58,6 +58,13 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
         err["http_status"] = exception.response.status_code
         if "x-correlation-id" in exception.response.headers:
             err["correlation_id"] = exception.response.headers["x-correlation-id"]
+    elif isinstance(exception, PulpTaskFailure):
+        err = {
+            "http_status": -1,
+            "message": exception.original_message,
+            "command_traceback": exception.original_traceback,
+        }
+        return err
     else:
         exc_message = type(exception).__name__
         if message := str(exception):

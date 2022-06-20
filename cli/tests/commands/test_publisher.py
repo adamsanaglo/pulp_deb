@@ -1,11 +1,10 @@
 import json
 from typing import Any
 
-from typer.testing import CliRunner
-
 from tests.utils import gen_publisher_attrs, invoke_command
 
-runner = CliRunner(mix_stderr=False)
+
+# Note that create and delete are exercised by the fixture.
 
 
 def test_list(publisher: Any) -> None:

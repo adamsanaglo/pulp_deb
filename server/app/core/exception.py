@@ -35,7 +35,7 @@ def _exception_response(
 async def validation_exception_handler(request: Request, exc: ValidationError) -> JSONResponse:
     errors = defaultdict(list)
     for error in exc.errors():
-        errors[error["loc"][1]].append(error["msg"])
+        errors[error["loc"][-1]].append(error["msg"])
 
     return _exception_response(
         request,

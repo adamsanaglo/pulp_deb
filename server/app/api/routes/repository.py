@@ -53,7 +53,7 @@ async def get_packages(id: RepoId) -> Any:
 @router.patch("/repositories/{id}/packages/")
 async def update_packages(id: RepoId, repo_update: RepositoryPackageUpdate) -> Any:
     async with RepositoryApi() as api:
-        return await api.update_packages(**repo_update.dict())
+        return await api.update_packages(id, **repo_update.dict())
 
 
 @router.post("/repositories/{id}/publish/")
