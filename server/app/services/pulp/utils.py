@@ -8,7 +8,7 @@ from core.schemas import Identifier
 
 
 def get_client() -> httpx.AsyncClient:
-    """Intiatiate a new httpx for interacting with Pulp."""
+    """Initiate a new httpx for interacting with Pulp."""
     return httpx.AsyncClient(
         headers={"Correlation-ID": str(correlation_id.get())},
         base_url=f"{settings.PULP_HOST}{settings.PULP_API_PATH}",

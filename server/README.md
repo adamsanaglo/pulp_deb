@@ -126,7 +126,8 @@ interact with.
 
 First, open `.env` and configure PULP_HOST to point to `http://localhost:8080` or wherever you are
 serving Pulp. You'll also need to update POSTGRES_SERVER to point to `localhost`
-or update your `/etc/hosts` file to point `db` to `127.0.0.1`.
+or update your `/etc/hosts` file to point `db` to `127.0.0.1` (if using WSL you will also have to 
+follow the directions in at the top of `/etc/hosts` to prevent it from being overwritten).
 
 Assuming you have the docker containers already running, you can run:
 
