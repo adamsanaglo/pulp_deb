@@ -4,16 +4,20 @@ import httpx
 import typer
 
 from pmc.client import get_client, handle_response
-from pmc.schemas import DistroType
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, DistroType
 
 app = typer.Typer()
 
 
 @app.command()
-def list(ctx: typer.Context) -> None:
+def list(
+    ctx: typer.Context, limit: Optional[int] = LIMIT_OPT, offset: Optional[int] = OFFSET_OPT
+) -> None:
     """List distributions."""
+    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+
     with get_client(ctx.obj) as client:
-        resp = client.get("/distributions/")
+        resp = client.get("/distributions/", params=params)
         handle_response(ctx.obj, resp)
 
 

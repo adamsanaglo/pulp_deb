@@ -3,7 +3,6 @@ from typing import Any
 
 from tests.utils import gen_distro_attrs, invoke_command
 
-
 # Note that create and delete are exercised by the fixture.
 
 

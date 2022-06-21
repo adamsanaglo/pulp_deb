@@ -1,17 +1,17 @@
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from core.schemas import Distribution, DistributionUpdate, DistroId
+from core.schemas import Distribution, DistributionUpdate, DistroId, Pagination
 from services.pulp.api import DistributionApi
 
 router = APIRouter()
 
 
 @router.get("/distributions/")
-async def list_distros() -> Any:
+async def list_distros(pagination: Pagination = Depends(Pagination)) -> Any:
     async with DistributionApi() as api:
-        return await api.list()
+        return await api.list(pagination)
 
 
 @router.post("/distributions/")

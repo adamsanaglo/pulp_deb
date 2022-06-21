@@ -3,7 +3,6 @@ from typing import Any
 
 from tests.utils import gen_repo_attrs, invoke_command
 
-
 # Note that create and delete are exercised by the fixture.
 
 
@@ -13,6 +12,20 @@ def test_list(repo: Any) -> None:
     response = json.loads(result.stdout)
     assert "count" in response
     assert response["count"] > 0
+
+
+def test_paginated_list(yum_repo: Any, apt_repo: Any) -> None:
+    result = invoke_command(["repo", "list", "--limit", "1"])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) == 1
+    id = response["results"][0]["id"]
+
+    result = invoke_command(["repo", "list", "--limit", "1", "--offset", "1"])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) == 1
+    assert response["results"][0]["id"] != id
 
 
 def test_show(repo: Any) -> None:

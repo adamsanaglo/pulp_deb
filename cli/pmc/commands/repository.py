@@ -1,9 +1,9 @@
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import typer
 
 from pmc.client import get_client, handle_response
-from pmc.schemas import RepoType
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoType
 
 app = typer.Typer()
 packages = typer.Typer()
@@ -11,9 +11,14 @@ app.add_typer(packages, name="packages")
 
 
 @app.command()
-def list(ctx: typer.Context, name: Optional[str] = typer.Option(None)) -> None:
+def list(
+    ctx: typer.Context,
+    limit: Optional[int] = LIMIT_OPT,
+    offset: Optional[int] = OFFSET_OPT,
+    name: Optional[str] = typer.Option(None),
+) -> None:
     """List repositories."""
-    params = {}
+    params: Dict[str, Any] = dict(limit=limit, offset=offset)
     if name:
         params["name"] = name
 

@@ -1,12 +1,11 @@
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 import tomli
 from pydantic import ValidationError
 
 from pmc.schemas import Config
-
 
 PulpTask = Dict[str, Any]
 

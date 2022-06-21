@@ -58,7 +58,7 @@ async def log_requests(
 @root_router.get("/", response_class=RedirectResponse, status_code=302)
 def root() -> str:
     logger.info("root request")
-    return "/api"
+    return "/api/"
 
 
 @root_router.get("/api/", status_code=200)

@@ -1,19 +1,36 @@
-from typing import Any
+from typing import Any, Dict
 
 import typer
 
 from pmc.client import get_client, handle_response
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, PackageType
 from pmc.utils import raise_if_task_failed
 
 app = typer.Typer()
+deb = typer.Typer()
+rpm = typer.Typer()
+app.add_typer(deb, name="deb", help="Manage deb packages")
+app.add_typer(rpm, name="rpm", help="Manage rpm packages")
 
 
-@app.command()
-def list(ctx: typer.Context) -> None:
-    """List packages."""
+def _list(type: PackageType, ctx: typer.Context, limit: int, offset: int) -> None:
+    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+
     with get_client(ctx.obj) as client:
-        resp = client.get("/packages/")
+        resp = client.get(f"/{type}/packages/", params=params)
         handle_response(ctx.obj, resp)
+
+
+@deb.command(name="list")
+def deb_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
+    """List deb packages."""
+    _list(PackageType.deb, ctx, limit, offset)
+
+
+@rpm.command(name="list")
+def rpm_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
+    """List rpm packages."""
+    _list(PackageType.rpm, ctx, limit, offset)
 
 
 @app.command()

@@ -1,9 +1,9 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from core.schemas import RepoId, Repository, RepositoryPackageUpdate, RepositoryUpdate
+from core.schemas import Pagination, RepoId, Repository, RepositoryPackageUpdate, RepositoryUpdate
 from services.pulp.api import PackageApi, RepositoryApi
 
 router = APIRouter()
@@ -11,13 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/repositories/")
-async def list_repos(name: Optional[str] = None) -> Any:
-    params = dict()
-    if name:
-        params = {"name": name}
-
+async def list_repos(pagination: Pagination = Depends(Pagination)) -> Any:
     async with RepositoryApi() as api:
-        return await api.list(params)
+        return await api.list(pagination)
 
 
 @router.post("/repositories/")

@@ -12,6 +12,7 @@ from core.schemas import (
     Identifier,
     PackageId,
     PackageType,
+    Pagination,
     RepoId,
     RepoType,
     TaskId,
@@ -70,10 +71,17 @@ class PulpApi:
     patch = partialmethod(request, "patch")
     delete = partialmethod(request, "delete")
 
-    async def list(self, params: Optional[Dict[str, Any]] = None) -> Any:
+    async def list(
+        self, pagination: Pagination, params: Optional[Dict[str, Any]] = None, **endpoint_args: Any
+    ) -> Any:
         """Call the list endpoint."""
-        resp = await self.get(self.endpoint("list"), params=params)
-        return translate_response(resp.json())
+        if not params:
+            params = dict()
+        params["limit"] = pagination.limit
+        params["offset"] = pagination.offset
+
+        resp = await self.get(self.endpoint("list", **endpoint_args), params=params)
+        return translate_response(resp.json(), pagination=pagination)
 
     async def read(self, id: Identifier) -> Any:
         """Call the read endpoint."""
@@ -210,19 +218,6 @@ class DistributionApi(PulpApi):
 
 
 class PackageApi(PulpApi):
-    async def list(self, params: Optional[Dict[str, Any]] = None) -> Any:
-        """Call the package list endpoints and combine results."""
-        # TODO: these responses need to be combined properly
-        packages = []
-
-        yum_resp = await self.get(self.endpoint("list", type=PackageType.rpm))
-        packages.append(translate_response(yum_resp.json()))
-
-        apt_resp = await self.get(self.endpoint("list", type=PackageType.deb))
-        packages.append(translate_response(apt_resp.json()))
-
-        return packages
-
     async def repository_packages(self, repo_id: RepoId) -> Any:
         """Call the package list endpoint and filter by repo id."""
         if repo_id.type == "apt":

@@ -6,10 +6,10 @@ from random import choice
 from typing import Any, Generator, List, Optional
 
 import pytest
+
 from pmc.schemas import RepoType
 
-from .utils import (gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs,
-                    invoke_command)
+from .utils import gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs, invoke_command
 
 
 @pytest.fixture(autouse=True)
@@ -99,7 +99,7 @@ def _package_manager(type: Optional[RepoType] = None) -> Generator[Any, None, No
     # (including our fixture-added package) to be cleaned up. This has a side effect of deleting
     # all other orphans from the database, so we should never run tests against a production db.
     assets = Path.cwd() / "tests" / "assets"
-    packages = []
+    packages: List[Path] = []
     if not type or type == RepoType.apt:
         packages.extend(assets.glob("*.deb"))
     if not type or type == RepoType.yum:

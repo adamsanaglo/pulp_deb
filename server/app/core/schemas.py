@@ -152,6 +152,11 @@ class PublisherId(Identifier):
         return cls(f"publishers-{uuid}")
 
 
+class Pagination(BaseModel):
+    limit: int = 100
+    offset: int = 0
+
+
 class Distribution(BaseModel):
     name: NonEmptyStr
     type: DistroType

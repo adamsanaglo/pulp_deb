@@ -1,17 +1,23 @@
 from typing import Any, Optional
 
-from fastapi import APIRouter, UploadFile
+from fastapi import APIRouter, Depends, UploadFile
 
-from core.schemas import PackageId
+from core.schemas import PackageId, PackageType, Pagination
 from services.pulp.api import PackageApi
 
 router = APIRouter()
 
 
-@router.get("/packages/")
-async def list_packages() -> Any:
+@router.get("/deb/packages/")
+async def deb_packages(pagination: Pagination = Depends(Pagination)) -> Any:
     async with PackageApi() as api:
-        return await api.list()
+        return await api.list(pagination, type=PackageType.deb)
+
+
+@router.get("/rpm/packages/")
+async def rpm_packages(pagination: Pagination = Depends(Pagination)) -> Any:
+    async with PackageApi() as api:
+        return await api.list(pagination, type=PackageType.rpm)
 
 
 @router.post("/packages/")

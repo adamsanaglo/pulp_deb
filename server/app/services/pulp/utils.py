@@ -1,10 +1,10 @@
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 from asgi_correlation_id.context import correlation_id
 
 from core.config import settings
-from core.schemas import Identifier
+from core.schemas import Identifier, Pagination
 
 
 def get_client() -> httpx.AsyncClient:
@@ -35,7 +35,7 @@ def id_to_pulp_href(id: Identifier) -> str:
     return f"{settings.PULP_API_PATH}/{prefix}/{id.uuid}/"
 
 
-def translate_response(response_json: Any) -> Any:
+def translate_response(response_json: Any, pagination: Optional[Pagination] = None) -> Any:
     assert isinstance(response_json, dict)
 
     if "pulp_href" in response_json:
@@ -49,5 +49,13 @@ def translate_response(response_json: Any) -> Any:
         response_json["created_resources"] = [
             pulp_href_to_id(href) for href in response_json["created_resources"] if href
         ]
+
+    # strip out next/previous pulp links
+    for link in ("next", "previous"):
+        response_json.pop(link, None)
+
+    if pagination:
+        response_json["limit"] = pagination.limit
+        response_json["offset"] = pagination.offset
 
     return response_json
