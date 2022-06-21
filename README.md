@@ -32,6 +32,12 @@ and setup, so see them for more info.
 
 ## IDE Setup
 
+### black
+
+We use black to format our code. black integrates with a number of IDEs. For more info see:
+
+https://black.readthedocs.io/en/stable/integrations/editors.html
+
 ### Visual Studio Code
 
 Here's an example VS Code settings file with some useful stuff in it, which can be found by
@@ -40,14 +46,36 @@ Ctrl-Shift-P and searching for "Preferences: Open Workspace Settings (JSON)"
 <!-- language: json -->
 
     {
-        "editor.formatOnSave": true,
-        "python.formatting.provider": "black",
-        "python.testing.cwd": "./cli",
-        "python.formatting.blackArgs": [
-            "--line-length",
-            "100"
+        "folders": [
+            {
+                "path": "server"
+            },
+            {
+                "path": "cli"
+            }
         ],
-        "editor.rulers": [
-            100
-        ]
+        "settings": {
+            "editor.formatOnSave": true,
+            "editor.codeActionsOnSave": {
+                "source.organizeImports": true
+            },
+            "python.formatting.provider": "black",
+            "python.formatting.blackArgs": [
+                "--line-length",
+                "100"
+            ],
+            "editor.rulers": [
+                100
+            ],
+            "isort.args": [
+                "--profile",
+                "black",
+                "--line-length",
+                "100"
+            ],
+        }
     }
+
+To use isort with VS Code, make sure you have the vscode-isort extension installed:
+
+https://github.com/microsoft/vscode-isort

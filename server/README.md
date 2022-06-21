@@ -63,15 +63,6 @@ formatting our code. You can run `make format` to run both.
 There's also a `make lint` command that will check your code with black, isort, flake8, etc without
 modifying your code.
 
-#### Editor integration
-
-black also integrates with a number of IDEs. For more info see:
-
-https://black.readthedocs.io/en/stable/integrations/editors.html
-
-To use isort with VS Code, you can use the vscode-isort extension:
-
-https://github.com/microsoft/vscode-isort
 
 ### Viewing the API schema
 
