@@ -79,3 +79,35 @@ Ctrl-Shift-P and searching for "Preferences: Open Workspace Settings (JSON)"
 To use isort with VS Code, make sure you have the vscode-isort extension installed:
 
 https://github.com/microsoft/vscode-isort
+
+
+### vim/neovim
+
+There are some plugins that provide linting/code formatting to vim (e.g. black has [its own vim
+plugin](https://github.com/psf/black/blob/main/plugin/black.vim)) but I recommend using [ALE
+(Asynchronous Lint Engine)](https://github.com/dense-analysis/ale) which handles a variety of code
+linters and formatters. ALE also works with both vim and neovim.
+
+#### ALE
+
+See ALE's installation guide for how to install ALE: https://github.com/dense-analysis/ale#installation
+
+To configure ALE for our project, add this to your rc file:
+
+```
+let g:ale_fixers = {"python": ["black", "isort"]}
+```
+
+It should pick up our project's settings in pyproject.toml.
+
+Optionally, you can have ALE format on save:
+
+```
+let g:ale_fix_on_save = 1
+```
+
+Alternatively, you can create a keyboard binding to run ALEFix:
+
+```
+map <Leader>f :ALEFix<CR>
+```
