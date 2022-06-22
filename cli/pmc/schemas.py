@@ -63,4 +63,5 @@ class Config(BaseModel):
     no_color: bool = False
     id_only: bool = False
     format: Format = Format.json
+    debug: bool = False
     base_url: AnyHttpUrl = parse_obj_as(AnyHttpUrl, "http://localhost:8000/api/v4")

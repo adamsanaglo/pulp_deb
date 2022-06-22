@@ -95,6 +95,7 @@ def main(
     no_wait: bool = typer.Option(False, "--no-wait", help="Don't wait for any background tasks."),
     no_color: bool = typer.Option(False, "--no-color", help="Suppress color output if enabled."),
     id_only: bool = typer.Option(False, "--id-only", help="Show ids instead of full responses."),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Show debug output."),
     resp_format: Format = typer.Option(Format.json, "--format", hidden=True),  # TODO: more formats
     base_url: str = typer.Option(""),
 ) -> None:
@@ -106,12 +107,16 @@ def main(
         no_wait=no_wait,
         no_color=no_color,
         id_only=id_only,
+        debug=debug,
         format=resp_format,
     )
     if base_url:
         config.base_url = parse_obj_as(AnyHttpUrl, base_url)
 
     ctx.obj = PMCContext(config=config, config_path=config_path)
+
+    if debug:
+        typer.echo(f"Generated CID: {ctx.obj.cid.hex}")
 
 
 def run() -> None:
