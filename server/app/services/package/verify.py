@@ -23,6 +23,8 @@ class UnsignedPackage(Exception):
 keys_dir = Path(__file__).parent / "keys"
 for key in ["microsoft.asc", "msopentech.asc"]:
     subprocess.run(["/usr/bin/gpg", "--import", str(keys_dir / key)], check=True)
+    # Some versions of rpmkeys use a different keyring, so we have to import the key here too.
+    subprocess.run(["/usr/bin/rpmkeys", "--import", str(keys_dir / key)], check=True)
 
 
 async def verify_signature(file: UploadFile) -> None:
