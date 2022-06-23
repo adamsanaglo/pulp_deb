@@ -4,7 +4,7 @@ ARG uid=1000
 ARG gid=1000
 
 RUN groupadd -g $gid pmc
-RUN useradd -r -u $uid -g $gid pmc
+RUN useradd -r -m -u $uid -g $gid pmc
 
 EXPOSE 8000
 WORKDIR /pmcserver
