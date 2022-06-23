@@ -1,8 +1,8 @@
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, UploadFile
-
 from core.schemas import PackageId, PackageType, Pagination
+from fastapi import APIRouter, Depends, UploadFile
+from services.package.verify import verify_signature
 from services.pulp.api import PackageApi
 
 router = APIRouter()
@@ -22,6 +22,7 @@ async def rpm_packages(pagination: Pagination = Depends(Pagination)) -> Any:
 
 @router.post("/packages/")
 async def create_package(file: UploadFile, force_name: Optional[bool] = False) -> Any:
+    await verify_signature(file)
     async with PackageApi() as api:
         return await api.create({"file": file, "force_name": force_name})
 

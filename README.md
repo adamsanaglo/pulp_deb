@@ -2,7 +2,7 @@
 Language: python
 ---
 
-# PMC (package.microsoft.com) Server and Client
+# PMC (packages.microsoft.com) Server and Client
 
 The ultimate intent of this project is to provide teams inside Microsoft an easy and scalable
 way to publish their linux packages.

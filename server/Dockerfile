@@ -17,7 +17,9 @@ COPY alembic.ini .
 RUN pip install --upgrade pip && \
     pip install poetry && \
     poetry config virtualenvs.create false && \
-    poetry install
+    poetry install && \
+    apt-get update && \
+    apt-get install -y rpm binutils
 
 COPY app app/
 COPY migrations migrations/

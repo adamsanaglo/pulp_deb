@@ -2,11 +2,9 @@ import json
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from random import choice
 from typing import Any, Generator, List, Optional
 
 import pytest
-
 from pmc.schemas import RepoType
 
 from .utils import gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs, invoke_command
@@ -92,46 +90,44 @@ def publisher() -> Generator[Any, None, None]:
         yield o
 
 
+def package_upload_command(package_name: str) -> List[str]:
+    package = Path.cwd() / "tests" / "assets" / package_name
+    cmd = ["package", "upload", str(package)]
+
+    # Required until https://github.com/pulp/pulp_rpm/pull/2537 is in current Pulp.
+    if package.suffix == ".rpm":
+        cmd.append("--force-name")
+
+    return cmd
+
+
 @contextmanager
-def _package_manager(type: Optional[RepoType] = None) -> Generator[Any, None, None]:
+def _package_manager(package_name: str) -> Generator[Any, None, None]:
     # We cannot simply delete packages once created (Pulp doesn't have API for that) so instead
     # we must call the "orphan cleanup" api endpoint with a time of zero, forcing all orphans
     # (including our fixture-added package) to be cleaned up. This has a side effect of deleting
     # all other orphans from the database, so we should never run tests against a production db.
-    assets = Path.cwd() / "tests" / "assets"
-    packages: List[Path] = []
-    if not type or type == RepoType.apt:
-        packages.extend(assets.glob("*.deb"))
-    if not type or type == RepoType.yum:
-        packages.extend(assets.glob("*.rpm"))
-
-    package = str(choice(packages))
-    cmd = ["package", "upload", package]
-
-    # Required until https://github.com/pulp/pulp_rpm/pull/2537 is in current Pulp.
-    if package.endswith(".rpm"):
-        cmd.append("--force-name")
-
+    cmd = package_upload_command(package_name)
     cleanup_cmd = ["orphan", "cleanup", "--protection-time", "0"]
     with _object_manager(cmd, cleanup_cmd) as p:
         yield p
 
 
 @pytest.fixture()
-def package() -> Generator[Any, None, None]:
-    with _package_manager() as p:
+def deb_package() -> Generator[Any, None, None]:
+    with _package_manager("signed-by-us.deb") as p:
         yield p
 
 
 @pytest.fixture()
-def deb_package() -> Generator[Any, None, None]:
-    with _package_manager(RepoType.apt) as p:
+def zst_deb_package() -> Generator[Any, None, None]:
+    with _package_manager("signed-by-us-zst-compressed.deb") as p:
         yield p
 
 
 @pytest.fixture()
 def rpm_package() -> Generator[Any, None, None]:
-    with _package_manager(RepoType.yum) as p:
+    with _package_manager("signed-by-us.rpm") as p:
         yield p
 
 
