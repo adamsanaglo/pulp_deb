@@ -1,21 +1,45 @@
-from typing import List
+from typing import Any, List, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.sql.selectable import Select
 
 from core.db import get_session
 from core.models import Publisher
-from core.schemas import PublisherCreate, PublisherId, PublisherResponse, PublisherUpdate
+from core.schemas import (
+    Pagination,
+    PublisherCreate,
+    PublisherId,
+    PublisherListResponse,
+    PublisherResponse,
+    PublisherUpdate,
+)
 
 router = APIRouter()
 
 
-@router.get("/publishers/", response_model=List[PublisherResponse])
-async def list_publishers(session: AsyncSession = Depends(get_session)) -> List[Publisher]:
-    result = await session.execute(select(Publisher))
-    publishers = result.scalars().all()
-    return publishers
+async def _get_list(
+    session: AsyncSession, query: Select, limit: int, offset: int
+) -> Tuple[List[Any], int]:
+    """Takes a query and returns a list of results and total count."""
+    count_query = select(func.count()).select_from(query.subquery())
+    count = (await session.execute(count_query)).scalar_one()
+
+    query = query.limit(limit).offset(offset)
+    results = (await session.execute(query)).scalars().all()
+
+    return results, count
+
+
+@router.get("/publishers/", response_model=PublisherListResponse)
+async def list_publishers(
+    pagination: Pagination = Depends(Pagination), session: AsyncSession = Depends(get_session)
+) -> PublisherListResponse:
+    query = select(Publisher)
+    publishers, count = await _get_list(session, query, **pagination.dict())
+    return PublisherListResponse(count=count, results=publishers, **pagination.dict())
 
 
 @router.post("/publishers/", response_model=PublisherResponse)

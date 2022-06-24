@@ -26,15 +26,13 @@ TaskHandler = Optional[Callable[[str], Any]]
 def _log_request(request: httpx.Request) -> None:
     typer.echo(f"Request: {request.method} {request.url}")
 
-    if 'content-type' in request.headers and request.headers['content-type'] == "application/json":
+    if "content-type" in request.headers and request.headers["content-type"] == "application/json":
         typer.echo(f"Body: {json.loads(request.content)}")
 
 
 def _log_response(response: httpx.Response) -> None:
     request = response.request
-    typer.echo(
-        f"Response: {request.method} {request.url} - Status {response.status_code}"
-    )
+    typer.echo(f"Response: {request.method} {request.url} - Status {response.status_code}")
 
 
 def _raise_for_status(response: httpx.Response) -> None:

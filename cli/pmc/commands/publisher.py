@@ -1,6 +1,9 @@
+from typing import Any, Dict, Optional
+
 import typer
 
 from pmc.client import get_client, handle_response
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT
 
 app = typer.Typer()
 
@@ -18,10 +21,16 @@ PUBLISHER_FIELDS = {
 
 
 @app.command()
-def list(ctx: typer.Context) -> None:
+def list(
+    ctx: typer.Context,
+    limit: Optional[int] = LIMIT_OPT,
+    offset: Optional[int] = OFFSET_OPT,
+) -> None:
     """List publishers."""
+    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+
     with get_client(ctx.obj) as client:
-        resp = client.get("/publishers/")
+        resp = client.get("/publishers/", params=params)
         handle_response(ctx.obj, resp)
 
 

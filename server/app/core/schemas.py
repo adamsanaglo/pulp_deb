@@ -157,6 +157,12 @@ class Pagination(BaseModel):
     offset: int = 0
 
 
+class ListResponse(BaseModel):
+    count: int
+    limit: int
+    offset: int
+
+
 class Distribution(BaseModel):
     name: NonEmptyStr
     type: DistroType
@@ -218,3 +224,7 @@ class PublisherResponse(PublisherCreate):
     id: PublisherId
     created_at: datetime
     last_edited: datetime
+
+
+class PublisherListResponse(ListResponse):
+    results: List[PublisherResponse]

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Generator, List, Optional
 
 import pytest
+
 from pmc.schemas import RepoType
 
 from .utils import gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs, invoke_command
@@ -82,11 +83,21 @@ def distro() -> Generator[Any, None, None]:
         yield d
 
 
-@pytest.fixture()
-def publisher() -> Generator[Any, None, None]:
+def _publisher_create_command() -> List[str]:
     p = gen_publisher_attrs()
-    cmd = ["publisher", "create", p["name"], p["contact_email"], p["icm_service"], p["icm_team"]]
-    with _object_manager(cmd) as o:
+    return ["publisher", "create", p["name"], p["contact_email"], p["icm_service"], p["icm_team"]]
+
+
+@pytest.fixture()
+def publisher_one() -> Generator[Any, None, None]:
+    with _object_manager(_publisher_create_command()) as o:
+        yield o
+
+
+@pytest.fixture()
+def publisher_two() -> Generator[Any, None, None]:
+    """Generate multiple publishers."""
+    with _object_manager(_publisher_create_command()) as o:
         yield o
 
 
