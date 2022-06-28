@@ -2,7 +2,6 @@ import json
 from typing import Any
 
 import pytest
-
 from tests.conftest import package_upload_command
 from tests.utils import invoke_command
 
@@ -42,3 +41,8 @@ def test_unsigned_package(package: str) -> None:
     result = invoke_command(cmd)
     assert result.exit_code != 0
     assert "UnsignedPackage" in result.stdout
+
+
+def test_ignore_signature(forced_unsigned_package: Any) -> None:
+    """This empty test ensures forcing an unsigned package works by exercising the fixture."""
+    pass

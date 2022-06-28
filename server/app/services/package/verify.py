@@ -20,10 +20,13 @@ class UnsignedPackage(Exception):
 
 # Run at app startup to load keyring
 keys_dir = Path(__file__).parent / "keys"
-for key in ["microsoft.asc", "msopentech.asc"]:
-    subprocess.run(["/usr/bin/gpg", "--import", str(keys_dir / key)], check=True)
-    # Some versions of rpmkeys use a different keyring, so we have to import the key here too.
-    subprocess.run(["/usr/bin/rpmkeys", "--import", str(keys_dir / key)], check=True)
+gpg_cmd = ["/usr/bin/gpg", "--no-default-keyring", "--keyring", str(keys_dir / ".keyring")]
+rpm_cmd = ["/usr/bin/rpmkeys", "--dbpath", str(keys_dir)]
+# There is also an "msopentech.asc" legacy key, but I'm ignoring it because:
+# 1) Only legacy stuff is signed with it, no new things.
+# 2) It fails to import into some versions of RPM for some unknown reason.
+subprocess.run(gpg_cmd + ["--import", str(keys_dir / "microsoft.asc")], check=True)
+subprocess.run(rpm_cmd + ["--import", str(keys_dir / "microsoft.asc")], check=True)
 
 
 async def verify_signature(file: UploadFile) -> None:
@@ -45,7 +48,7 @@ def _verify_rpm_signature(file: UploadFile) -> None:
     """
     with NamedTemporaryFile() as f:
         shutil.copyfileobj(file.file, f)
-        result = subprocess.run(["/usr/bin/rpmkeys", "--checksig", f.name])
+        result = subprocess.run(rpm_cmd + ["--checksig", f.name])
         if result.returncode != 0:
             raise UnsignedPackage
 
@@ -78,6 +81,6 @@ def _verify_deb_signature(file: UploadFile) -> None:
                         combined.write(f.read())
 
         # ask gpg if it's signed correctly
-        result = subprocess.run(["/usr/bin/gpg", "--verify", "_gpgorigin", "combined"], cwd=td)
+        result = subprocess.run(gpg_cmd + ["--verify", "_gpgorigin", "combined"], cwd=td)
         if result.returncode != 0:
             raise UnsignedPackage

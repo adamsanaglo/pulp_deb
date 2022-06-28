@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Generator, List, Optional
 
 import pytest
-
 from pmc.schemas import RepoType
 
 from .utils import gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs, invoke_command
@@ -101,7 +100,7 @@ def publisher_two() -> Generator[Any, None, None]:
         yield o
 
 
-def package_upload_command(package_name: str) -> List[str]:
+def package_upload_command(package_name: str, unsigned: Optional[bool] = False) -> List[str]:
     package = Path.cwd() / "tests" / "assets" / package_name
     cmd = ["package", "upload", str(package)]
 
@@ -109,16 +108,21 @@ def package_upload_command(package_name: str) -> List[str]:
     if package.suffix == ".rpm":
         cmd.append("--force-name")
 
+    if unsigned:
+        cmd.append("--ignore-signature")
+
     return cmd
 
 
 @contextmanager
-def _package_manager(package_name: str) -> Generator[Any, None, None]:
+def _package_manager(
+    package_name: str, unsigned: Optional[bool] = False
+) -> Generator[Any, None, None]:
     # We cannot simply delete packages once created (Pulp doesn't have API for that) so instead
     # we must call the "orphan cleanup" api endpoint with a time of zero, forcing all orphans
     # (including our fixture-added package) to be cleaned up. This has a side effect of deleting
     # all other orphans from the database, so we should never run tests against a production db.
-    cmd = package_upload_command(package_name)
+    cmd = package_upload_command(package_name, unsigned)
     cleanup_cmd = ["orphan", "cleanup", "--protection-time", "0"]
     with _object_manager(cmd, cleanup_cmd) as p:
         yield p
@@ -139,6 +143,12 @@ def zst_deb_package() -> Generator[Any, None, None]:
 @pytest.fixture()
 def rpm_package() -> Generator[Any, None, None]:
     with _package_manager("signed-by-us.rpm") as p:
+        yield p
+
+
+@pytest.fixture()
+def forced_unsigned_package() -> Generator[Any, None, None]:
+    with _package_manager("unsigned.rpm", unsigned=True) as p:
         yield p
 
 
