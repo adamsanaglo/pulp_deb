@@ -8,6 +8,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError as ValidationError
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse, Response
+from fastapi_microsoft_identity import initialize as msft_identity_initialize
 from httpx import HTTPStatusError, RequestError
 
 from api.routes.api import router as api_router
@@ -32,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 root_router = APIRouter()
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
+msft_identity_initialize(settings.TENANT_ID, settings.APP_CLIENT_ID)
 
 
 @app.middleware("http")
@@ -62,7 +64,7 @@ def root() -> str:
 
 
 @root_router.get("/api/", status_code=200)
-def api() -> Dict[str, Any]:
+def api(request: Request) -> Dict[str, Any]:
     return {
         "server": {"version": settings.VERSION},
         "versions": {"v4": "v4/"},

@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     LOGGING_CONFIG: Optional[str]
 
+    APP_CLIENT_ID: str = ""
+    TENANT_ID: str = ""
+
     def db_uri(self) -> Any:
         return PostgresDsn.build(
             scheme="postgresql+asyncpg",

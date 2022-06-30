@@ -58,6 +58,8 @@ class Format(str, Enum):
         return self.value
 
 
+# Codebase uses typer to deconflict Config options and command-line parameters
+# Any new options here MUST be added to main.py as well
 class Config(BaseModel):
     no_wait: bool = False
     no_color: bool = False
@@ -65,3 +67,8 @@ class Config(BaseModel):
     format: Format = Format.json
     debug: bool = False
     base_url: AnyHttpUrl = parse_obj_as(AnyHttpUrl, "http://localhost:8000/api/v4")
+    msal_client_id: str = ""
+    msal_scope: str = ""
+    msal_cert_path: str = ""
+    msal_SNIAuth: bool = True
+    msal_authority: str = ""

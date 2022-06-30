@@ -2,6 +2,8 @@ from typing import Any, Optional
 
 from core.schemas import PackageId, PackageType, Pagination
 from fastapi import APIRouter, Depends, UploadFile
+from fastapi.requests import Request
+from fastapi_microsoft_identity import requires_auth
 from services.package.verify import verify_signature
 from services.pulp.api import PackageApi
 
@@ -9,20 +11,24 @@ router = APIRouter()
 
 
 @router.get("/deb/packages/")
-async def deb_packages(pagination: Pagination = Depends(Pagination)) -> Any:
+@requires_auth
+async def deb_packages(request: Request, pagination: Pagination = Depends(Pagination)) -> Any:
     async with PackageApi() as api:
         return await api.list(pagination, type=PackageType.deb)
 
 
 @router.get("/rpm/packages/")
-async def rpm_packages(pagination: Pagination = Depends(Pagination)) -> Any:
+@requires_auth
+async def rpm_packages(request: Request, pagination: Pagination = Depends(Pagination)) -> Any:
     async with PackageApi() as api:
         return await api.list(pagination, type=PackageType.rpm)
 
 
 @router.post("/packages/")
+@requires_auth
 async def create_package(
-    file: UploadFile, force_name: Optional[bool] = False, ignore_signature: Optional[bool] = False
+    request: Request, file: UploadFile, force_name: Optional[bool] = False,
+    ignore_signature: Optional[bool] = False
 ) -> Any:
     if not ignore_signature:
         await verify_signature(file)
@@ -31,6 +37,7 @@ async def create_package(
 
 
 @router.get("/packages/{id}/")
-async def read_package(id: PackageId) -> Any:
+@requires_auth
+async def read_package(request: Request, id: PackageId) -> Any:
     async with PackageApi() as api:
         return await api.read(id)

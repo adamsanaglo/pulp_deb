@@ -2,6 +2,8 @@ include .env
 SHELL := /bin/bash
 PULP_PASSWORD ?= $(shell openssl rand -base64 12)
 POSTGRES_PASSWORD ?= $(shell openssl rand -base64 12)
+APP_CLIENT_ID ?= "1ce02e3e-1bf3-4d28-8cdc-e921f824399d"
+TENANT_ID ?= "72f988bf-86f1-41af-91ab-2d7cd011db47"
 
 .PHONY: help run build rebuild down teardown update reset migrate shell lint dbconsole
 
@@ -12,6 +14,8 @@ default: help
 	cp .env.example .env
 	@sed -i 's#PULP_PASSWORD=""#PULP_PASSWORD="${PULP_PASSWORD}"#' .env
 	@sed -i 's#POSTGRES_PASSWORD=""#POSTGRES_PASSWORD="${POSTGRES_PASSWORD}"#' .env
+	@sed -i 's#APP_CLIENT_ID=""#APP_CLIENT_ID="${APP_CLIENT_ID}"#' .env
+	@sed -i 's#TENANT_ID=""#TENANT_ID="${TENANT_ID}"#' .env
 
 run:				## run the containers
 	docker compose up -d

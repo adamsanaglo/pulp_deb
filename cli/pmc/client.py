@@ -48,11 +48,18 @@ def get_client(ctx: PMCContext) -> Generator[httpx.Client, None, None]:
     if ctx.config.debug:
         request_hooks.append(_log_request)
         response_hooks.insert(0, _log_response)
-
+    try:
+        token = ctx.auth.acquire_token()
+    except Exception as e:
+        typer.echo(f"Failed to retrieve AAD token", err=True)
+        raise
     client = httpx.Client(
         base_url=ctx.config.base_url,
         event_hooks={"request": request_hooks, "response": response_hooks},
-        headers={"x-correlation-id": ctx.cid.hex},
+        headers={
+            "x-correlation-id": ctx.cid.hex,
+            "Authorization": f"Bearer {token}"
+        },
     )
     try:
         yield client

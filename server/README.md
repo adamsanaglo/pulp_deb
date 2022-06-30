@@ -45,6 +45,17 @@ http :8000/api/v4/repositories/
 http :8000/api/v4/repositories/ name=test type=yum
 ```
 
+### Configuring Authentication
+The server only requires two things:
+- A Service Principal which represents the API in Azure Active Directory (AAD)
+- A Tenant ID which will be used to verify client tokens
+
+Configuring your environment is simple:
+- For a dev environment, just run `make .env`. It will generate a .env file with an existing App ID in the MSIT tenant.
+- For production, run `make .env` specifying `APP_CLIENT_ID` and `TENANT_ID` on the command line to use custom values.
+
+That's it! Clients will request a token from AAD, scoped to this `APP_CLIENT_ID` and `fastapi_microsoft_identity` library will vet the token.
+
 ### Managing your dev environment
 
 The dev environment is set up to automatically reload the web server when it detects any code

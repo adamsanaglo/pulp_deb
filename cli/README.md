@@ -12,6 +12,22 @@ OS but `pmc --help` will show the default locations.
 The config file location may also be specified by setting an environment variable (`PMC_CLI_CONFIG`)
 or setting `--config` when running pmc (ie `pmc --config ~/settings.toml ...`).
 
+## Authentication Options
+Repo API calls require Azure Active Directory (AAD) Authentication, which is handled by the Microsoft Authentication Library (MSAL).
+Authentication is a 3 step process.
+1. Request a token from AAD (specifically the `MSAL authority`) for a specified `scope` (the API server)
+2. Receive a token from AAD
+3. Send the token to the API
+The options below enable authentication, which can be specified in the Config or the command line.
+Config        | CLI            | Description
+--------------|----------------|-------------------
+msal_client_id|--msal-client-id| Application ID for the Service Principal that will be used for authentication
+msal_cert_path|--msal-cert-path| Path to a cert that will authenticate the Service Principal
+msal_SNIAuth  |--msal-sniauth  | Use Subject Name Issuer Authentication (to enable certificate autorotation)
+msal_authority|--msal-authority| The AAD authority from which a token will be requested (i.e. https://login.microsoftonline.com/...)
+msal_scope    |--msal-scope    | The scope for which a token will be requested (i.e. api://1ce02e3e...)
+
+
 ## Dev Environment
 
 First, install poetry via pipx:
@@ -47,6 +63,13 @@ Or use `poetry run`:
 ```
 poetry run pmc repo list
 ```
+
+## Configuring Authentication
+A default Service Principal is available to simplify your dev environment
+1. Run `make config`
+  - This will generate a config in the default location (~/.config/pmc/settings.toml)
+  - It will prepopulate this config file with the necessary settings.
+2. Download the latest PEM file from [Azure Keyvault](https://ms.portal.azure.com/#@microsoft.onmicrosoft.com/asset/Microsoft_Azure_KeyVault/Certificate/https://mb-repotest.vault.azure.net/certificates/esrp-auth-test) and place it in `~/.config/pmc/auth.pem`
 
 ## Example Workflow
 

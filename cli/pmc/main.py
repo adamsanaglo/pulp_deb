@@ -41,9 +41,9 @@ def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
         try:
             config = parse_config(path)
             ctx.default_map = config.dict(exclude_unset=True)
-        except Exception:
-            # ignore parse exceptions for now. validate later once we can exclude config subcommands
-            pass
+        except Exception as e:
+            # Ignore parse exceptions for now. validate later once we can exclude config subcommands
+            typer.echo(f'Warning: Unable to parse config, using defaults: {e}', err=True)
 
     return path
 
@@ -98,22 +98,41 @@ def main(
     debug: bool = typer.Option(False, "--debug", "-d", help="Show debug output."),
     resp_format: Format = typer.Option(Format.json, "--format", hidden=True),  # TODO: more formats
     base_url: str = typer.Option(""),
+    msal_client_id: str = typer.Option("", "--msal-client-id",
+        help="Client ID for the publisher's Service Principal"),
+    msal_scope: str = typer.Option("", "--msal-scope",
+        help="Scope for authentication (i.e. api://1ce02e3e...)"),
+    msal_cert_path: str = typer.Option("", "--msal-cert-path",
+        help="Path to authentication cert for publisher's Service Principal"),
+    msal_SNIAuth: bool = typer.Option(False, "--msal-sniauth",
+        help="Use SNI Authentication, which enables certificate auto-rotation."),
+    msal_authority: str = typer.Option("", "--msal-authority",
+        help="Authority URL for authentication (i.e. https://login.microsoftonline.com/...)"),
 ) -> None:
     if config_path and ctx.invoked_subcommand != "config":
         # validate config. allow users to still edit/recreate their config even if it's invalid.
         validate_config(config_path)
 
+    # New config options MUST be specified above and below in order to take effect!
     config = Config(
         no_wait=no_wait,
         no_color=no_color,
         id_only=id_only,
         debug=debug,
         format=resp_format,
+        msal_client_id=msal_client_id,
+        msal_scope=msal_scope,
+        msal_cert_path=msal_cert_path,
+        msal_SNIAuth=msal_SNIAuth,
+        msal_authority=msal_authority,
     )
     if base_url:
         config.base_url = parse_obj_as(AnyHttpUrl, base_url)
 
     ctx.obj = PMCContext(config=config, config_path=config_path)
+    if ctx.invoked_subcommand != "config":
+        # Can't create auth client if config is invalid...
+        ctx.obj.configure_auth()
 
     if debug:
         typer.echo(f"Generated CID: {ctx.obj.cid.hex}")
