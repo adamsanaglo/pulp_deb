@@ -64,6 +64,8 @@ the paths depending on where you store your workspace file.
             "editor.codeActionsOnSave": {
                 "source.organizeImports": true
             },
+            "python.linting.flake8Enabled": true,
+            "python.linting.mypyEnabled": true,
             "python.formatting.provider": "black",
             "python.formatting.blackArgs": [
                 "--line-length",
