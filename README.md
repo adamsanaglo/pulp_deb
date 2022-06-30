@@ -40,18 +40,23 @@ https://black.readthedocs.io/en/stable/integrations/editors.html
 
 ### Visual Studio Code
 
+First, you will need to install a couple of extensions. If you are running PMC inside WSL, make sure
+you have the 'Remote - WSL' extension installed. Also, we recommend installing the isort extension
+from Microsoft.
+
 Here's an example VS Code settings file with some useful stuff in it, which can be found by
-Ctrl-Shift-P and searching for "Preferences: Open Workspace Settings (JSON)"
+Ctrl-Shift-P and searching for "Preferences: Open Workspace Settings (JSON)". You may need to tailor
+the paths depending on where you store your workspace file.
 
 <!-- language: json -->
 
     {
         "folders": [
             {
-                "path": "server"
+                "path": "Compute-PMC\\server"
             },
             {
-                "path": "cli"
+                "path": "Compute-PMC\\cli"
             }
         ],
         "settings": {
@@ -75,10 +80,6 @@ Ctrl-Shift-P and searching for "Preferences: Open Workspace Settings (JSON)"
             ],
         }
     }
-
-To use isort with VS Code, make sure you have the vscode-isort extension installed:
-
-https://github.com/microsoft/vscode-isort
 
 
 ### vim/neovim

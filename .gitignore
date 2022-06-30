@@ -341,3 +341,12 @@ ASALocalRun/
 coveragetool
 reports/
 *.cobertura.xml
+
+# mypy cache
+.mypy_cache
+
+# virtualenvs
+.venv
+
+# ctags
+tags
