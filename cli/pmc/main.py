@@ -43,14 +43,20 @@ def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
             ctx.default_map = config.dict(exclude_unset=True)
         except Exception as e:
             # Ignore parse exceptions for now. validate later once we can exclude config subcommands
-            typer.echo(f'Warning: Unable to parse config, using defaults: {e}', err=True)
+            typer.echo(f"Warning: Unable to parse config, using defaults: {e}", err=True)
 
     return path
 
 
 def format_exception(exception: BaseException) -> Dict[str, Any]:
     """Build an error dict from an exception."""
-    if isinstance(exception, httpx.HTTPStatusError):
+    if isinstance(exception, httpx.HTTPStatusError) and exception.response.status_code == 401:
+        return {
+            "http_status": 401,
+            "message": "Unauthorized, ensure that you have logged in by setting the msal options",
+            "command_traceback": str(exception.request.url),
+        }
+    elif isinstance(exception, httpx.HTTPStatusError):
         resp_json = exception.response.json()
         assert isinstance(resp_json, Dict)
 
@@ -98,16 +104,25 @@ def main(
     debug: bool = typer.Option(False, "--debug", "-d", help="Show debug output."),
     resp_format: Format = typer.Option(Format.json, "--format", hidden=True),  # TODO: more formats
     base_url: str = typer.Option(""),
-    msal_client_id: str = typer.Option("", "--msal-client-id",
-        help="Client ID for the publisher's Service Principal"),
-    msal_scope: str = typer.Option("", "--msal-scope",
-        help="Scope for authentication (i.e. api://1ce02e3e...)"),
-    msal_cert_path: str = typer.Option("", "--msal-cert-path",
-        help="Path to authentication cert for publisher's Service Principal"),
-    msal_SNIAuth: bool = typer.Option(False, "--msal-sniauth",
-        help="Use SNI Authentication, which enables certificate auto-rotation."),
-    msal_authority: str = typer.Option("", "--msal-authority",
-        help="Authority URL for authentication (i.e. https://login.microsoftonline.com/...)"),
+    msal_client_id: str = typer.Option(
+        "", "--msal-client-id", help="Client ID for the publisher's Service Principal"
+    ),
+    msal_scope: str = typer.Option(
+        "", "--msal-scope", help="Scope for authentication (i.e. api://1ce02e3e...)"
+    ),
+    msal_cert_path: str = typer.Option(
+        "", "--msal-cert-path", help="Path to authentication cert for publisher's Service Principal"
+    ),
+    msal_SNIAuth: bool = typer.Option(
+        False,
+        "--msal-sniauth",
+        help="Use SNI Authentication, which enables certificate auto-rotation.",
+    ),
+    msal_authority: str = typer.Option(
+        "",
+        "--msal-authority",
+        help="Authority URL for authentication (i.e. https://login.microsoftonline.com/...)",
+    ),
 ) -> None:
     if config_path and ctx.invoked_subcommand != "config":
         # validate config. allow users to still edit/recreate their config even if it's invalid.

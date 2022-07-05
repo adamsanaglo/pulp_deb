@@ -1,8 +1,6 @@
 from typing import Any, List, Tuple
 
-from fastapi.requests import Request
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi_microsoft_identity import requires_auth
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -36,10 +34,8 @@ async def _get_list(
 
 
 @router.get("/publishers/", response_model=PublisherListResponse)
-@requires_auth
 async def list_publishers(
-    request: Request, pagination: Pagination = Depends(Pagination),
-    session: AsyncSession = Depends(get_session)
+    pagination: Pagination = Depends(Pagination), session: AsyncSession = Depends(get_session)
 ) -> PublisherListResponse:
     query = select(Publisher)
     publishers, count = await _get_list(session, query, **pagination.dict())
@@ -47,9 +43,8 @@ async def list_publishers(
 
 
 @router.post("/publishers/", response_model=PublisherResponse)
-@requires_auth
 async def add_publisher(
-    request: Request, publisher_data: PublisherCreate, session: AsyncSession = Depends(get_session)
+    publisher_data: PublisherCreate, session: AsyncSession = Depends(get_session)
 ) -> Publisher:
     publisher = Publisher(**publisher_data.dict())
     session.add(publisher)
@@ -59,9 +54,8 @@ async def add_publisher(
 
 
 @router.get("/publishers/{id}/", response_model=PublisherResponse)
-@requires_auth
 async def read_publisher(
-   request: Request, id: PublisherId, session: AsyncSession = Depends(get_session)
+    id: PublisherId, session: AsyncSession = Depends(get_session)
 ) -> Publisher:
     publisher = await session.get(Publisher, id.uuid)
     if not publisher:
@@ -70,9 +64,8 @@ async def read_publisher(
 
 
 @router.patch("/publishers/{id}/", response_model=PublisherResponse)
-@requires_auth
 async def update_publisher(
-    request: Request, id: PublisherId, publisher: PublisherUpdate, session: AsyncSession = Depends(get_session)
+    id: PublisherId, publisher: PublisherUpdate, session: AsyncSession = Depends(get_session)
 ) -> Publisher:
     db_publisher = await session.get(Publisher, id.uuid)
     if not db_publisher:
@@ -86,8 +79,7 @@ async def update_publisher(
 
 
 @router.delete("/publishers/{id}/", status_code=204)
-@requires_auth
-async def delete_publisher(request: Request, id: PublisherId, session: AsyncSession = Depends(get_session)) -> None:
+async def delete_publisher(id: PublisherId, session: AsyncSession = Depends(get_session)) -> None:
     publisher = await session.get(Publisher, id.uuid)
     if not publisher:
         raise HTTPException(status_code=404, detail="Publisher not found")

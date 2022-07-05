@@ -3,12 +3,12 @@ import logging.config
 import time
 from typing import Any, Awaitable, Callable, Dict
 
+import fastapi_microsoft_identity
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError as ValidationError
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse, Response
-from fastapi_microsoft_identity import initialize as msft_identity_initialize
 from httpx import HTTPStatusError, RequestError
 
 from api.routes.api import router as api_router
@@ -33,11 +33,20 @@ logger = logging.getLogger(__name__)
 
 root_router = APIRouter()
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
-msft_identity_initialize(settings.TENANT_ID, settings.APP_CLIENT_ID)
+fastapi_microsoft_identity.initialize(settings.TENANT_ID, settings.APP_CLIENT_ID)
+
+
+UNAUTHENTICATED_ROUTES = ("/", "/api/")
+
+
+@fastapi_microsoft_identity.requires_auth
+async def authenticate(request: Request) -> None:
+    """Does nothing but trigger requires_auth. The request arg must be passed as a kwarg."""
+    return
 
 
 @app.middleware("http")
-async def log_requests(
+async def log_requests_and_authenticate(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     logger.info(
@@ -46,7 +55,14 @@ async def log_requests(
     )
     start_time = time.time()
 
-    response = await call_next(request)
+    unauthenticated_response = None
+    if request.get("path") not in UNAUTHENTICATED_ROUTES:
+        unauthenticated_response = await authenticate(request=request)
+
+    if unauthenticated_response:
+        response = unauthenticated_response
+    else:
+        response = await call_next(request)
 
     process_time = (time.time() - start_time) * 1000
     formatted_process_time = "{0:.2f}".format(process_time)
