@@ -10,12 +10,14 @@ from fastapi.exceptions import RequestValidationError as ValidationError
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse, Response
 from httpx import HTTPStatusError, RequestError
+from sqlalchemy.exc import IntegrityError
 
 from api.routes.api import router as api_router
 from core.config import settings
 from core.exception import (
     exception_handler,
     httpx_exception_handler,
+    integrity_error_handler,
     pulp_exception_handler,
     validation_exception_handler,
 )
@@ -94,6 +96,7 @@ app.add_middleware(CorrelationIdMiddleware, header_name="X-Correlation-ID")
 app.add_exception_handler(HTTPStatusError, pulp_exception_handler)
 app.add_exception_handler(RequestError, httpx_exception_handler)
 app.add_exception_handler(ValidationError, validation_exception_handler)
+app.add_exception_handler(IntegrityError, integrity_error_handler)
 app.add_exception_handler(Exception, exception_handler)
 
 if __name__ == "__main__":

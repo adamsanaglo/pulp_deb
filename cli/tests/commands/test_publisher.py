@@ -15,6 +15,23 @@ def test_list(publisher_one: Any, publisher_two: Any) -> None:
     assert response["offset"] == 0
 
 
+def test_duplicate(publisher_one: Any) -> None:
+    cmd = [
+        "publisher",
+        "create",
+        publisher_one["name"],
+        "dd@contoso.com",
+        "contoso_test",
+        "contoso",
+    ]
+    result = invoke_command(cmd)
+    response = json.loads(result.stdout)
+    assert result.exit_code != 0
+    assert response["http_status"] == 409
+    assert list(response["details"].keys()) == ["name"]
+    assert response["details"]["name"] == ["This field must be unique."]
+
+
 def test_show(publisher_one: Any) -> None:
     result = invoke_command(["publisher", "show", publisher_one["id"]])
     assert result.exit_code == 0

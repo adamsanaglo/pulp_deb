@@ -1,11 +1,13 @@
 import json
 import logging
+import re
 from collections import defaultdict
-from typing import Any
+from typing import Any, Dict, List, Union
 
 from asgi_correlation_id.context import correlation_id
 from fastapi.exceptions import RequestValidationError as ValidationError
 from httpx import HTTPStatusError, RequestError
+from sqlalchemy.exc import IntegrityError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -78,6 +80,25 @@ async def httpx_exception_handler(request: Request, exc: RequestError) -> JSONRe
     logger.exception(exc)
 
     return _exception_response(request, f"{type(exc).__name__} while requesting {exc.request.url}.")
+
+
+async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+    """IntegrityError handler."""
+    logger.exception(exc)
+
+    uniq_const = r'duplicate key value violates unique constraint "\w+"\nDETAIL:  Key \((.*)\)='
+    if match := re.search(uniq_const, exc.orig.args[0]):
+        field = match.group(1)
+
+        # format message/details be consistent with Pulp
+        message = VALIDATION_ERROR_MESSAGE
+        details: Union[Dict[str, List[str]], str] = {field: ["This field must be unique."]}
+    else:
+        # fall back to just showing the exception message
+        message = f"Unexpected exception {type(exc).__name__}."
+        details = str(exc)
+
+    return _exception_response(request, message, details=details, status_code=409)
 
 
 async def exception_handler(request: Request, exc: Exception) -> JSONResponse:
