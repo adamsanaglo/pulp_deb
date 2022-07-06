@@ -160,13 +160,13 @@ def run() -> None:
         command(standalone_mode=False)
     except Exception as exc:
         traceback.print_exc()
-        typer.echo("")
+        typer.echo("", err=True)
 
         err = format_exception(exc)
-        if sys.stdout.isatty():
+        if sys.stderr.isatty():
             output = json.dumps(err, indent=3)
         else:
             output = str(err)
-        typer.echo(output)
+        typer.echo(output, err=True)
 
         exit(1)
