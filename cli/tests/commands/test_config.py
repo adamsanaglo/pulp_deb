@@ -1,4 +1,5 @@
 import json
+import pytest
 import tempfile
 from typing import Any
 
@@ -20,6 +21,7 @@ def test_config_with_invalid_value() -> None:
     assert "DecodeError" in result.stdout
 
 
+@pytest.mark.skip(reason="Authentication is required for all commands")
 def test_config_id_only(repo: Any) -> None:
     config = tempfile.NamedTemporaryFile(mode="w+", suffix=".json")
     json.dump({"id_only": True}, config)
