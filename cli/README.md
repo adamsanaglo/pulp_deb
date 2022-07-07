@@ -81,8 +81,8 @@ REPO_ID=$(pmc --id-only repo create myrepo apt)
 pmc distro create mydistro apt "some/path" --repository $REPO_ID
 
 # upload a package
-wget https://packages.microsoft.com/repos/cbl-d/pool/main/v/vim/vim-common_8.1.0875-5_all.deb
-PACKAGE_ID=$(pmc --id-only package upload vim-common_8.1.0875-5_all.deb)
+cp tests/assets/signed-by-us.deb .
+PACKAGE_ID=$(pmc --id-only package upload signed-by-us.deb)
 
 # add our package to the repo
 pmc repo packages update $REPO_ID --add-packages $PACKAGE_ID
