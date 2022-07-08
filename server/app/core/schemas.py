@@ -18,6 +18,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, StrictStr, root_validator, validator
 
+from core.models import Role
+
 uuid_regex = re.compile(r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}")
 
 T = TypeVar("T", bound="Identifier")
@@ -143,15 +145,6 @@ class PackageId(Identifier):
         return PackageType(self._pieces.group(1))
 
 
-class PublisherId(Identifier):
-    pattern = re.compile(rf"^publishers-({uuid_regex.pattern})$")
-    examples = ["publishers-749b9daa-2c0c-4ef6-a60d-8da32a78b169"]
-
-    @classmethod
-    def build_from_uuid(cls: Type[T], uuid: UUID) -> T:
-        return cls(f"publishers-{uuid}")
-
-
 class Pagination(BaseModel):
     limit: int = 100
     offset: int = 0
@@ -197,12 +190,11 @@ class RepositoryPackageUpdate(BaseModel):
         return values
 
 
-class PublisherCreate(BaseModel):
+class AccountCreate(BaseModel):
+    id: UUID
     name: NonEmptyStr
     is_enabled: bool = True
-    is_account_admin: bool = False
-    is_repo_admin: bool = False
-    is_package_admin: bool = False
+    role: Role
     icm_service: NonEmptyStr
     icm_team: NonEmptyStr
     contact_email: NonEmptyStr
@@ -215,16 +207,16 @@ class PublisherCreate(BaseModel):
         return v
 
 
-class PublisherUpdate(BaseModel):
-    # reuse PublisherCreate but make fields optional
-    __annotations__ = {k: Optional[v] for k, v in PublisherCreate.__annotations__.items()}
+class AccountUpdate(BaseModel):
+    # reuse AccountCreate but make fields optional
+    __annotations__ = {k: Optional[v] for k, v in AccountCreate.__annotations__.items()}  # type: ignore #
 
 
-class PublisherResponse(PublisherCreate):
-    id: PublisherId
+class AccountResponse(AccountCreate):
+    id: UUID
     created_at: datetime
     last_edited: datetime
 
 
-class PublisherListResponse(ListResponse):
-    results: List[PublisherResponse]
+class AccountListResponse(ListResponse):
+    results: List[AccountResponse]

@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import Any, Generator, List, Optional
 
 import pytest
+
 from pmc.schemas import RepoType
 
-from .utils import gen_distro_attrs, gen_publisher_attrs, gen_repo_attrs, invoke_command
+from .utils import gen_account_attrs, gen_distro_attrs, gen_repo_attrs, invoke_command
 
 
 @pytest.fixture(autouse=True)
@@ -44,7 +45,7 @@ def _object_manager(
     finally:
         if response:
             if cleanup_cmd is None:
-                type = cmd[0]  # "repo", "distro", "publisher"
+                type = cmd[0]  # "repo", "distro", "account"
                 cleanup_cmd = [type, "delete", response["id"]]
             result = invoke_command(cleanup_cmd)
             assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
@@ -82,21 +83,29 @@ def distro() -> Generator[Any, None, None]:
         yield d
 
 
-def _publisher_create_command() -> List[str]:
-    p = gen_publisher_attrs()
-    return ["publisher", "create", p["name"], p["contact_email"], p["icm_service"], p["icm_team"]]
+def _account_create_command() -> List[str]:
+    p = gen_account_attrs()
+    return [
+        "account",
+        "create",
+        p["id"],
+        p["name"],
+        p["contact_email"],
+        p["icm_service"],
+        p["icm_team"],
+    ]
 
 
 @pytest.fixture()
-def publisher_one() -> Generator[Any, None, None]:
-    with _object_manager(_publisher_create_command()) as o:
+def account_one() -> Generator[Any, None, None]:
+    with _object_manager(_account_create_command()) as o:
         yield o
 
 
 @pytest.fixture()
-def publisher_two() -> Generator[Any, None, None]:
-    """Generate multiple publishers."""
-    with _object_manager(_publisher_create_command()) as o:
+def account_two() -> Generator[Any, None, None]:
+    """Generate multiple accounts."""
+    with _object_manager(_account_create_command()) as o:
         yield o
 
 

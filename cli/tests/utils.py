@@ -24,12 +24,15 @@ def gen_distro_attrs() -> Dict[str, str]:
     )
 
 
-def gen_publisher_attrs() -> Dict[str, str]:
+def gen_account_attrs() -> Dict[str, str]:
+    my_uuid = str(uuid4())
     return dict(
-        name=f"pmc_cli_test_publisher_{uuid4()}",
+        id=my_uuid,
+        name=f"pmc_cli_test_account_{my_uuid}",
         contact_email="alice@contoso.com;bob@contoso.com",
         icm_service="test_icm_service",
         icm_team="test_icm_team",
+        role="Publisher",
     )
 
 

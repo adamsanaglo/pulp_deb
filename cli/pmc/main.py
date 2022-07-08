@@ -9,8 +9,9 @@ import typer
 from pydantic import AnyHttpUrl
 from pydantic.tools import parse_obj_as
 
+from .commands import account
 from .commands import config as config_cmd
-from .commands import distribution, orphan, package, publisher, repository, task
+from .commands import distribution, orphan, package, repository, task
 from .context import PMCContext
 from .schemas import CONFIG_PATHS, Config, Format
 from .utils import PulpTaskFailure, parse_config, validate_config
@@ -21,7 +22,7 @@ app.add_typer(distribution.app, name="distro")
 app.add_typer(package.app, name="package")
 app.add_typer(repository.app, name="repo")
 app.add_typer(task.app, name="task")
-app.add_typer(publisher.app, name="publisher")
+app.add_typer(account.app, name="account")
 app.add_typer(orphan.app, name="orphan")
 
 
@@ -105,13 +106,13 @@ def main(
     resp_format: Format = typer.Option(Format.json, "--format", hidden=True),  # TODO: more formats
     base_url: str = typer.Option(""),
     msal_client_id: str = typer.Option(
-        "", "--msal-client-id", help="Client ID for the publisher's Service Principal"
+        "", "--msal-client-id", help="Client ID for the account's Service Principal"
     ),
     msal_scope: str = typer.Option(
         "", "--msal-scope", help="Scope for authentication (i.e. api://1ce02e3e...)"
     ),
     msal_cert_path: str = typer.Option(
-        "", "--msal-cert-path", help="Path to authentication cert for publisher's Service Principal"
+        "", "--msal-cert-path", help="Path to authentication cert for account's Service Principal"
     ),
     msal_SNIAuth: bool = typer.Option(
         False,
