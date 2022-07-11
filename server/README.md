@@ -126,17 +126,12 @@ http --pretty=all :8080/pulp/api/v3/docs/api.json | less -R
 Sometimes it may be helpful to run the API server outside of a container to make it easier to
 interact with.
 
-First, open `.env` and configure PULP_HOST to point to `http://localhost:8080` or wherever you are
-serving Pulp. You'll also need to update POSTGRES_SERVER to point to `localhost`
-or update your `/etc/hosts` file to point `db` to `127.0.0.1` (if using WSL you will also have to 
-follow the directions in at the top of `/etc/hosts` to prevent it from being overwritten).
-
-You must also have the `rpm` and `binutil` packages installed (which are available on both rpm or
+You must also have the `rpm` and `binutils` packages installed (which are available on both rpm or
 deb-based systems):
 
 ```
-sudo apt-get install -y rpm binutil
-# sudo dnf install -y rpm binutil
+sudo apt-get install -y rpm binutils
+# sudo dnf install -y rpm binutils
 ```
 
 Assuming you have the docker containers already running, you can run:
@@ -144,5 +139,12 @@ Assuming you have the docker containers already running, you can run:
 ```
 docker compose stop api
 poetry install
-poetry run python app/main.py
+PULP_HOST="http://localhost:8080" POSTGRES_SERVER="127.0.0.1" poetry run python app/main.py
 ```
+
+If you don't want to set environment variables every time you run the server, you can edit `.env`
+and configure PULP_HOST to point to `http://localhost:8080`. You'll also need to update
+POSTGRES_SERVER to point to `localhost` or update your `/etc/hosts` file to point `db` to
+`127.0.0.1` (if using WSL you will also have to follow the directions in at the top of `/etc/hosts`
+to prevent it from being overwritten).
+

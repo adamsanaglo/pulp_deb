@@ -22,7 +22,7 @@ test: tests/settings.toml
 	pytest
 
 config:
-	pmc config create
+	pmc config create --no-edit
 	@sed -i 's#msal_client_id = ""#msal_client_id = ${msal_client_id}#' ${config_file}
 	@sed -i 's#msal_scope = ""#msal_scope = ${msal_scope}#' ${config_file}
 	@sed -i 's#msal_cert_path = ""#msal_cert_path = ${msal_cert_path}#' ${config_file}

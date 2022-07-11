@@ -106,21 +106,20 @@ def main(
     resp_format: Format = typer.Option(Format.json, "--format", hidden=True),  # TODO: more formats
     base_url: str = typer.Option(""),
     msal_client_id: str = typer.Option(
-        "", "--msal-client-id", help="Client ID for the account's Service Principal"
+        ..., "--msal-client-id", help="Client ID for the account's Service Principal"
     ),
     msal_scope: str = typer.Option(
-        "", "--msal-scope", help="Scope for authentication (i.e. api://1ce02e3e...)"
+        ..., "--msal-scope", help="Scope for authentication (i.e. api://1ce02e3e...)"
     ),
     msal_cert_path: str = typer.Option(
-        "", "--msal-cert-path", help="Path to authentication cert for account's Service Principal"
+        ..., "--msal-cert-path", help="Path to authentication cert for account's Service Principal"
     ),
     msal_SNIAuth: bool = typer.Option(
-        False,
-        "--msal-sniauth",
+        True,
         help="Use SNI Authentication, which enables certificate auto-rotation.",
     ),
     msal_authority: str = typer.Option(
-        "",
+        ...,
         "--msal-authority",
         help="Authority URL for authentication (i.e. https://login.microsoftonline.com/...)",
     ),

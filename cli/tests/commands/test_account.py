@@ -19,7 +19,7 @@ def test_duplicate_name(account_one: Any) -> None:
     cmd = [
         "account",
         "create",
-        gen_account_attrs()["id"]
+        gen_account_attrs()["id"],
         account_one["name"],
         "dd@contoso.com",
         "contoso_test",

@@ -67,8 +67,8 @@ class Config(BaseModel):
     format: Format = Format.json
     debug: bool = False
     base_url: AnyHttpUrl = parse_obj_as(AnyHttpUrl, "http://localhost:8000/api/v4")
-    msal_client_id: str = ""
-    msal_scope: str = ""
-    msal_cert_path: str = ""
+    msal_client_id: str
+    msal_scope: str
+    msal_cert_path: Path
     msal_SNIAuth: bool = True
-    msal_authority: str = ""
+    msal_authority: str
