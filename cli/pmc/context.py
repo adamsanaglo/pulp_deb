@@ -13,6 +13,4 @@ class PMCContext:
         self.config = config
         self.config_path = config_path
         self.isatty = sys.stdout.isatty()
-
-    def configure_auth(self):
         self.auth = pmcauth(self.config)

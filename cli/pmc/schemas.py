@@ -3,7 +3,7 @@ from pathlib import Path
 
 import click
 import typer
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import AnyHttpUrl, BaseModel, FilePath, StrictStr, validator
 from pydantic.tools import parse_obj_as
 
 FINISHED_TASK_STATES = ("skipped", "completed", "failed", "canceled")
@@ -13,6 +13,10 @@ CONFIG_PATHS = [
 ]
 LIMIT_OPT = typer.Option(100, help="Limit on the number of results that are returned.")
 OFFSET_OPT = typer.Option(0, help="Number of records to skip within set of results.")
+
+
+class NonEmptyStr(StrictStr):
+    min_length = 1
 
 
 class RepoType(str, Enum):
@@ -68,8 +72,18 @@ class Config(BaseModel):
     format: Format = Format.json
     debug: bool = False
     base_url: AnyHttpUrl = parse_obj_as(AnyHttpUrl, "http://localhost:8000/api/v4")
-    msal_client_id: str
-    msal_scope: str
-    msal_cert_path: Path
+    msal_client_id: NonEmptyStr
+    msal_scope: NonEmptyStr
+    msal_cert_path: FilePath
     msal_SNIAuth: bool = True
-    msal_authority: str
+    msal_authority: NonEmptyStr
+
+    @validator("msal_cert_path", pre=True)
+    def expand_path(cls, v: str) -> str:
+        """Pre-validator to expand msal_cert_path."""
+        try:
+            path = Path(v).expanduser()
+            return str(path)
+        except Exception:
+            # we encountered a problem; just use the original value and let validation handle it
+            return v

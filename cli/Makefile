@@ -23,7 +23,7 @@ test: tests/settings.toml
 
 config:
 	pmc config create --no-edit
-	@sed -i 's#msal_client_id = ""#msal_client_id = ${msal_client_id}#' ${config_file}
-	@sed -i 's#msal_scope = ""#msal_scope = ${msal_scope}#' ${config_file}
-	@sed -i 's#msal_cert_path = ""#msal_cert_path = ${msal_cert_path}#' ${config_file}
-	@sed -i 's#msal_authority = ""#msal_authority = ${msal_authority}#' ${config_file}
+	@sed -i 's#msal_client_id = "FILL_ME_IN"#msal_client_id = ${msal_client_id}#' ${config_file}
+	@sed -i 's#msal_scope = "FILL_ME_IN"#msal_scope = ${msal_scope}#' ${config_file}
+	@sed -i 's#msal_cert_path = "FILL_ME_IN"#msal_cert_path = ${msal_cert_path}#' ${config_file}
+	@sed -i 's#msal_authority = "FILL_ME_IN"#msal_authority = ${msal_authority}#' ${config_file}

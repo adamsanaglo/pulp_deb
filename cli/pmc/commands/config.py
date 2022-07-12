@@ -25,7 +25,10 @@ def create(
     overwrite: bool = typer.Option(False, help="Overwrite the existing config."),
 ) -> None:
     """Create a basic config and open it for editing."""
-    config = Config()
+    # create a default config
+    default_config = {
+        k: v.get("default", "FILL_ME_IN") for k, v in Config.schema()["properties"].items()
+    }
 
     if location.is_file() and not overwrite:
         raise click.UsageError(f"file '{location}' already exists.")
@@ -35,10 +38,10 @@ def create(
 
     if location.suffix == ".toml":
         with location.open("wb") as f:
-            tomli_w.dump({"cli": config.dict()}, f)
+            tomli_w.dump({"cli": default_config}, f)
     elif location.suffix == ".json":
         with location.open("w") as f:
-            json.dump(config.dict(), f, indent=3)
+            json.dump(default_config, f, indent=3)
     else:
         raise click.UsageError(f"invalid file extension for '{location}'.")
 
@@ -49,7 +52,7 @@ def create(
 @app.command()
 def edit(ctx: typer.Context) -> None:
     """Edit config in a text editor."""
-    config_path = ctx.obj.config_path
+    config_path = ctx.find_root().params["config_path"]
     if not config_path:
         raise click.UsageError("config file not provided.")
     if not config_path.is_file():
