@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Column

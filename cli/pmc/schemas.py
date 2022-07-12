@@ -58,8 +58,9 @@ class Format(str, Enum):
         return self.value
 
 
-# Codebase uses typer to deconflict Config options and command-line parameters
-# Any new options here MUST be added to main.py as well
+# Codebase uses typer to define command-line parameters which doesn't support Pydantic (yet)
+# Any new options here MUST be added to main.py as well until
+# https://github.com/tiangolo/typer/issues/111 is supported
 class Config(BaseModel):
     no_wait: bool = False
     no_color: bool = False

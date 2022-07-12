@@ -18,7 +18,9 @@ Authentication is a 3 step process.
 1. Request a token from AAD (specifically the `MSAL authority`) for a specified `scope` (the API server)
 2. Receive a token from AAD
 3. Send the token to the API
+
 The options below enable authentication, which can be specified in the Config or the command line.
+
 Config        | CLI            | Description
 --------------|----------------|-------------------
 msal_client_id|--msal-client-id| Application ID for the Service Principal that will be used for authentication

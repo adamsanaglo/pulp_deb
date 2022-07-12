@@ -6,7 +6,7 @@ from pmc.client import get_client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoType
 
 app = typer.Typer()
-packages = typer.Typer()
+packages = typer.Typer(help="Manage a repo's packages.")
 app.add_typer(packages, name="packages")
 
 

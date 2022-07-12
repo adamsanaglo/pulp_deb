@@ -156,7 +156,7 @@ class ListResponse(BaseModel):
     offset: int
 
 
-class Distribution(BaseModel):
+class DistributionCreate(BaseModel):
     name: NonEmptyStr
     type: DistroType
     base_path: NonEmptyStr
@@ -169,13 +169,39 @@ class DistributionUpdate(BaseModel):
     repository: Optional[RepoId]
 
 
-class Repository(BaseModel):
+class DistributionResponse(BaseModel):
+    id: DistroId
+    pulp_created: datetime
+    name: str
+    base_path: str
+    base_url: str
+    repository: Optional[RepoId]
+    publication: Optional[str]
+
+
+class DistributionListResponse(ListResponse):
+    results: List[DistributionResponse]
+
+
+class RepositoryCreate(BaseModel):
     name: NonEmptyStr
     type: RepoType
 
 
 class RepositoryUpdate(BaseModel):
     name: Optional[str]
+
+
+class RepositoryResponse(BaseModel):
+    id: RepoId
+    pulp_created: datetime
+    name: str
+    description: Optional[str]
+    retain_repo_versions: Optional[int]
+
+
+class RepositoryListResponse(ListResponse):
+    results: List[RepositoryResponse]
 
 
 class RepositoryPackageUpdate(BaseModel):
@@ -188,6 +214,134 @@ class RepositoryPackageUpdate(BaseModel):
         if not values["add_packages"] and not values["remove_packages"]:
             raise ValueError("Fields add_packages and remove_packages cannot both be empty.")
         return values
+
+
+class BasePackageResponse(BaseModel):
+    id: PackageId
+    pulp_created: datetime
+    sha256: str
+    sha384: str
+    sha512: str
+
+
+class DebPackageResponse(BasePackageResponse):
+    # https://github.com/pulp/pulp_deb/blob/6ce60082/pulp_deb/app/models/content.py#L139
+    package: str
+    source: Optional[str]
+    version: str
+    architecture: str
+    section: Optional[str]
+    priority: Optional[str]
+    origin: Optional[str]
+    tag: Optional[str]
+    bugs: Optional[str]
+    essential: Optional[bool]
+    build_essential: Optional[bool]
+    installed_size: Optional[int]
+    maintainer: str
+    original_maintainer: Optional[str]
+    description: str
+    description_md5: Optional[str]
+    homepage: Optional[str]
+    built_using: Optional[str]
+    auto_built_package: Optional[str]
+    multi_arch: Optional[str]
+
+    # Depends et al
+    breaks: Optional[str]
+    conflicts: Optional[str]
+    depends: Optional[str]
+    recommends: Optional[str]
+    suggests: Optional[str]
+    enhances: Optional[str]
+    pre_depends: Optional[str]
+    provides: Optional[str]
+    replaces: Optional[str]
+
+
+class DebPackageListResponse(ListResponse):
+    results: List[DebPackageResponse]
+
+
+class RpmPackageResponse(BasePackageResponse):
+    # https://github.com/pulp/pulp_rpm/blob/4f4aa4f1/pulp_rpm/app/models/package.py#L58
+    name: str
+    epoch: str
+    version: str
+    release: str
+    arch: str
+    pkgId: str
+    checksum_type: str
+    summary: str
+    description: str
+    url: str
+
+    # pulp code comments seem to imply these are lists of dicts but in testing they seem to be
+    # lists of lists so just model them as list of Any
+    changelogs: List[Any]
+    files: List[Any]
+    requires: List[Any]
+    provides: List[Any]
+    conflicts: List[Any]
+    obsoletes: List[Any]
+    suggests: List[Any]
+    enhances: List[Any]
+    recommends: List[Any]
+    supplements: List[Any]
+
+    location_base: str
+    location_href: str
+
+    rpm_buildhost: str
+    rpm_group: str
+    rpm_license: str
+    rpm_packager: str
+    rpm_sourcerpm: str
+    rpm_vendor: str
+    rpm_header_start: Optional[int]
+    rpm_header_end: Optional[int]
+
+    size_archive: Optional[int]
+    size_installed: Optional[int]
+    size_package: Optional[int]
+
+    time_build: Optional[int]
+    time_file: Optional[int]
+
+
+class RpmPackageListResponse(ListResponse):
+    results: List[RpmPackageResponse]
+
+
+class PackageResponse(BaseModel):
+    __root__: Union[DebPackageResponse, RpmPackageResponse]
+
+
+class PackageListResponse(ListResponse):
+    results: List[PackageResponse]
+
+
+class TaskResponse(BaseModel):
+    task: TaskId
+
+
+class TaskReadResponse(BaseModel):
+    id: TaskId
+    pulp_created: datetime
+    state: str
+    name: str
+    logging_cid: UUID
+    started_at: Optional[datetime]
+    finished_at: Optional[datetime]
+    error: Optional[Dict[str, Any]]
+    worker: Optional[str]
+    progress_reports: Optional[List[Dict[str, Any]]]
+    created_resources: List[str]
+    reserved_resources_record: List[str]
+
+
+class TaskListResponse(ListResponse):
+    results: List[TaskReadResponse]
 
 
 class AccountCreate(BaseModel):
