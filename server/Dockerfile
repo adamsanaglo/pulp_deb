@@ -1,4 +1,4 @@
-FROM python:3.9.2
+FROM mcr.microsoft.com/mirror/docker/library/python:3.10-slim
 
 ARG uid=1000
 ARG gid=1000
@@ -19,7 +19,7 @@ RUN pip install --upgrade pip && \
     poetry config virtualenvs.create false && \
     poetry install && \
     apt-get update && \
-    apt-get install -y rpm binutils
+    apt-get install -y rpm binutils gpg
 
 COPY app app/
 COPY migrations migrations/

@@ -363,7 +363,9 @@ class AccountCreate(BaseModel):
 
 class AccountUpdate(BaseModel):
     # reuse AccountCreate but make fields optional
-    __annotations__ = {k: Optional[v] for k, v in AccountCreate.__annotations__.items()}  # type: ignore #
+    __annotations__ = {}
+    for k, v in AccountCreate.__annotations__.items():
+        __annotations__[k] = Optional[v]  # type: ignore
 
 
 class AccountResponse(AccountCreate):
