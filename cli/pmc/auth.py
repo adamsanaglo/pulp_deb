@@ -41,7 +41,7 @@ class pmcauth:
             result = self.app.acquire_token_for_client(scopes=[self.scope])
 
         if "access_token" in result:
-            return result["access_token"]
+            return str(result["access_token"])
 
         raise Exception(result.get("error"))
 

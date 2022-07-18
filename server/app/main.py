@@ -41,7 +41,7 @@ fastapi_microsoft_identity.initialize(settings.TENANT_ID, settings.APP_CLIENT_ID
 UNAUTHENTICATED_ROUTES = ("/", "/api/", "/redoc", "/openapi.json")
 
 
-@fastapi_microsoft_identity.requires_auth
+@fastapi_microsoft_identity.requires_auth  # type: ignore
 async def authenticate(request: Request) -> None:
     """Does nothing but trigger requires_auth. The request arg must be passed as a kwarg."""
     return
@@ -50,7 +50,7 @@ async def authenticate(request: Request) -> None:
 @app.middleware("http")
 async def log_requests_and_authenticate(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
+) -> Any:
     logger.info(
         f"request from {request.client.host}:{request.client.port} - "
         f"'{request.method} {request.url.path}'."

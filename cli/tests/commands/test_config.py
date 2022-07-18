@@ -1,7 +1,8 @@
 import json
-import pytest
 import tempfile
 from typing import Any
+
+import pytest
 
 from tests.utils import invoke_command
 

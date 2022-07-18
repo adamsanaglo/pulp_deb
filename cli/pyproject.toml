@@ -28,6 +28,7 @@ mypy = "^0.940"
 pytest = "^7.1.1"
 types-Pygments = "^2.9.17"
 black = "^22.3.0"
+types-pyOpenSSL = "^22.0.4"
 
 [tool.poetry.extras]
 pygments = ["Pygments"]
