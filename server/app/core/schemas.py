@@ -317,7 +317,11 @@ class PackageResponse(BaseModel):
     __root__: Union[DebPackageResponse, RpmPackageResponse]
 
 
-class PackageListResponse(ListResponse):
+class PackageListResponse(BaseModel):
+    # TODO: have this response extend ListResponse
+    count: int
+    limit: Optional[int]
+    offset: Optional[int]
     results: List[PackageResponse]
 
 
