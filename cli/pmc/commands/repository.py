@@ -78,10 +78,17 @@ def publish(ctx: typer.Context, id: str) -> None:
 
 
 @packages.command(name="list")
-def list_packages(ctx: typer.Context, repo_id: str) -> None:
+def list_packages(
+    ctx: typer.Context,
+    repo_id: str,
+    limit: Optional[int] = LIMIT_OPT,
+    offset: Optional[int] = OFFSET_OPT,
+) -> None:
     """List packages for a repository."""
+    params = dict(limit=limit, offset=offset)
+
     with get_client(ctx.obj) as client:
-        resp = client.get(f"/repositories/{repo_id}/packages/")
+        resp = client.get(f"/repositories/{repo_id}/packages/", params=params)
         handle_response(ctx.obj, resp)
 
 

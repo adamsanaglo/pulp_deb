@@ -63,9 +63,9 @@ async def delete_repository(id: RepoId) -> Any:
 
 
 @router.get("/repositories/{id}/packages/", response_model=PackageListResponse)
-async def get_packages(id: RepoId) -> Any:
+async def get_packages(id: RepoId, pagination: Pagination = Depends(Pagination)) -> Any:
     async with PackageApi() as api:
-        return await api.repository_packages(id)
+        return await api.repository_packages(id, pagination)
 
 
 @router.patch("/repositories/{id}/packages/", response_model=TaskResponse)
