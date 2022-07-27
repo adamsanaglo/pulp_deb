@@ -1,10 +1,9 @@
-from enum import Enum
 from typing import Any, Dict, Optional
 
 import typer
 
 from pmc.client import get_client, handle_response
-from pmc.schemas import LIMIT_OPT, OFFSET_OPT
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, Role
 
 app = typer.Typer()
 
@@ -30,14 +29,6 @@ ACCOUNT_FIELDS = {
     "icm_team",
     "contact_email",
 }
-
-
-class Role(str, Enum):
-    # Another good candidate for consolidation with server.core.models.Role
-    Publisher = "Publisher"
-    Account_Admin = "Account_Admin"
-    Repo_Admin = "Repo_Admin"
-    Package_Admin = "Package_Admin"
 
 
 @app.command()

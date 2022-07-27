@@ -3,8 +3,8 @@ from typing import Any, Optional
 import httpx
 from asgi_correlation_id.context import correlation_id
 
-from core.config import settings
-from core.schemas import Identifier, Pagination
+from app.core.config import settings
+from app.core.schemas import Identifier, Pagination
 
 
 def get_client() -> httpx.AsyncClient:

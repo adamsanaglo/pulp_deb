@@ -28,6 +28,10 @@ class Role(str, enum.Enum):
     Repo_Admin = "Repo_Admin"
     Package_Admin = "Package_Admin"
 
+    def __str__(self) -> str:
+        """Return value as the string representation."""
+        return str(self.value)
+
 
 class Account(ModelBase, table=True):
     """Model representing accounts."""

@@ -2,8 +2,8 @@ from typing import Any, Optional
 
 from fastapi import APIRouter
 
-from core.schemas import TaskResponse
-from services.pulp.api import OrphanApi
+from app.core.schemas import TaskResponse
+from app.services.pulp.api import OrphanApi
 
 router = APIRouter()
 

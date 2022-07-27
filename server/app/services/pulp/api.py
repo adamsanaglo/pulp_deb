@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import httpx
 
-from core.schemas import (
+from app.core.schemas import (
     DistroId,
     DistroType,
     Identifier,
@@ -17,7 +17,7 @@ from core.schemas import (
     RepoType,
     TaskId,
 )
-from services.pulp.utils import get_client, id_to_pulp_href, translate_response
+from app.services.pulp.utils import get_client, id_to_pulp_href, translate_response
 
 T = TypeVar("T", bound="PulpApi")
 
@@ -249,6 +249,14 @@ class PackageApi(PulpApi):
 
         resp = await self.post(path, files={"file": file.file}, data=data)
         return translate_response(resp.json())
+
+    async def get_package_name(self, package_id: PackageId) -> Any:
+        """Call PackageApi.read and parse the response to return the name of the package."""
+        response = await self.read(package_id)
+        # rpms have a "name" field, debs have a "package" field.
+        if "name" in response:
+            return response["name"]
+        return response["package"]
 
     @staticmethod
     def endpoint(action: str, **kwargs: Any) -> str:

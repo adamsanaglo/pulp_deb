@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, StrictStr, root_validator, validator
 
-from core.models import Role
+from app.core.models import Role
 
 uuid_regex = re.compile(r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}")
 
@@ -349,7 +349,7 @@ class TaskListResponse(ListResponse):
 
 
 class AccountCreate(BaseModel):
-    id: UUID
+    id: UUID  # Must be the Azure Active Directory "oid" of the user/principal.
     name: NonEmptyStr
     is_enabled: bool = True
     role: Role

@@ -1,7 +1,8 @@
 import json
 from typing import Any
 
-from tests.utils import gen_repo_attrs, invoke_command
+from pmc.schemas import Role
+from tests.utils import become, gen_repo_attrs, invoke_command
 
 # Note that create and delete are exercised by the fixture.
 
@@ -46,6 +47,7 @@ def test_update(repo: Any) -> None:
 
 def _update_list_packages(package: Any, repo: Any) -> None:
     # Note: Not a test. You can't just shove any package in any repo. See callers below.
+    become(Role.Repo_Admin)
     result = invoke_command(
         ["repo", "packages", "update", repo["id"], "--add-packages", package["id"]]
     )

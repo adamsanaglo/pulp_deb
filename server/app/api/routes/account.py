@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql.selectable import Select
 
-from core.db import get_session
-from core.models import Account
-from core.schemas import (
+from app.core.db import get_session
+from app.core.models import Account
+from app.core.schemas import (
     AccountCreate,
     AccountListResponse,
     AccountResponse,

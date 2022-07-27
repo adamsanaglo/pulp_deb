@@ -3,8 +3,9 @@ from typing import Any
 
 import pytest
 
+from pmc.schemas import Role
 from tests.conftest import package_upload_command
-from tests.utils import invoke_command
+from tests.utils import become, invoke_command
 
 # Note that "package upload" is exercised by fixture.
 
@@ -38,6 +39,7 @@ def test_zst_deb(zst_deb_package: Any) -> None:
 
 @pytest.mark.parametrize("package", ["unsigned.deb", "unsigned.rpm", "signed-by-other.rpm"])
 def test_unsigned_package(package: str) -> None:
+    become(Role.Package_Admin)
     cmd = package_upload_command(package)
     result = invoke_command(cmd)
     assert result.exit_code != 0

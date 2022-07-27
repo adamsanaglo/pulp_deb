@@ -1,6 +1,6 @@
 import logging
 
-from .config import settings
+from app.core.config import settings
 
 FORMAT = "%(asctime)s %(levelname)-7s [%(correlation_id)s]: %(name)s:%(lineno)d - %(message)s"
 LEVEL = logging.DEBUG if settings.DEBUG else logging.INFO

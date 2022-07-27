@@ -12,16 +12,16 @@ from fastapi.responses import RedirectResponse, Response
 from httpx import HTTPStatusError, RequestError
 from sqlalchemy.exc import IntegrityError
 
-from api.routes.api import router as api_router
-from core.config import settings
-from core.exception import (
+from app.api.routes.api import router as api_router
+from app.core.config import settings
+from app.core.exception import (
     exception_handler,
     httpx_exception_handler,
     integrity_error_handler,
     pulp_exception_handler,
     validation_exception_handler,
 )
-from core.log_config import DEFAULT_LOG_CONFIG
+from app.core.log_config import DEFAULT_LOG_CONFIG
 
 # setup loggers
 if settings.LOGGING_CONFIG:
@@ -38,33 +38,17 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
 fastapi_microsoft_identity.initialize(settings.TENANT_ID, settings.APP_CLIENT_ID)
 
 
-UNAUTHENTICATED_ROUTES = ("/", "/api/", "/redoc", "/openapi.json")
-
-
-@fastapi_microsoft_identity.requires_auth  # type: ignore
-async def authenticate(request: Request) -> None:
-    """Does nothing but trigger requires_auth. The request arg must be passed as a kwarg."""
-    return
-
-
 @app.middleware("http")
-async def log_requests_and_authenticate(
+async def log_requests(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Any:
+) -> Response:
     logger.info(
         f"request from {request.client.host}:{request.client.port} - "
         f"'{request.method} {request.url.path}'."
     )
     start_time = time.time()
 
-    unauthenticated_response = None
-    if request.get("path") not in UNAUTHENTICATED_ROUTES:
-        unauthenticated_response = await authenticate(request=request)
-
-    if unauthenticated_response:
-        response = unauthenticated_response
-    else:
-        response = await call_next(request)
+    response = await call_next(request)
 
     process_time = (time.time() - start_time) * 1000
     formatted_process_time = "{0:.2f}".format(process_time)

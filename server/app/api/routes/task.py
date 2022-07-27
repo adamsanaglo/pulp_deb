@@ -2,8 +2,9 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from core.schemas import Pagination, TaskId, TaskListResponse, TaskReadResponse
-from services.pulp.api import TaskApi, TaskCancelException
+from app.api.auth import requires_account_admin
+from app.core.schemas import Pagination, TaskId, TaskListResponse, TaskReadResponse
+from app.services.pulp.api import TaskApi, TaskCancelException
 
 router = APIRouter()
 
@@ -20,7 +21,11 @@ async def read_task(id: TaskId) -> Any:
         return await api.read(id)
 
 
-@router.patch("/tasks/{id}/cancel/", response_model=TaskReadResponse)
+@router.patch(
+    "/tasks/{id}/cancel/",
+    response_model=TaskReadResponse,
+    dependencies=[Depends(requires_account_admin)],
+)
 async def cancel_task(id: TaskId) -> Any:
     async with TaskApi() as api:
         try:

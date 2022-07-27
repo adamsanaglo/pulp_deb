@@ -19,47 +19,45 @@ class NonEmptyStr(StrictStr):
     min_length = 1
 
 
-class RepoType(str, Enum):
+class StringEnum(str, Enum):
+    def __str__(self) -> str:
+        """Return value as the string representation."""
+        return str(self.value)
+
+
+class Role(StringEnum):
+    # Another good candidate for consolidation with server.core.models.Role
+    Publisher = "Publisher"
+    Account_Admin = "Account_Admin"
+    Repo_Admin = "Repo_Admin"
+    Package_Admin = "Package_Admin"
+
+
+class RepoType(StringEnum):
     """Type for a repository."""
 
     apt = "apt"
     yum = "yum"  # maps to 'rpm' in Pulp
 
-    def __str__(self) -> str:
-        """Return value as the string representation."""
-        return self.value
 
-
-class DistroType(str, Enum):
+class DistroType(StringEnum):
     """Type for a distribution."""
 
     apt = "apt"
     yum = "yum"  # maps to 'rpm' in Pulp
 
-    def __str__(self) -> str:
-        """Return value as the string representation."""
-        return self.value
 
-
-class PackageType(str, Enum):
+class PackageType(StringEnum):
     """Type of packages."""
 
     deb = "deb"
     rpm = "rpm"
 
-    def __str__(self) -> str:
-        """Return value as the string representation."""
-        return self.value
 
-
-class Format(str, Enum):
+class Format(StringEnum):
     """Options for different response formats (e.g. json)."""
 
     json = "json"
-
-    def __str__(self) -> str:
-        """Return value as the string representation."""
-        return self.value
 
 
 # Codebase uses typer to define command-line parameters which doesn't support Pydantic (yet)

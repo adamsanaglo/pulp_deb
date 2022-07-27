@@ -6,9 +6,9 @@ from typing import Any, Generator, List, Optional
 
 import pytest
 
-from pmc.schemas import RepoType
+from pmc.schemas import RepoType, Role
 
-from .utils import gen_account_attrs, gen_distro_attrs, gen_repo_attrs, invoke_command
+from .utils import become, gen_account_attrs, gen_distro_attrs, gen_repo_attrs, invoke_command
 
 
 @pytest.fixture(autouse=True)
@@ -30,14 +30,16 @@ def check_connection(set_config: Path) -> None:
 
 @contextmanager
 def _object_manager(
-    cmd: List[str], cleanup_cmd: Optional[List[str]] = None
+    cmd: List[str], role: Role, cleanup_cmd: Optional[List[str]] = None
 ) -> Generator[Any, None, None]:
     """
-    Create, yield, and clean up an object given the command to create it.
+    Create, yield, and clean up an object given the command to create it and the Role that has
+    permission.
     If "{type} delete {id}" does not suffice to clean it up you can pass a custom cleanup command.
     """
     response = None
     try:
+        become(role)
         result = invoke_command(cmd)
         assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
         response = json.loads(result.stdout)
@@ -47,6 +49,7 @@ def _object_manager(
             if cleanup_cmd is None:
                 type = cmd[0]  # "repo", "distro", "account"
                 cleanup_cmd = [type, "delete", response["id"]]
+            become(role)  # again, because the test may have changed role.
             result = invoke_command(cleanup_cmd)
             assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
 
@@ -55,7 +58,7 @@ def _object_manager(
 def repo() -> Generator[Any, None, None]:
     attrs = gen_repo_attrs()
     cmd = ["repo", "create", attrs["name"], attrs["type"]]
-    with _object_manager(cmd) as r:
+    with _object_manager(cmd, Role.Repo_Admin) as r:
         yield r
 
 
@@ -63,7 +66,7 @@ def repo() -> Generator[Any, None, None]:
 def apt_repo() -> Generator[Any, None, None]:
     attrs = gen_repo_attrs(RepoType.apt)
     cmd = ["repo", "create", attrs["name"], attrs["type"]]
-    with _object_manager(cmd) as r:
+    with _object_manager(cmd, Role.Repo_Admin) as r:
         yield r
 
 
@@ -71,15 +74,16 @@ def apt_repo() -> Generator[Any, None, None]:
 def yum_repo() -> Generator[Any, None, None]:
     attrs = gen_repo_attrs(RepoType.yum)
     cmd = ["repo", "create", attrs["name"], attrs["type"]]
-    with _object_manager(cmd) as r:
+    with _object_manager(cmd, Role.Repo_Admin) as r:
         yield r
 
 
 @pytest.fixture()
 def distro() -> Generator[Any, None, None]:
+    become(Role.Repo_Admin)
     attrs = gen_distro_attrs()
     cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
-    with _object_manager(cmd) as d:
+    with _object_manager(cmd, Role.Repo_Admin) as d:
         yield d
 
 
@@ -98,14 +102,14 @@ def _account_create_command() -> List[str]:
 
 @pytest.fixture()
 def account_one() -> Generator[Any, None, None]:
-    with _object_manager(_account_create_command()) as o:
+    with _object_manager(_account_create_command(), Role.Account_Admin) as o:
         yield o
 
 
 @pytest.fixture()
 def account_two() -> Generator[Any, None, None]:
     """Generate multiple accounts."""
-    with _object_manager(_account_create_command()) as o:
+    with _object_manager(_account_create_command(), Role.Account_Admin) as o:
         yield o
 
 
@@ -133,7 +137,7 @@ def _package_manager(
     # all other orphans from the database, so we should never run tests against a production db.
     cmd = package_upload_command(package_name, unsigned)
     cleanup_cmd = ["orphan", "cleanup", "--protection-time", "0"]
-    with _object_manager(cmd, cleanup_cmd) as p:
+    with _object_manager(cmd, Role.Package_Admin, cleanup_cmd) as p:
         yield p
 
 
@@ -164,6 +168,7 @@ def forced_unsigned_package() -> Generator[Any, None, None]:
 @pytest.fixture()
 def task() -> Generator[Any, None, None]:
     # do something, anything, that results in at least one task being created
+    become(Role.Package_Admin)
     cmd = ["orphan", "cleanup"]
     result = invoke_command(cmd)
     assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"

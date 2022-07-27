@@ -1,4 +1,6 @@
 import json
+import subprocess
+from pathlib import Path
 from random import choice
 from typing import Any, Dict, Optional
 from uuid import uuid4
@@ -7,7 +9,7 @@ from click.testing import Result
 from typer.testing import CliRunner
 
 from pmc.main import app, format_exception
-from pmc.schemas import DistroType, RepoType
+from pmc.schemas import DistroType, RepoType, Role
 
 
 def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, str]:
@@ -54,3 +56,14 @@ def invoke_command(*args: Any, **kwargs: Any) -> Result:
         err = format_exception(result.exception)
         result.stdout_bytes += json.dumps(err).encode("utf-8")
     return result
+
+
+current_role = None
+
+
+def become(role: Role) -> None:
+    """Update our role in the database."""
+    global current_role
+    if current_role != role:
+        subprocess.check_call([str(Path(__file__).parents[1] / "update_role.sh"), str(role)])
+        current_role = role

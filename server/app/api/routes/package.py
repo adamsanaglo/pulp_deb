@@ -2,7 +2,8 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, UploadFile
 
-from core.schemas import (
+from app.api.auth import requires_package_admin_or_publisher
+from app.core.schemas import (
     DebPackageListResponse,
     PackageId,
     PackageResponse,
@@ -11,8 +12,8 @@ from core.schemas import (
     RpmPackageListResponse,
     TaskResponse,
 )
-from services.package.verify import verify_signature
-from services.pulp.api import PackageApi
+from app.services.package.verify import verify_signature
+from app.services.pulp.api import PackageApi
 
 router = APIRouter()
 
@@ -29,7 +30,11 @@ async def rpm_packages(pagination: Pagination = Depends(Pagination)) -> Any:
         return await api.list(pagination, type=PackageType.rpm)
 
 
-@router.post("/packages/", response_model=TaskResponse)
+@router.post(
+    "/packages/",
+    response_model=TaskResponse,
+    dependencies=[Depends(requires_package_admin_or_publisher)],
+)
 async def create_package(
     file: UploadFile, force_name: Optional[bool] = False, ignore_signature: Optional[bool] = False
 ) -> Any:

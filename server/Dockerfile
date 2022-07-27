@@ -13,6 +13,9 @@ COPY pyproject.toml .
 COPY poetry.lock .
 COPY .env .
 COPY alembic.ini .
+COPY README.md .
+COPY app app/
+COPY migrations migrations/
 
 RUN pip install --upgrade pip && \
     pip install poetry && \
@@ -21,7 +24,5 @@ RUN pip install --upgrade pip && \
     apt-get update && \
     apt-get install -y rpm binutils gpg
 
-COPY app app/
-COPY migrations migrations/
 
 ENTRYPOINT ["python", "app/main.py"]
