@@ -25,6 +25,10 @@ uuid_regex = re.compile(r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-
 T = TypeVar("T", bound="Identifier")
 
 
+class EmptyStr(StrictStr):
+    max_length = 0
+
+
 class NonEmptyStr(StrictStr):
     min_length = 1
 
@@ -330,7 +334,7 @@ class TaskReadResponse(BaseModel):
     pulp_created: datetime
     state: str
     name: str
-    logging_cid: UUID
+    logging_cid: Union[UUID, EmptyStr]
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
     error: Optional[Dict[str, Any]]
