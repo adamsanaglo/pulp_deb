@@ -26,6 +26,16 @@ def gen_distro_attrs() -> Dict[str, str]:
     )
 
 
+def gen_release_attrs() -> Dict[str, str]:
+    return dict(
+        distribution=f"test_release_{uuid4()}",
+        codename=f"test_release_{uuid4()}",
+        suite="stable",
+        components="main,contrib,non-free",
+        architectures="arm,amd64",
+    )
+
+
 def gen_account_attrs() -> Dict[str, str]:
     my_uuid = str(uuid4())
     return dict(

@@ -1,5 +1,5 @@
 from random import choice
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -27,6 +27,16 @@ def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, str]:
     if not type:
         type = choice([RepoType.apt, RepoType.yum])
     return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type)
+
+
+def gen_release_attrs() -> Dict[str, Union[str, List[str]]]:
+    return dict(
+        distribution=f"pmc_cli_test_release_{uuid4()}",
+        codename="cortoso",
+        suite="stable",
+        components=["main", "contrib", "non-free"],
+        architectures=["arm", "amd64"],
+    )
 
 
 def gen_distro_attrs() -> Dict[str, str]:

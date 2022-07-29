@@ -1,6 +1,6 @@
 import asyncio
 import subprocess
-from typing import AsyncGenerator, Callable, Generator
+from typing import AsyncGenerator, Callable, Generator, Type
 from unittest.mock import AsyncMock
 
 import pytest
@@ -143,29 +143,44 @@ def get_async_mock() -> AsyncMock:
     return mock
 
 
+def list_async_mock() -> AsyncMock:
+    """Mock that emulates a list endpoint."""
+    mock = AsyncMock()
+    mock.return_value = {"results": [], "count": 0, "limit": 100, "offset": 0}
+    return mock
+
+
 @pytest.fixture
-def distribution_api(monkeypatch) -> type[pulp_service_api.DistributionApi]:
+def distribution_api(monkeypatch) -> Type[pulp_service_api.DistributionApi]:
     for method in ("create", "update", "read", "destroy", "list"):
         monkeypatch.setattr(pulp_service_api.DistributionApi, method, get_async_mock())
     return pulp_service_api.DistributionApi
 
 
 @pytest.fixture
-def repository_api(monkeypatch) -> type[pulp_service_api.RepositoryApi]:
+def repository_api(monkeypatch) -> Type[pulp_service_api.RepositoryApi]:
     for method in ("create", "update", "read", "destroy", "list", "update_packages", "publish"):
         monkeypatch.setattr(pulp_service_api.RepositoryApi, method, get_async_mock())
     return pulp_service_api.RepositoryApi
 
 
 @pytest.fixture
-def orphan_api(monkeypatch) -> type[pulp_service_api.OrphanApi]:
+def release_api(monkeypatch) -> Type[pulp_service_api.ReleaseApi]:
+    monkeypatch.setattr(pulp_service_api.ReleaseApi, "list", list_async_mock())
+    for method in ("create", "update", "read", "destroy", "add_components", "add_architectures"):
+        monkeypatch.setattr(pulp_service_api.ReleaseApi, method, get_async_mock())
+    return pulp_service_api.ReleaseApi
+
+
+@pytest.fixture
+def orphan_api(monkeypatch) -> Type[pulp_service_api.OrphanApi]:
     for method in ("create", "update", "read", "destroy", "list", "cleanup"):
         monkeypatch.setattr(pulp_service_api.OrphanApi, method, get_async_mock())
     return pulp_service_api.OrphanApi
 
 
 @pytest.fixture
-def package_api(monkeypatch) -> type[pulp_service_api.PackageApi]:
+def package_api(monkeypatch) -> Type[pulp_service_api.PackageApi]:
     for method in (
         "create",
         "update",
@@ -180,7 +195,7 @@ def package_api(monkeypatch) -> type[pulp_service_api.PackageApi]:
 
 
 @pytest.fixture
-def task_api(monkeypatch) -> type[pulp_service_api.TaskApi]:
+def task_api(monkeypatch) -> Type[pulp_service_api.TaskApi]:
     for method in ("create", "update", "read", "destroy", "list", "cancel"):
         monkeypatch.setattr(pulp_service_api.TaskApi, method, get_async_mock())
     return pulp_service_api.TaskApi

@@ -117,6 +117,15 @@ class RepoId(Identifier):
             return RepoType(t)
 
 
+class DebRepoId(RepoId):
+    pattern = re.compile(rf"^repositories-deb-apt-({uuid_regex.pattern})$")
+    examples = ["repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558"]
+
+    @property
+    def type(self) -> RepoType:
+        return RepoType.apt
+
+
 class DistroId(Identifier):
     pattern = re.compile(rf"^distributions-(?:deb|rpm)-(apt|rpm)-({uuid_regex.pattern})$")
     examples = [
@@ -137,7 +146,16 @@ class TaskId(Identifier):
     examples = ["tasks-7788448d-b112-47a8-a310-3ccfe088e809"]
 
 
-class PackageId(Identifier):
+class ContentId(Identifier):
+    pattern = re.compile(rf"^content-(deb|rpm)-[a-z_]+-({uuid_regex.pattern})$")
+    examples = [
+        "content-deb-packages-39a63a9e-2081-4dfe-80eb-2c27af4b6024",
+        "content-deb-releases-1b6e8bba-e9a0-4070-9965-f1840164714e",
+        "content-deb-release_components-be0a9766-633b-4538-a1a8-9b2a686affa0",
+    ]
+
+
+class PackageId(ContentId):
     pattern = re.compile(rf"^content-(deb|rpm)-packages-({uuid_regex.pattern})$")
     examples = [
         "content-deb-packages-39a63a9e-2081-4dfe-80eb-2c27af4b6024",
@@ -147,6 +165,11 @@ class PackageId(Identifier):
     @property
     def type(self) -> PackageType:
         return PackageType(self._pieces.group(1))
+
+
+class ReleaseId(ContentId):
+    pattern = re.compile(rf"^content-deb-releases-({uuid_regex.pattern})$")
+    examples = ["content-deb-releases-7788448d-b112-47a8-a310-3ccfe088e809"]
 
 
 class Pagination(BaseModel):
@@ -323,6 +346,22 @@ class PackageResponse(BaseModel):
 
 class PackageListResponse(ListResponse):
     results: List[PackageResponse]
+
+
+class ReleaseCreate(BaseModel):
+    distribution: str
+    codename: str
+    suite: str
+    components: List[str]
+    architectures: List[str]
+
+
+class ReleaseResponse(ReleaseCreate):
+    id: ReleaseId
+
+
+class ReleaseListResponse(ListResponse):
+    results: List[ReleaseResponse]
 
 
 class TaskResponse(BaseModel):

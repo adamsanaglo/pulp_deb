@@ -3,11 +3,13 @@ from typing import Any, Dict, Optional
 import typer
 
 from pmc.client import get_client, handle_response
+from pmc.commands.release import releases
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoType
 
 app = typer.Typer()
 packages = typer.Typer(help="Manage a repo's packages.")
 app.add_typer(packages, name="packages")
+app.add_typer(releases, name="releases")
 
 
 @app.command()

@@ -7,12 +7,15 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 import httpx
 
 from app.core.schemas import (
+    ContentId,
+    DebRepoId,
     DistroId,
     DistroType,
     Identifier,
     PackageId,
     PackageType,
     Pagination,
+    ReleaseId,
     RepoId,
     RepoType,
     TaskId,
@@ -72,11 +75,20 @@ class PulpApi:
     delete = partialmethod(request, "delete")
 
     async def list(
-        self, pagination: Pagination, params: Optional[Dict[str, Any]] = None, **endpoint_args: Any
+        self,
+        pagination: Optional[Pagination] = None,
+        params: Optional[Dict[str, Any]] = None,
+        **endpoint_args: Any,
     ) -> Any:
         """Call the list endpoint."""
+        if not pagination:
+            pagination = Pagination()
+
         if not params:
             params = dict()
+        else:
+            params = params.copy()
+
         params["limit"] = pagination.limit
         params["offset"] = pagination.offset
 
@@ -116,25 +128,36 @@ class RepositoryApi(PulpApi):
         resp = await self.post(self.endpoint("create", type=type), json=data)
         return translate_response(resp.json())
 
-    async def update_packages(
+    async def update_content(
         self,
         id: RepoId,
-        add_packages: Optional[List[PackageId]],
-        remove_packages: Optional[List[PackageId]],
+        add_content: Optional[List[ContentId]] = None,
+        remove_content: Optional[List[ContentId]] = None,
     ) -> Any:
-        """Update a repo's packages by calling the repo modify endpoint."""
+        """Update a repo's content by calling the repo modify endpoint."""
 
-        def _translate_ids(ids: List[PackageId]) -> List[str]:
-            return [id_to_pulp_href(pkg_id) for pkg_id in ids]
+        def _translate_ids(ids: List[ContentId]) -> List[str]:
+            return [id_to_pulp_href(content_id) for content_id in ids]
 
         data = {}
-        if add_packages:
-            data["add_content_units"] = _translate_ids(add_packages)
-        if remove_packages:
-            data["remove_content_units"] = _translate_ids(remove_packages)
+        if add_content:
+            data["add_content_units"] = _translate_ids(add_content)
+        if remove_content:
+            data["remove_content_units"] = _translate_ids(remove_content)
 
         resp = await self.post(self.endpoint("modify", id=id), json=data)
         return translate_response(resp.json())
+
+    async def update_packages(
+        self,
+        id: RepoId,
+        add_packages: Optional[List[PackageId]] = None,
+        remove_packages: Optional[List[PackageId]] = None,
+    ) -> Any:
+        """Update a repo's packages."""
+        add_content = [ContentId(pkg) for pkg in (add_packages or [])]
+        remove_content = [ContentId(pkg) for pkg in (remove_packages or [])]
+        return await self.update_content(id, add_content, remove_content)
 
     async def publish(self, id: RepoId) -> Any:
         """Call the publication create endpoint."""
@@ -270,6 +293,125 @@ class PackageApi(PulpApi):
             return f"{uris[id.type]}{id.uuid}/"
         else:
             raise ValueError(f"Could not construct endpoint for '{kwargs}'.")
+
+
+class ReleaseComponentApi(PulpApi):
+    """Api for apt repo release components."""
+
+    @staticmethod
+    def endpoint(action: str, **kwargs: Any) -> str:
+        if action in ["create", "list"]:
+            return "/content/deb/release_components/"
+        else:
+            raise ValueError(f"Could not construct endpoint for '{kwargs}'.")
+
+
+class ReleaseArchitectureApi(PulpApi):
+    """Api for apt repo release architectures."""
+
+    @staticmethod
+    def endpoint(action: str, **kwargs: Any) -> str:
+        if action in ["create", "list"]:
+            return "/content/deb/release_architectures/"
+        else:
+            raise ValueError(f"Could not construct endpoint for '{kwargs}'.")
+
+
+class ReleaseApi(PulpApi):
+    """Api for apt repo releases (aka dists)."""
+
+    async def _get_components(self, release_id: ReleaseId) -> Any:
+        async with ReleaseComponentApi() as api:
+            resp = await api.list(params={"release": release_id.uuid})
+            return [comp["component"] for comp in resp["results"]]
+
+    async def _get_architectures(self, release_id: ReleaseId) -> Any:
+        async with ReleaseArchitectureApi() as api:
+            resp = await api.list(params={"release": release_id.uuid})
+            return [arch["architecture"] for arch in resp["results"]]
+
+    async def list(
+        self,
+        pagination: Optional[Pagination] = None,
+        params: Optional[Dict[str, Any]] = None,
+        **endpoint_args: Any,
+    ) -> Any:
+        """Call the list endpoint."""
+        if params and "repository" in params:
+            params = params.copy()
+            assert isinstance(params["repository"], DebRepoId)
+            repo_id = params.pop("repository")
+            async with RepositoryApi() as api:
+                repo = await api.read(repo_id)
+                params["repository_version"] = repo["latest_version_href"]
+
+        releases = await super().list(pagination, params, **endpoint_args)
+
+        # add in components and architectures
+        for release in releases["results"]:
+            release_id = ReleaseId(release["id"])
+            release["components"] = await self._get_components(release_id)
+            release["architectures"] = await self._get_architectures(release_id)
+
+        return releases
+
+    async def _add_items(
+        self, api_class: Type[PulpApi], field: str, release: ReleaseId, items: List[str]
+    ) -> List[ContentId]:
+        release_href = id_to_pulp_href(release)
+        content = []
+
+        for item in items:
+            async with api_class() as api:
+                response = await api.list(params={field: item, "release": release.uuid})
+                if len(results := response["results"]) > 0:
+                    result = results[0]
+                else:
+                    result = await api.create({field: item, "release": release_href})
+                content_id = ContentId(result["id"])
+                content.append(content_id)
+
+        return content
+
+    async def add_components(self, release: ReleaseId, components: List[str]) -> List[ContentId]:
+        """Create a set of components for a release."""
+        return await self._add_items(ReleaseComponentApi, "component", release, components)
+
+    async def add_architectures(self, release: ReleaseId, components: List[str]) -> List[ContentId]:
+        """Create a set of architectures for a release."""
+        return await self._add_items(ReleaseArchitectureApi, "architecture", release, components)
+
+    async def create(self, data: Dict[str, Any]) -> Any:
+        """Find or create the release and add it to our repo."""
+        components = data.pop("components")
+        architectures = data.pop("architectures")
+
+        # find if the release already exists (eg for another repo)
+        repository = data.pop("repository")
+        releases = await self.list(params=data)
+        if len(releases["results"]) > 0:
+            release = releases["results"][0]
+        else:
+            # release doesn't exist, let's create it
+            resp = await self.post(self.endpoint("create"), json=data)
+            release = translate_response(resp.json())
+
+        # create the release comps and architectures
+        release_id = ReleaseId(release["id"])
+        content: List[ContentId] = [release_id]
+        content.extend(await self.add_components(release_id, components))
+        content.extend(await self.add_architectures(release_id, architectures))
+
+        # add our release with its components and architectures to our repository
+        async with RepositoryApi() as api:
+            return await api.update_content(repository, add_content=content)
+
+    @staticmethod
+    def endpoint(action: str, **kwargs: Any) -> str:
+        if action in ["list", "create"]:
+            return "/content/deb/releases/"
+        else:
+            raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
 
 
 class TaskApi(PulpApi):
