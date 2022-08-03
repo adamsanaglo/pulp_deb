@@ -1,0 +1,25 @@
+{
+  "scriptFile": "__init__.py",
+  "bindings": [
+    {
+      "name": "mytimer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "30 8 * * *"
+    },
+    {
+      "type": "queue",
+      "direction": "out",
+      "name": "msg",
+      "queueName": "repo-request-queue",
+      "connection": "pmcstatusprimary_CONNECTION"
+    },
+    {
+      "type": "queue",
+      "direction": "out",
+      "name": "msgresultsqueue",
+      "queueName": "results-queue",
+      "connection": "pmcstatusprimary_CONNECTION"
+    }
+  ]
+}

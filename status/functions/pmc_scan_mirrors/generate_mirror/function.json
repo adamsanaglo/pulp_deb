@@ -1,0 +1,33 @@
+{
+  "scriptFile": "__init__.py",
+  "bindings": [
+    {
+      "name": "mytimer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "0 */3 * * * *"
+    },
+    {
+      "name": "inputblobmirrors",
+      "type": "blob",
+      "dataType": "string",
+      "path": "static-data/mirrors.json",
+      "connection": "pmcstatusprimary_CONNECTION",
+      "direction": "in"
+    },
+    {
+      "type": "queue",
+      "direction": "out",
+      "name": "msg",
+      "queueName": "mirror-request-queue",
+      "connection": "pmcstatusprimary_CONNECTION"
+    },
+    {
+      "type": "queue",
+      "direction": "out",
+      "name": "msgresultsqueue",
+      "queueName": "results-queue",
+      "connection": "pmcstatusprimary_CONNECTION"
+    }
+  ]
+}

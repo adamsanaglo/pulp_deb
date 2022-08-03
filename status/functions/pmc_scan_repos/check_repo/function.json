@@ -1,0 +1,27 @@
+{
+  "scriptFile": "__init__.py",
+  "bindings": [
+    {
+      "name": "msg",
+      "type": "queueTrigger",
+      "direction": "in",
+      "queueName": "repo-request-queue",
+      "connection": "pmcstatusprimary_CONNECTION"
+    },
+    {
+      "name": "inputblobpubkeys",
+      "type": "blob",
+      "dataType": "string",
+      "path": "static-data/pubkeys.json",
+      "connection": "pmcstatusprimary_CONNECTION",
+      "direction": "in"
+    },
+    {
+      "type": "queue",
+      "direction": "out",
+      "name": "msgout",
+      "queueName": "results-queue",
+      "connection": "pmcstatusprimary_CONNECTION"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+.custom-accordion-success {
+    --bs-accordion-active-color: black;
+    --bs-accordion-active-bg: white;
+    --bs-accordion-btn-color: black;
+    --bs-accordion-btn-bg: white;
+}
+
+.custom-accordion-fail {
+    --bs-accordion-active-color: black;
+    --bs-accordion-active-bg: rgb(255, 230, 230);
+    --bs-accordion-btn-color: black;
+    --bs-accordion-btn-bg: rgb(255, 230, 230);
+}
+
+.custom-accordion-empty {
+    --bs-accordion-btn-bg: rgb(233, 236, 239);
+    --bs-accordion-active-color: grey;
+    --bs-accordion-btn-color: grey;
+}
+
+/* Show it is fixed to the top */
+body {
+    min-height: 75rem;
+    padding-top: 4.5rem;
+}
