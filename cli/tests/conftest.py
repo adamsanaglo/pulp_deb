@@ -105,6 +105,7 @@ def orphan_cleanup() -> Generator[None, None, None]:
     try:
         yield
     finally:
+        become(Role.Package_Admin)
         result = invoke_command(["orphan", "cleanup", "--protection-time", "0"])
         assert result.exit_code == 0, f"Failed to call orphan cleanup: {result.stderr}."
 
@@ -121,8 +122,6 @@ def release(orphan_cleanup: None, apt_repo: Any) -> Generator[Any, None, None]:
         attrs["distribution"],
         attrs["codename"],
         attrs["suite"],
-        attrs["components"],
-        attrs["architectures"],
     ]
     result = invoke_command(cmd)
     assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"

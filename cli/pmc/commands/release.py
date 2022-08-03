@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, List, Optional, Union
 
 import typer
 
@@ -33,17 +33,21 @@ def create(
     distribution: str = typer.Argument(..., help="Name under which to distribute release."),
     codename: str = typer.Argument(..., help="Codename for the release."),
     suite: str = typer.Argument(..., help="Suite for the release (e.g. stable)."),
-    components: str = typer.Argument(..., help="Comma-separated list of components."),
-    architectures: str = typer.Argument(..., help="Comma-separated list of architectures."),
+    components: str = typer.Option(None, help="Comma-separated list of components."),
+    architectures: str = typer.Option(None, help="Comma-separated list of architectures."),
 ) -> None:
     """Create a release for a repository."""
-    data = {
+    data: Dict[str, Union[str, List[str]]] = {
         "codename": codename,
         "suite": suite,
         "distribution": distribution,
-        "components": components.split(","),
-        "architectures": architectures.split(","),
     }
+
+    if components:
+        data["components"] = components.split(",")
+    if architectures:
+        data["architectures"] = architectures.split(",")
+
     with get_client(ctx.obj) as client:
         resp = client.post(f"/repositories/{repo_id}/releases/", json=data)
         handle_response(ctx.obj, resp)

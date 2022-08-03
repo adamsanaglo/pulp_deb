@@ -352,8 +352,8 @@ class ReleaseCreate(BaseModel):
     distribution: str
     codename: str
     suite: str
-    components: List[str]
-    architectures: List[str]
+    components: List[str] = ["main"]
+    architectures: List[str] = ["amd64", "arm64", "armhf"]
 
 
 class ReleaseResponse(ReleaseCreate):

@@ -5,6 +5,33 @@ from pmc.schemas import RepoType
 from tests.utils import gen_release_attrs, gen_repo_attrs, invoke_command
 
 
+def test_create_with_comps_architectures(orphan_cleanup: None, apt_repo: Any) -> None:
+    attrs = gen_release_attrs()
+    cmd = [
+        "repo",
+        "releases",
+        "create",
+        apt_repo["id"],
+        attrs["distribution"],
+        attrs["codename"],
+        attrs["suite"],
+        "--components",
+        "test1,test2",
+        "--architectures",
+        "flux,",
+    ]
+
+    result = invoke_command(cmd)
+    assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
+
+    # retrieve the release and yield it
+    result = invoke_command(["repo", "releases", "list", apt_repo["id"]])
+    assert result.exit_code == 0, f"release list failed: {result.stderr}"
+    release = json.loads(result.stdout)["results"][0]
+    assert sorted(release["components"]), ["test1", "test2"]
+    assert release["architectures"], ["flux"]
+
+
 def test_list(release: Any) -> None:
     """Test release list command."""
     result = invoke_command(["repo", "releases", "list", release["repository_id"], "--limit", "1"])
@@ -13,8 +40,8 @@ def test_list(release: Any) -> None:
     assert len(response["results"]) == 1
 
     rel = response["results"][0]
-    assert sorted(rel["components"]) == sorted(["main", "contrib", "non-free"])
-    assert sorted(rel["architectures"]) == sorted(["arm", "amd64"])
+    assert rel["components"] == ["main"]
+    assert sorted(rel["architectures"]) == ["amd64", "arm64", "armhf"]
 
     result = invoke_command(["repo", "releases", "list", release["repository_id"], "--offset", "2"])
     assert result.exit_code == 0, f"release list failed: {result.stderr}"
@@ -33,8 +60,6 @@ def test_yum_release(yum_repo: Any) -> None:
         attrs["distribution"],
         attrs["codename"],
         attrs["suite"],
-        attrs["components"],
-        attrs["architectures"],
     ]
     result = invoke_command(cmd)
     assert result.exit_code == 1
@@ -51,8 +76,6 @@ def test_dupe_release(release: Any) -> None:
         release["distribution"],
         release["codename"],
         release["suite"],
-        "main",
-        "arm",
     ]
     result = invoke_command(cmd)
     assert result.exit_code == 1
@@ -78,8 +101,6 @@ def test_dupe_release_another_repo(release: Any) -> None:
             release["distribution"],
             release["codename"],
             release["suite"],
-            "main",
-            "arm",
         ]
         result = invoke_command(cmd)
         assert result.exit_code == 0
