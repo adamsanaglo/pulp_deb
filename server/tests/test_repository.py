@@ -95,8 +95,8 @@ async def test_roles_repository_add_package(
     you've been granted repo access (2) * who "owns" the package (nobody, someone else, me) (3).
     """
     # set up db
-    repo_id = f"repositories-deb-apt-{uuid4()}"
-    package_id = f"content-deb-packages-{uuid4()}"
+    repo_id = f"repositories-rpm-rpm-{uuid4()}"
+    package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"
     _setup_repo_package(
         package_api, db_session, repo_id, package_name, account, repo_perm, package_perm
@@ -139,8 +139,8 @@ async def test_roles_repository_remove_package(
     someone else, me) (3).
     """
     # set up db
-    repo_id = f"repositories-deb-apt-{uuid4()}"
-    package_id = f"content-deb-packages-{uuid4()}"
+    repo_id = f"repositories-rpm-rpm-{uuid4()}"
+    package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"
     _setup_repo_package(
         package_api, db_session, repo_id, package_name, account, repo_perm, package_perm

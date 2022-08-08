@@ -26,7 +26,10 @@ def gen_account_attrs(role: Role = Role.Publisher) -> Dict[str, Any]:
 def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, str]:
     if not type:
         type = choice([RepoType.apt, RepoType.yum])
-    return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type)
+    if type == RepoType.apt:
+        return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type, release="jammy")
+    else:
+        return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type)
 
 
 def gen_release_attrs() -> Dict[str, Union[str, List[str]]]:

@@ -151,12 +151,50 @@ class RepositoryApi(PulpApi):
     async def update_packages(
         self,
         id: RepoId,
+        release: Optional[str] = None,
+        component: Optional[str] = None,
         add_packages: Optional[List[PackageId]] = None,
         remove_packages: Optional[List[PackageId]] = None,
     ) -> Any:
         """Update a repo's packages."""
         add_content = [ContentId(pkg) for pkg in (add_packages or [])]
         remove_content = [ContentId(pkg) for pkg in (remove_packages or [])]
+
+        if id.type == RepoType.apt:
+            # for apt repos, we need to add/remove the package release components to the repo too
+            # this is the association that joins a package to a repo's release component
+
+            # first find the component we're dealing with
+            async with ReleaseApi() as release_api:
+                releases = await release_api.list(
+                    params={"repository": id, "distribution": release}
+                )
+                rel_id = ContentId(releases["results"][0]["id"])
+            async with ReleaseComponentApi() as comp_api:
+                comps = await comp_api.list(params={"release": rel_id.uuid, "component": component})
+                comp_id = ContentId(comps["results"][0]["id"])
+
+            async with PackageReleaseComponentApi() as prc_api:
+                # find or create the comp packages we need and add them to add_content
+                add_ids = []
+                for pkg_id in add_content:
+                    prc = await prc_api.find_or_create(pkg_id, comp_id)
+                    add_ids.append(ContentId(prc["id"]))
+                add_content.extend(add_ids)
+
+                # find any comp packages we need to remove and add them to remove_content
+                remove_ids = []
+                for pkg_id in remove_content:
+                    resp = await prc_api.list(
+                        params={
+                            "package": pkg_id.uuid,
+                            "release_component": comp_id.uuid,
+                        }
+                    )
+                    if resp["count"] > 0:
+                        remove_ids.append(ContentId(resp["results"][0]["id"]))
+                remove_content.extend(remove_ids)
+
         return await self.update_content(id, add_content, remove_content)
 
     async def publish(self, id: RepoId) -> Any:
@@ -165,10 +203,15 @@ class RepositoryApi(PulpApi):
         path = self._detail_uri(id.type, "publications")
 
         if id.type == RepoType.apt:
-            data["simple"] = True
+            data["structured"] = True
 
         resp = await self.post(path, json=data)
         return translate_response(resp.json())
+
+    async def latest_version_href(self, repo_id: RepoId) -> str:
+        """Get the latest version href for a repo id."""
+        repo = await self.read(repo_id)
+        return str(repo["latest_version_href"])
 
     @staticmethod
     def _detail_uri(type: Any, resource: str = "repositories") -> str:
@@ -251,8 +294,7 @@ class PackageApi(PulpApi):
             raise TypeError(f"Unsupported repository type: {repo_id.type.value}")
 
         async with RepositoryApi() as repo_api:
-            repo = await repo_api.read(repo_id)
-        version_href = repo["latest_version_href"]
+            version_href = await repo_api.latest_version_href(repo_id)
 
         return await self.list(pagination, {"repository_version": version_href}, type=type)
 
@@ -306,6 +348,28 @@ class ReleaseComponentApi(PulpApi):
             raise ValueError(f"Could not construct endpoint for '{kwargs}'.")
 
 
+class PackageReleaseComponentApi(PulpApi):
+    """Api for association between packages and release components."""
+
+    async def find_or_create(self, package_id: ContentId, comp_id: ContentId) -> Any:
+        """Find or create a package release component."""
+        resp = await self.list(package=package_id.uuid, release_component=comp_id.uuid)
+        if resp["count"] > 0:
+            prc = resp["results"][0]
+        else:
+            package = id_to_pulp_href(package_id)
+            comp = id_to_pulp_href(comp_id)
+            prc = await self.create(data={"package": package, "release_component": comp})
+        return prc
+
+    @staticmethod
+    def endpoint(action: str, **kwargs: Any) -> str:
+        if action in ["create", "list"]:
+            return "/content/deb/package_release_components/"
+        else:
+            raise ValueError(f"Could not construct endpoint for '{kwargs}'.")
+
+
 class ReleaseArchitectureApi(PulpApi):
     """Api for apt repo release architectures."""
 
@@ -339,11 +403,9 @@ class ReleaseApi(PulpApi):
         """Call the list endpoint."""
         if params and "repository" in params:
             params = params.copy()
-            assert isinstance(params["repository"], DebRepoId)
-            repo_id = params.pop("repository")
+            repo_id = DebRepoId(params.pop("repository"))
             async with RepositoryApi() as api:
-                repo = await api.read(repo_id)
-                params["repository_version"] = repo["latest_version_href"]
+                params["repository_version"] = await api.latest_version_href(repo_id)
 
         releases = await super().list(pagination, params, **endpoint_args)
 

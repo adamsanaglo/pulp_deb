@@ -78,9 +78,14 @@ A default Service Principal is available to simplify your dev environment
 
 ## Example Workflow
 
+### apt
+
 ```
 # create a repo
 REPO_ID=$(pmc --id-only repo create myrepo apt)
+
+# create a repo release
+pmc repo releases create $REPO_ID jammy jammy stable
 
 # create a distro
 pmc distro create mydistro apt "some/path" --repository $REPO_ID
@@ -89,12 +94,35 @@ pmc distro create mydistro apt "some/path" --repository $REPO_ID
 cp tests/assets/signed-by-us.deb .
 PACKAGE_ID=$(pmc --id-only package upload signed-by-us.deb)
 
-# add our package to the repo
-pmc repo packages update $REPO_ID --add-packages $PACKAGE_ID
+# add our package to the repo release
+pmc repo packages update $REPO_ID jammy --add-packages $PACKAGE_ID
 
 # publish the repo
 pmc repo publish $REPO_ID
 
 # check out our repo
 http :8080/pulp/content/some/path/
+```
+
+### yum
+
+```
+# create a repo
+REPO_ID=$(pmc --id-only repo create myrepo yum)
+
+# create a distro
+pmc distro create mydistro yum "awesome/path" --repository $REPO_ID
+
+# upload a package
+cp tests/assets/signed-by-us.rpm .
+PACKAGE_ID=$(pmc --id-only package upload signed-by-us.deb)
+
+# add our package to the repo release
+pmc repo packages update $REPO_ID --add-packages $PACKAGE_ID
+
+# publish the repo
+pmc repo publish $REPO_ID
+
+# check out our repo
+http :8080/pulp/content/awesome/path/
 ```

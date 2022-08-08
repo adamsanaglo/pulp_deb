@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import typer
 
@@ -98,15 +98,21 @@ def list_packages(
 def update_packages(
     ctx: typer.Context,
     repo_id: str,
+    release: str = typer.Argument(None, help="Release/dist to add packages to."),
+    component: str = typer.Argument(None, help="Component to add packages to."),
     add_packages: Optional[str] = typer.Option(None),
     remove_packages: Optional[str] = typer.Option(None),
 ) -> None:
     """Add or remove packages from a repository."""
-    data = {}
+    data: Dict[str, Union[str, List[str]]] = {}
     if add_packages:
         data["add_packages"] = add_packages.split(",")
     if remove_packages:
         data["remove_packages"] = remove_packages.split(",")
+    if release:
+        data["release"] = release
+    if component:
+        data["component"] = component
 
     with get_client(ctx.obj) as client:
         resp = client.patch(f"/repositories/{repo_id}/packages/", json=data)

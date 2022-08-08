@@ -234,6 +234,8 @@ class RepositoryListResponse(ListResponse):
 class RepositoryPackageUpdate(BaseModel):
     add_packages: Optional[List[PackageId]]
     remove_packages: Optional[List[PackageId]]
+    release: Optional[str]
+    component: str = "main"
 
     @root_validator
     @classmethod

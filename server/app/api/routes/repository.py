@@ -18,6 +18,7 @@ from app.core.schemas import (
     RepositoryPackageUpdate,
     RepositoryResponse,
     RepositoryUpdate,
+    RepoType,
     TaskResponse,
 )
 from app.services.pulp.api import PackageApi, RepositoryApi
@@ -75,6 +76,15 @@ async def update_packages(
     account: Account = Depends(get_active_account),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    if id.type == RepoType.apt and not repo_update.release:
+        raise HTTPException(
+            status_code=422, detail="Release field is required for apt repositories."
+        )
+    elif id.type == RepoType.yum and repo_update.release:
+        raise HTTPException(
+            status_code=422, detail="Release field is not permitted for yum repositories."
+        )
+
     # Repo Package Update permissions are complicated.
     # * Repo Admins and Publishers should be able to ADD packages if and only if they "own" packages
     #   of that name in this repo.
