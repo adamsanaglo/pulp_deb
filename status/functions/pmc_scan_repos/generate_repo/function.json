@@ -8,6 +8,14 @@
       "schedule": "30 8 * * *"
     },
     {
+      "name": "repositorystatus",
+      "type": "blob",
+      "dataType": "string",
+      "path": "dynamic-public-data/repository_status.json",
+      "connection": "pmcstatusprimary_CONNECTION",
+      "direction": "in"
+    },
+    {
       "type": "queue",
       "direction": "out",
       "name": "msg",

@@ -6,11 +6,13 @@ Scans all apt and yum repositories and is triggered by a timer once a day. Resul
 
 ## Function details
 ### generate_repo
-Scans [packages.microsoft.com](https://packages.microsoft.com) for a list of apt and yum repositories and adds them to repo-request-queue for them to be checked by **check_repo**. Apt repositories are added to to the queue with a "dist" field specifying one dist to check per **check_repo** function call. Filters of apt and yum repositories are also added to the results-queue to handle deleted repositories or apt dists. 
+Scans [packages.microsoft.com](https://packages.microsoft.com) for a list of apt and yum repositories and adds them to repo-request-queue for them to be checked by **check_repo**. Apt repositories are added to to the queue with a "dist" field specifying one dist to check per **check_repo** function call. The current repository status is used to determine which repos/dists to re-check based on the last time they were last checked. Filters of apt and yum repositories are also added to the results-queue to handle deleted repositories or apt dists. 
 
 - **trigger**: Timer everyday at 8:30:00 am UTC (1:30 am PST)
 
-- **inputs**: None
+- **inputs**:
+
+    repositorystatus - JSON blob with the current status of all repositories used to determine whether a repository needs to be checked again or not. This input is set as `dynamic-public-data/repository_status.json` which is the same blob that is updated by pmc_status_delivery. 
 
 - **outputs**:
 

@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 import json
 import logging
 from pathlib import Path
@@ -8,7 +9,10 @@ from typing import List, Optional, Tuple
 import azure.functions as func
 from repoaudit.utils import destroy_gpg, initialize_gpg, RepoErrors
 from repoaudit.apt import _find_dists
+import requests
 from requests.exceptions import HTTPError
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 TRUSTED_CA = '''
 # Issuer: CN=DigiCert Global Root G2 O=DigiCert Inc OU=www.digicert.com
@@ -131,6 +135,126 @@ def get_repo_from_msg(msg: func.QueueMessage) -> Tuple[str, str]:
     return type, repo
 
 
+def check_date(
+    file_url: str,
+    last_checked: Optional[datetime],
+    hours_until_recheck: int = 672,  # 4 weeks between full re-scans
+    shift_last_checked: int = -4
+) -> bool:
+    """
+    Returns True if a metadata file's last modified time indicates a repository
+    should be checked, False otherwise.
+    """
+    if last_checked is None:
+        return True
+
+    # Shift last_checked time to account for updates occurring during the check.
+    # At the moment, last_checked represents the end time of the status check
+    # which could theoretically take up to 4 hours (the timeout of the function).
+    last_checked = last_checked + timedelta(hours=shift_last_checked)
+
+    # re-scan if repository is empty
+    try:
+        response = request_headers(file_url)
+    except HTTPError:
+        return True
+
+    last_modified_str = response.headers.get('Last-Modified', None)
+
+    if not last_modified_str:
+        return True
+
+    try:
+        last_modified = datetime.strptime(last_modified_str, '%a, %d %b %Y %H:%M:%S %Z')
+    except ValueError:
+        logging.warning(
+            f"Could not parse Last-Modified header for '{file_url}': '{last_modified_str}'"
+        )
+        return True
+
+    time_now = datetime.utcnow()
+
+    # re-scan if repository status is stale
+    hours_since_last_check = (time_now-last_checked).total_seconds() // 3600
+    if hours_since_last_check >= hours_until_recheck:
+        return True
+
+    # re-scan if changes have been made since the last check
+    if last_modified >= last_checked:
+        return True
+
+    return False
+
+
+def get_datetime(
+    repo_type: str,
+    repo: str,
+    dist: str,
+    current_status: dict
+) -> Optional[datetime]:
+    """Construct datetime object representing last updated time for a repo and dist."""
+    try:
+        time_str = current_status[repo_type][repo]["dists"][dist]["time"]
+    except (TypeError, KeyError):
+        return None
+
+    try:
+        date = datetime.fromisoformat(time_str)
+    except ValueError:
+        logging.warning(
+            f"Could not parse time for {repo_type} repo {repo} at dist {dist} : '{time_str}'"
+        )
+        return None
+
+    return date
+
+
+def repo_needs_status_update(
+    repo_type: str,
+    repo_url: str,
+    current_status: dict,
+    dists: List[str] = None
+) -> bool:
+    """
+    Check if apt or yum repo/dist needs a status update based on the last time it
+    was checked according to the current_status which is intended to be the same as
+    the current repository_status.json.
+    """
+    assert repo_type == "apt" or repo_type == "yum"
+
+    if repo_type == "apt":
+        if not dists:
+            return True
+
+        for dist in dists:
+            release_url = urljoin(repo_url, "dists", dist, "Release")
+            last_checked = get_datetime(repo_type, repo_url, dist, current_status)
+            if check_date(release_url, last_checked):
+                return True
+    else:
+        repomd_url = urljoin(repo_url, "repodata", "repomd.xml")
+        last_checked = get_datetime(repo_type, repo_url, RepoErrors.YUM_DIST, current_status)
+        if check_date(repomd_url, last_checked):
+            return True
+
+    return False
+
+
+def check_and_add_task(task: dict, tasks: list, current_status: dict) -> bool:
+    """
+    Add an apt or yum task to the tasks list only if the repo/dist
+    status in current_status is out of date or stale.
+    """
+    repo_type = task.get("type", None)
+    repo = task.get("repo", None)
+    assert repo_type is not None and repo is not None
+
+    dists = task.get("dists", None)
+
+    if repo_needs_status_update(repo_type, repo, current_status, dists=dists):
+        tasks.append(json.dumps(task))
+
+
 def get_dists_from_msg(msg: func.QueueMessage) -> Optional[List[str]]:
     """Get dists from msg."""
     message_json = json.loads(msg.get_body().decode('utf-8'))
@@ -146,3 +270,32 @@ def get_status_msg(status: dict, status_type: str) -> str:
     """Get the status message to add to the results-queue."""
     output = {"status_type": status_type, "status": status}
     return json.dumps(output, indent=4)
+
+
+def urljoin(*paths: str) -> str:
+    """Join together a set of url components."""
+    # urllib's urljoin has a few gotchas and doesn't handle multiple paths
+    return "/".join(map(lambda path: path.strip("/"), paths))
+
+
+def retry_session(retries: int = 3) -> requests.Session:
+    """Create a requests.Session with retries."""
+    session = requests.Session()
+    retry = Retry(total=retries)
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
+def request_headers(
+    url: str,
+    session: Optional[requests.Session] = None,
+    verify: Optional[str] = None
+) -> requests.Response:
+    """Call requests.head() on a url and return the requests.Response."""
+    if not session:
+        session = retry_session()
+    resp = session.head(url, verify=verify)
+    resp.raise_for_status()
+    return resp

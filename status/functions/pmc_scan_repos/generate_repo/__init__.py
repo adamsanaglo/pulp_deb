@@ -4,21 +4,27 @@ import logging
 import more_itertools
 
 import azure.functions as func
-from shared_code.utils import get_status_msg, load_ca, get_apt_filter, get_yum_filter
+from shared_code.utils import (get_status_msg, load_ca, get_apt_filter, get_yum_filter,
+                               check_and_add_task)
 from repoaudit.utils import get_repo_urls
 
 
 def main(
     mytimer: func.TimerRequest,
+    repositorystatus: str,
     msg: func.Out[func.QueueMessage],
     msgresultsqueue: func.Out[func.QueueMessage]
 ) -> None:
     """
     Azure function that generates a list of apt and yum repositories and adds them to
     repo-request-queue to be checked by check_repo. Apt repositories are further
-    divided by distribution. Also adds two filter list, for apt and yum repos, to the
-    results-queue to filter deleted repos.
+    divided by distribution. Only repos/dists that have been recently updated or have
+    stale status are queued to be checked. Also adds two filter lists, for apt and
+    yum repos, to the results-queue to filter deleted repos.
     """
+
+    current_status = json.loads(repositorystatus)
+
     utc_timestamp = datetime.datetime.utcnow().replace(
         tzinfo=datetime.timezone.utc).isoformat()
 
@@ -39,16 +45,16 @@ def main(
         if dists:
             for dist in dists:
                 task = {"type": "apt", "repo": repo, "dists": [dist]}
-                apt_tasks.append(json.dumps(task))
+                check_and_add_task(task, apt_tasks, current_status)
         else:
             task = {"type": "apt", "repo": repo}
-            apt_tasks.append(json.dumps(task))
+            check_and_add_task(task, apt_tasks, current_status)
 
     # add yum repos to check
     yum_tasks = []
     for repo in yum_urls:
         task = {"type": "yum", "repo": repo}
-        yum_tasks.append(json.dumps(task))
+        check_and_add_task(task, apt_tasks, current_status)
 
     tasks = list(more_itertools.roundrobin(apt_tasks, yum_tasks))
 
