@@ -6,6 +6,23 @@ from tests.utils import gen_distro_attrs, invoke_command
 # Note that create and delete are exercised by the fixture.
 
 
+def test_create_with_repository(apt_repo: Any) -> None:
+    attrs = gen_distro_attrs()
+    cmd = [
+        "distro",
+        "create",
+        attrs["name"],
+        attrs["type"],
+        attrs["base_path"],
+        "--repository",
+        apt_repo["id"],
+    ]
+    result = invoke_command(cmd)
+    assert result.exit_code == 0
+    response = json.loads(result.stdout)
+    assert response["name"] == attrs["name"]
+
+
 def test_list(distro: Any) -> None:
     result = invoke_command(["distro", "list"])
     assert result.exit_code == 0

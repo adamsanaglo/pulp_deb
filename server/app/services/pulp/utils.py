@@ -1,3 +1,4 @@
+import re
 from typing import Any, Optional
 
 import httpx
@@ -31,8 +32,10 @@ def pulp_href_to_id(pulp_href: str) -> str:
 
 def id_to_pulp_href(id: Identifier) -> str:
     """Convert an id back into a pulp_href."""
-    prefix = id.split(f"-{id.uuid}")[0].replace("-", "/")
-    return f"{settings.PULP_API_PATH}/{prefix}/{id.uuid}/"
+    uuid = id.uuid
+    pieces = [piece.replace("-", "/") for piece in id.split(uuid)]
+    pieces.insert(1, uuid)
+    return f"{settings.PULP_API_PATH}/{''.join(pieces)}/"
 
 
 def translate_response(response_json: Any, pagination: Optional[Pagination] = None) -> Any:
@@ -40,8 +43,6 @@ def translate_response(response_json: Any, pagination: Optional[Pagination] = No
 
     if "pulp_href" in response_json:
         response_json["id"] = pulp_href_to_id(response_json.pop("pulp_href"))
-    if "task" in response_json:
-        response_json["task"] = pulp_href_to_id(response_json["task"])
     if "results" in response_json:
         for result in response_json["results"]:
             translate_response(result)
@@ -49,6 +50,13 @@ def translate_response(response_json: Any, pagination: Optional[Pagination] = No
         response_json["created_resources"] = [
             pulp_href_to_id(href) for href in response_json["created_resources"] if href
         ]
+
+    for field, val in response_json.copy().items():
+        if isinstance(val, str) and re.match(rf"^{settings.PULP_API_PATH}/[a-z0-9_\-/]+/$", val):
+            if field.endswith("_href"):
+                response_json.pop(field)
+                field = field.rstrip("_href")
+            response_json[field] = pulp_href_to_id(val)
 
     # strip out next/previous pulp links
     for link in ("next", "previous"):

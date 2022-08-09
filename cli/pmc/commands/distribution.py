@@ -8,6 +8,8 @@ from pmc.schemas import LIMIT_OPT, OFFSET_OPT, DistroType
 
 app = typer.Typer()
 
+repo_option = typer.Option(None, help="Repository to distribute.")
+
 
 @app.command()
 def list(
@@ -27,7 +29,7 @@ def create(
     name: str,
     distro_type: DistroType,
     base_path: str,
-    repository: Optional[str] = typer.Option(None),
+    repository: Optional[str] = repo_option,
 ) -> None:
     """Create a distribution."""
 
@@ -65,7 +67,7 @@ def update(
     id: str,
     name: Optional[str] = typer.Option(None),
     base_path: Optional[str] = typer.Option(None),
-    repository_id: Optional[str] = typer.Option(None),
+    repository: Optional[str] = repo_option,
 ) -> None:
     """Update a distribution."""
 
@@ -78,8 +80,8 @@ def update(
         data["name"] = name
     if base_path:
         data["base_path"] = base_path
-    if repository_id:
-        data["repository"] = repository_id
+    if repository:
+        data["repository"] = repository
 
     with get_client(ctx.obj) as client:
         resp = client.patch(f"/distributions/{id}/", json=data)

@@ -20,9 +20,14 @@ from pydantic import BaseModel, EmailStr, StrictStr, root_validator, validator
 
 from app.core.models import Role
 
-uuid_regex = re.compile(r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}")
-
 T = TypeVar("T", bound="Identifier")
+
+
+uuid_group = r"?P<uuid>[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"
+
+
+def normalize_type(type: str) -> str:
+    return "yum" if type == "rpm" else type
 
 
 class EmptyStr(StrictStr):
@@ -57,7 +62,7 @@ class PackageType(str, Enum):
 class Identifier(str):
     """Represents an id in PMC."""
 
-    pattern: Pattern[str] = re.compile(rf"^([a-z-]+)-({uuid_regex.pattern})$")
+    pattern: Pattern[str] = re.compile(rf"^([a-z-]+)-({uuid_group})$")
     examples: List[str]
 
     @classmethod
@@ -95,7 +100,7 @@ class Identifier(str):
     @property
     def uuid(self) -> str:
         """Extract a uuid part from the id."""
-        return self._pieces.groups()[-1]
+        return self._pieces.group("uuid")
 
     @classmethod
     def build_from_uuid(cls: Type[T], uuid: UUID) -> T:
@@ -103,7 +108,7 @@ class Identifier(str):
 
 
 class RepoId(Identifier):
-    pattern = re.compile(rf"^repositories-(?:deb|rpm)-(apt|rpm)-({uuid_regex.pattern})$")
+    pattern = re.compile(rf"^repositories-(?:deb|rpm)-(?P<type>apt|rpm)-({uuid_group})$")
     examples = [
         "repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558",
         "repositories-rpm-rpm-11712ac6-ae6d-43b0-9494-1930337425b4",
@@ -111,14 +116,25 @@ class RepoId(Identifier):
 
     @property
     def type(self) -> RepoType:
-        if (t := self._pieces.group(1)) == "rpm":
-            return RepoType("yum")
-        else:
-            return RepoType(t)
+        return RepoType(normalize_type(self._pieces.group("type")))
+
+
+class RepoVersionId(Identifier):
+    pattern = re.compile(
+        rf"^repositories-(?:deb|rpm)-(?P<type>apt|rpm)-({uuid_group})-versions-(\d+)"
+    )
+    examples = [
+        "repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558-versions-0",
+        "repositories-rpm-rpm-11712ac6-ae6d-43b0-9494-1930337425b4-versions-5",
+    ]
+
+    @property
+    def type(self) -> RepoType:
+        return RepoType(normalize_type(self._pieces.group("type")))
 
 
 class DebRepoId(RepoId):
-    pattern = re.compile(rf"^repositories-deb-apt-({uuid_regex.pattern})$")
+    pattern = re.compile(rf"^repositories-deb-apt-({uuid_group})$")
     examples = ["repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558"]
 
     @property
@@ -127,7 +143,7 @@ class DebRepoId(RepoId):
 
 
 class DistroId(Identifier):
-    pattern = re.compile(rf"^distributions-(?:deb|rpm)-(apt|rpm)-({uuid_regex.pattern})$")
+    pattern = re.compile(rf"^distributions-(?:deb|rpm)-(?P<type>apt|rpm)-({uuid_group})$")
     examples = [
         "distributions-deb-apt-5ad78d51-1eae-4d5c-bea6-c00da9339315",
         "distributions-rpm-rpm-02ce62a-6cae-4c38-b53f-eb231f6b3e64",
@@ -135,19 +151,16 @@ class DistroId(Identifier):
 
     @property
     def type(self) -> DistroType:
-        if (t := self._pieces.group(1)) == "rpm":
-            return DistroType("yum")
-        else:
-            return DistroType(t)
+        return DistroType(normalize_type(self._pieces.group("type")))
 
 
 class TaskId(Identifier):
-    pattern = re.compile(rf"^tasks-({uuid_regex.pattern})$")
+    pattern = re.compile(rf"^tasks-({uuid_group})$")
     examples = ["tasks-7788448d-b112-47a8-a310-3ccfe088e809"]
 
 
 class ContentId(Identifier):
-    pattern = re.compile(rf"^content-(deb|rpm)-[a-z_]+-({uuid_regex.pattern})$")
+    pattern = re.compile(rf"^content-(deb|rpm)-[a-z_]+-({uuid_group})$")
     examples = [
         "content-deb-packages-39a63a9e-2081-4dfe-80eb-2c27af4b6024",
         "content-deb-releases-1b6e8bba-e9a0-4070-9965-f1840164714e",
@@ -156,7 +169,7 @@ class ContentId(Identifier):
 
 
 class PackageId(ContentId):
-    pattern = re.compile(rf"^content-(deb|rpm)-packages-({uuid_regex.pattern})$")
+    pattern = re.compile(rf"^content-(?P<type>deb|rpm)-packages-({uuid_group})$")
     examples = [
         "content-deb-packages-39a63a9e-2081-4dfe-80eb-2c27af4b6024",
         "content-rpm-packages-21b4d540-76ef-420c-af0a-78c92b67eca0",
@@ -164,11 +177,11 @@ class PackageId(ContentId):
 
     @property
     def type(self) -> PackageType:
-        return PackageType(self._pieces.group(1))
+        return PackageType(self._pieces.group("type"))
 
 
 class ReleaseId(ContentId):
-    pattern = re.compile(rf"^content-deb-releases-({uuid_regex.pattern})$")
+    pattern = re.compile(rf"^content-deb-releases-({uuid_group})$")
     examples = ["content-deb-releases-7788448d-b112-47a8-a310-3ccfe088e809"]
 
 

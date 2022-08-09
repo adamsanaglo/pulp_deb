@@ -18,6 +18,7 @@ from app.core.schemas import (
     ReleaseId,
     RepoId,
     RepoType,
+    RepoVersionId,
     TaskId,
 )
 from app.services.pulp.utils import get_client, id_to_pulp_href, translate_response
@@ -211,7 +212,7 @@ class RepositoryApi(PulpApi):
     async def latest_version_href(self, repo_id: RepoId) -> str:
         """Get the latest version href for a repo id."""
         repo = await self.read(repo_id)
-        return str(repo["latest_version_href"])
+        return id_to_pulp_href(RepoVersionId(repo["latest_version"]))
 
     @staticmethod
     def _detail_uri(type: Any, resource: str = "repositories") -> str:
