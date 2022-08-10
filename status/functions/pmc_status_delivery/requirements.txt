@@ -2,4 +2,5 @@
 
 azure-functions
 azure-storage-blob
+azure-storage-queue
 repoaudit
