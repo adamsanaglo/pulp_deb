@@ -54,7 +54,7 @@ def main(
     yum_tasks = []
     for repo in yum_urls:
         task = {"type": "yum", "repo": repo}
-        check_and_add_task(task, apt_tasks, current_status)
+        check_and_add_task(task, yum_tasks, current_status)
 
     tasks = list(more_itertools.roundrobin(apt_tasks, yum_tasks))
 
