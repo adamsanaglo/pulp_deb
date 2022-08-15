@@ -1,4 +1,4 @@
-STATUS_URL = "https://pmcstatusprimary.blob.core.windows.net/dynamic-public-data/repository_status.json"
+STATUS_URL = "https://pmcstatus.blob.core.windows.net/dynamic-public-data/repository_status.json"
 
 
 /**
