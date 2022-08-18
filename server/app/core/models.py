@@ -56,6 +56,8 @@ class OwnedPackage(ModelBase, table=True):
     owner of that package. This tracks the package ownerships.
     """
 
+    __table_args__ = (UniqueConstraint("account_id", "repo_id", "package_name"),)
+
     account_id: uuid.UUID = Field(foreign_key="account.id")
     # account: Account, implicitly created by "back_populates" directive on Account table.
     repo_id: str
@@ -67,6 +69,8 @@ class RepoAccess(ModelBase, table=True):
     A given account might have Publish roles to three repos but not the rest. This tracks the
     Pulp Ids of repos that accounts have access to.
     """
+
+    __table_args__ = (UniqueConstraint("account_id", "repo_id"),)
 
     account_id: uuid.UUID = Field(foreign_key="account.id")
     # account: Account, implicitly created by "back_populates" directive on Account table.
