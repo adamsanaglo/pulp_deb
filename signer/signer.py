@@ -1,9 +1,11 @@
 import esrp
 import logging
-from redis import Redis
+import util
 
 from azure.core.exceptions import ClientAuthenticationError
-from config import is_valid_keycode
+from config import is_valid_keycode, settings
+from keyvault_util import keyvault_util
+from redis import Redis
 from retrying import retry
 from tempfile import SpooledTemporaryFile
 from typing import Dict
@@ -20,6 +22,58 @@ def get_signature_index(task_id: str):
     return f'{task_id}_signature'
 
 
+def import_legacy_key():
+    """
+    If the legacy signing key is not already present...
+    download it from KeyVault and import it into GPG
+    """
+    # Check for the legacy signing key
+    cmd = "/usr/bin/gpg --list-secret-keys"
+    res = util.run_cmd_out(cmd.split(" "))
+    if res.returncode != 0:
+        # Failure listing keys? Try to proceed...
+        log.error(f"Exit code {res.returncode} checking gpg key: {res.stderr}")
+    if settings.LEGACY_KEY_THUMBPRINT in res.stdout:
+        log.debug(f"Found key with thumbprint {settings.LEGACY_KEY_THUMBPRINT}")
+        return
+    # Download the key
+    log.info(f"Downloading legacy signing key from {settings.KEYVAULT} : {settings.LEGACY_KEY}")
+    vault_name = settings.KEYVAULT
+    key_name = settings.LEGACY_KEY
+    kv_util = keyvault_util()
+    auth_cert = kv_util.get_secret(vault_name, key_name)
+    legacy_key_path = util.write_to_temporary_file(auth_cert.encode(), 'pem')
+
+    # Import the key to gpg and delete the file from disk
+    log.info("Importing legacy key from disk")
+    cmd = f"/usr/bin/gpg --import {legacy_key_path}"
+    res = util.run_cmd_out(cmd.split(" "))
+    util.secure_delete(legacy_key_path)
+    if res.returncode != 0:
+        # Failure importing key
+        raise Exception("Error importing gpg key: {res.stderr}")
+
+
+@retry(stop_max_attempt_number=10, wait_exponential_multiplier=1000, wait_exponential_max=60000)
+def sign_legacy(unsigned_file: SpooledTemporaryFile, task_id: str) -> bool:
+    """
+    Use the legacy signing key, via gpg
+    """
+    import_legacy_key()
+    unsigned_file_path = esrp.write_unsigned_file_to_disk(unsigned_file)
+    signature_file = util.get_temporary_file()
+    thumbprint = settings.LEGACY_KEY_THUMBPRINT
+    cmd = "gpg --quiet --batch --yes --homedir ~/.gnupg/ --detach-sign " + \
+    f"--default-key {thumbprint} --armor --output {signature_file} {unsigned_file_path}"
+    cmd_split = cmd.split(' ')
+    res = util.run_cmd_out(cmd_split)
+    if res.returncode == 0:
+        signature_key = get_signature_index(task_id)
+        redis.set(signature_key, signature_file)
+    else:
+        raise Exception(f"Error signing with legacy key: {res.stderr}")
+    return res
+
 def sign_request(unsigned_file: SpooledTemporaryFile, key_id: str, task_id: str) -> bool:
     '''
     Write the unsigned file to disk
@@ -27,9 +81,11 @@ def sign_request(unsigned_file: SpooledTemporaryFile, key_id: str, task_id: str)
     Store the signature for return to the requestor
     '''
     if key_id == "legacy":
-        # TODO Implement legacy signing
-        log.error('Legacy signing not yet supported')
-        return False
+        try:
+            return sign_legacy(unsigned_file, task_id)
+        except Exception as e:
+            log.error(f"Fatal error signing with legacy key: {e}")
+            return False
     if not is_valid_keycode(key_id):
         log.error(f'Key code {key_id} is not in the list of supported keys for task [{task_id}]')
     try:
