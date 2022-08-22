@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pmc
+  template:
+    metadata:
+      labels:
+        app: pmc
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: pmc
+        image: $loginserver/pmcserver_api
+        resources:
+          requests:
+            cpu: 100m
+            memory: 1Gi
+          limits:
+            cpu: 250m
+            memory: 1Gi
+        ports:
+          - containerPort: 80
+            name: pmc-port
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /api/
+            port: pmc-port
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        # Note that we don't actually care about reading secrets from the disk, but you MUST
+        # still mount them because that's what triggers the syncing from keyvault -> aks secret
+        volumeMounts:
+        - name: pmc-secrets-volume
+          mountPath: "/mnt/secrets"
+          readOnly: true
+        envFrom:
+          - configMapRef:
+              name: pmc-settings
+        env:
+          - name: PULP_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pmc-secret
+                key: pulp_admin_password 
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pmc-secret
+                key: pmc_postgres_password
+      - name: pulp-api
+        image: quay.io/pulp/pulp:latest
+        command: ['pulp-api']
+        resources:
+          requests:
+            cpu: 100m
+            memory: 1Gi
+          limits:
+            cpu: 250m
+            memory: 1Gi
+        ports:
+        - containerPort: 24817
+          name: pulp-api-port
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /pulp/api/v3/status/
+            port: pulp-api-port
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        volumeMounts:
+          - name: files-storage
+            mountPath: "/var/lib/pulp"
+          - name: pulp-secrets-volume
+            mountPath: "/mnt/secrets"
+            readOnly: true
+        envFrom:
+          - configMapRef:
+              name: pulp-settings
+        env:
+          - name: PULP_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pulp-secret
+                key: pulp_admin_password
+          - name: PULP_DATABASES__default__PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pulp-secret
+                key: pulp_postgres_password
+          - name: PULP_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pulp-secret
+                key: pulp_secret
+      volumes:
+        - name: files-storage
+          persistentVolumeClaim:
+            claimName: pulp-files-claim
+        - name: pulp-secrets-volume
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "pulp-secret-provider"
+        - name: pmc-secrets-volume
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "pmc-secret-provider"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pmc-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    app: pmc

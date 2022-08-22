@@ -22,7 +22,7 @@ RUN pip install --upgrade pip && \
     poetry config virtualenvs.create false && \
     poetry install && \
     apt-get update && \
-    apt-get install -y rpm binutils gpg
+    apt-get install -y rpm binutils gpg postgresql-client
 
 
 ENTRYPOINT ["python", "app/main.py"]

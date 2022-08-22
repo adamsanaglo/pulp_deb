@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pmc-settings
+data:
+  API_PREFIX: "/api/v4"
+  SERVER_HOST: "0.0.0.0"
+  SERVER_PORT: "80"
+  DEBUG: "0"
+  PULP_USERNAME: "admin"
+  APP_CLIENT_ID: "1ce02e3e-1bf3-4d28-8cdc-e921f824399d"
+  TENANT_ID: "72f988bf-86f1-41af-91ab-2d7cd011db47"
+  POSTGRES_USER: "pmcserver"
+  POSTGRES_DB: "pmcserver"
+  PULP_HOST: "http://localhost:24817"  # pmc-server talks to pulp api via in-pod localhost
+  POSTGRES_SERVER: $pg_server
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pulp-settings
+data:
+  PULP_DB_ENCRYPTION_KEY: "/mnt/secrets/pulpSymmetricKey"
+  PULP_TOKEN_AUTH_DISABLED: "True"
+  PULP_CONTENT_ORIGIN: "http://${destination_env}:80"
+  POSTGRES_SERVICE_HOST: $pg_server
+  PULP_DATABASES__default__HOST: $pg_server
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pulp-many-files
+  labels:
+    app: pulp-many-files
+spec:
+  capacity:
+    storage: 10Gi
+  storageClassName: default
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/pulp-many-files"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pulp-files-claim
+  labels:
+    app: pulp
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: pulp-many-files
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: pmc-secret-provider
+spec:
+  provider: azure
+  # In addition to syncing the keys configured below, this syncs them into an aks secret so we
+  # can add them to the env variables.
+  secretObjects:
+  - secretName: pmc-secret
+    type: Opaque
+    data:
+    - objectName: "pmcPostgresPassword"
+      key: pmc_postgres_password
+    - objectName: "pulpAdminPassword"
+      key: pulp_admin_password
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"
+    userAssignedIdentityID: $CLIENT_ID
+    keyvaultName: $kv
+    # This configures what secrets we pull from the keyvault
+    objects: |
+      array:
+        - |
+          objectName: "pmcPostgresPassword"
+          objectType: secret
+        - |
+          objectName: "pulpAdminPassword"
+          objectType: secret
+    tenantId: $AZURE_TENANT_ID
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: pulp-secret-provider
+spec:
+  provider: azure
+  # In addition to syncing the keys configured below, this syncs them into an aks secret so we
+  # can add them to the env variables.
+  secretObjects:
+  - secretName: pulp-secret
+    type: Opaque
+    data:
+    - objectName: "pulpPostgresPassword"
+      key: pulp_postgres_password
+    - objectName: "pulpAdminPassword"
+      key: pulp_admin_password
+    - objectName: "pulpSecret"
+      key: pulp_secret
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"
+    userAssignedIdentityID: $CLIENT_ID
+    keyvaultName: $kv
+    # This configures what secrets we pull from the keyvault
+    objects: |
+      array:
+        - |
+          objectName: "pulpPostgresPassword"
+          objectType: secret
+        - |
+          objectName: "pulpAdminPassword"
+          objectType: secret
+        - |
+          objectName: "pulpSecret"
+          objectType: secret
+        - |
+          objectName: "pulpSymmetricKey"
+          objectType: secret
+    tenantId: $AZURE_TENANT_ID
