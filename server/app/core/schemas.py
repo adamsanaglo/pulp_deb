@@ -16,7 +16,17 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, StrictStr, root_validator, validator
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    FileUrl,
+    HttpUrl,
+    NonNegativeInt,
+    PositiveInt,
+    StrictStr,
+    root_validator,
+    validator,
+)
 
 from app.core.models import Role
 
@@ -40,6 +50,13 @@ class NonEmptyStr(StrictStr):
 
 class DistroType(str, Enum):
     """Type for a distribution."""
+
+    apt = "apt"
+    yum = "yum"  # maps to 'rpm' in Pulp
+
+
+class RemoteType(str, Enum):
+    """Type for a remote."""
 
     apt = "apt"
     yum = "yum"  # maps to 'rpm' in Pulp
@@ -154,6 +171,18 @@ class DistroId(Identifier):
         return DistroType(normalize_type(self._pieces.group("type")))
 
 
+class RemoteId(Identifier):
+    pattern = re.compile(rf"^remotes-(?:deb|rpm)-(?P<type>apt|rpm)-({uuid_group})$")
+    examples = [
+        "remotes-deb-apt-492ed45e-a9a8-41ca-a133-7b18ad571712",
+        "remotes-rpm-rpm-d3e56b3a-d816-454f-b045-503ffe41c9d1",
+    ]
+
+    @property
+    def type(self) -> RemoteType:
+        return RemoteType(normalize_type(self._pieces.group("type")))
+
+
 class TaskId(Identifier):
     pattern = re.compile(rf"^tasks-({uuid_group})$")
     examples = ["tasks-7788448d-b112-47a8-a310-3ccfe088e809"]
@@ -223,13 +252,70 @@ class DistributionListResponse(ListResponse):
     results: List[DistributionResponse]
 
 
+class RemoteCreate(BaseModel):
+    name: NonEmptyStr
+    type: RemoteType
+    url: Union[HttpUrl, FileUrl]
+    download_concurrency: Optional[PositiveInt]
+    max_retries: Optional[NonNegativeInt]
+    rate_limit: Optional[NonNegativeInt]
+    distributions: Optional[List[str]]
+    components: Optional[List[str]]
+    architectures: Optional[List[str]]
+
+
+class RemoteUpdate(BaseModel):
+    name: Optional[str]
+    url: Union[HttpUrl, FileUrl, None]
+    download_concurrency: Optional[PositiveInt]
+    max_retries: Optional[NonNegativeInt]
+    rate_limit: Optional[NonNegativeInt]
+    distributions: Optional[List[str]]
+    components: Optional[List[str]]
+    architectures: Optional[List[str]]
+
+
+class BaseRemoteResponse(BaseModel):
+    id: RemoteId
+    pulp_created: datetime
+    name: str
+    url: Union[HttpUrl, FileUrl]
+    download_concurrency: Optional[PositiveInt]
+    max_retries: Optional[NonNegativeInt]
+    rate_limit: Optional[NonNegativeInt]
+
+
+class YumRemoteResponse(BaseRemoteResponse):
+    ...
+
+
+class AptRemoteResponse(YumRemoteResponse):
+    distributions: Union[str, List[str]]
+    components: Union[str, List[str], None]
+    architectures: Union[str, List[str], None]
+    _split_whitespace = validator("distributions", "components", "architectures")(
+        lambda x: x.split(" ") if x else x
+    )
+
+
+class RemoteResponse(BaseModel):
+    __root__: Union[AptRemoteResponse, YumRemoteResponse]
+
+
+class RemoteListResponse(ListResponse):
+    # Note that this response doesn't include the apt remote fields (distributions, etc)
+    results: List[BaseRemoteResponse]
+
+
 class RepositoryCreate(BaseModel):
     name: NonEmptyStr
     type: RepoType
+    remote: Optional[RemoteId]
 
 
 class RepositoryUpdate(BaseModel):
     name: Optional[str]
+    remote: Union[RemoteId, EmptyStr, None]
 
 
 class RepositoryResponse(BaseModel):
@@ -238,6 +324,7 @@ class RepositoryResponse(BaseModel):
     name: str
     description: Optional[str]
     retain_repo_versions: Optional[int]
+    remote: Optional[RemoteId]
 
 
 class RepositoryListResponse(ListResponse):

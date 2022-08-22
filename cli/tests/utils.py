@@ -31,8 +31,8 @@ def gen_release_attrs() -> Dict[str, str]:
         distribution=f"test_release_{uuid4()}",
         codename=f"test_release_{uuid4()}",
         suite="stable",
-        components="main,contrib,non-free",
-        architectures="arm,amd64",
+        components="main;contrib;non-free",
+        architectures="arm;amd64",
     )
 
 

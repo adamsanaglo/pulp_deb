@@ -47,6 +47,13 @@ class DistroType(StringEnum):
     yum = "yum"  # maps to 'rpm' in Pulp
 
 
+class RemoteType(StringEnum):
+    """Type for a remote."""
+
+    apt = "apt"
+    yum = "yum"  # maps to 'rpm' in Pulp
+
+
 class PackageType(StringEnum):
     """Type of packages."""
 

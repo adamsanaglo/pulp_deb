@@ -30,9 +30,14 @@ def list(
 
 
 @app.command()
-def create(ctx: typer.Context, name: str, repo_type: RepoType) -> None:
+def create(
+    ctx: typer.Context,
+    name: str,
+    repo_type: RepoType,
+    remote: Optional[str] = typer.Option(None, help="Remote id to use for sync."),
+) -> None:
     """Create a repository."""
-    data = {"name": name, "type": repo_type}
+    data = {"name": name, "type": repo_type, "remote": remote}
     with get_client(ctx.obj) as client:
         resp = client.post("/repositories/", json=data)
         handle_response(ctx.obj, resp)
@@ -47,16 +52,26 @@ def show(ctx: typer.Context, id: str) -> None:
 
 
 @app.command()
-def update(ctx: typer.Context, id: str, name: str = typer.Option("")) -> None:
+def update(
+    ctx: typer.Context,
+    id: str,
+    name: str = typer.Option(""),
+    remote: Optional[str] = typer.Option(None, help="Remote id to use for sync"),
+) -> None:
     """Update a repository."""
 
     def show_func(task: Any) -> Any:
         with get_client(ctx.obj) as client:
             return client.get(f"/repositories/{id}/")
 
-    data = {}
+    data: Dict[str, Any] = {}
     if name:
         data["name"] = name
+    if remote is not None:
+        if remote == "":
+            data["remote"] = None  # unset remote
+        else:
+            data["remote"] = remote
 
     with get_client(ctx.obj) as client:
         resp = client.patch(f"/repositories/{id}/", json=data)
@@ -68,6 +83,18 @@ def delete(ctx: typer.Context, id: str) -> None:
     """Delete a repository."""
     with get_client(ctx.obj) as client:
         resp = client.delete(f"/repositories/{id}/")
+        handle_response(ctx.obj, resp)
+
+
+@app.command()
+def sync(
+    ctx: typer.Context,
+    id: str,
+    remote: Optional[str] = typer.Option(None, help="Optional remote id to use for sync."),
+) -> None:
+    """Sync a repository."""
+    with get_client(ctx.obj) as client:
+        resp = client.post(f"/repositories/{id}/sync/")
         handle_response(ctx.obj, resp)
 
 

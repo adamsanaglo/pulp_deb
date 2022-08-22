@@ -11,7 +11,7 @@ from pydantic.tools import parse_obj_as
 
 from .commands import account
 from .commands import config as config_cmd
-from .commands import distribution, orphan, package, repository, task
+from .commands import distribution, orphan, package, remote, repository, task
 from .context import PMCContext
 from .schemas import CONFIG_PATHS, Config, Format, NonEmptyStr
 from .utils import PulpTaskFailure, parse_config, validate_config
@@ -19,6 +19,7 @@ from .utils import PulpTaskFailure, parse_config, validate_config
 app = typer.Typer()
 app.add_typer(config_cmd.app, name="config")
 app.add_typer(distribution.app, name="distro")
+app.add_typer(remote.app, name="remote")
 app.add_typer(package.app, name="package")
 app.add_typer(repository.app, name="repo")
 app.add_typer(task.app, name="task")

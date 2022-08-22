@@ -16,6 +16,8 @@ from app.core.schemas import (
     PackageType,
     Pagination,
     ReleaseId,
+    RemoteId,
+    RemoteType,
     RepoId,
     RepoType,
     RepoVersionId,
@@ -126,7 +128,23 @@ class RepositoryApi(PulpApi):
     async def create(self, data: Dict[str, Any]) -> Any:
         """Call the create endpoint."""
         type = data.pop("type")
+        if remote := data.get("remote", None):
+            data["remote"] = id_to_pulp_href(remote)
         resp = await self.post(self.endpoint("create", type=type), json=data)
+        return translate_response(resp.json())
+
+    async def update(self, id: Identifier, data: Dict[str, Any]) -> Any:
+        if data.get("remote", False):
+            data["remote"] = id_to_pulp_href(data.pop("remote"))
+        return await super().update(id, data)
+
+    async def sync(self, id: RepoId, remote: Optional[RemoteId] = None) -> Any:
+        """Call the create endpoint."""
+        if remote:
+            data = {"remote": remote}
+        else:
+            data = {}
+        resp = await self.post(self.endpoint("sync", id=id), json=data)
         return translate_response(resp.json())
 
     async def update_content(
@@ -236,9 +254,54 @@ class RepositoryApi(PulpApi):
         elif action in ("read", "delete", "update"):
             assert isinstance((id := kwargs["id"]), RepoId)
             return f"{RepositoryApi._detail_uri(id.type)}{id.uuid}/"
-        elif action == "modify":
+        elif action in ["modify", "sync"]:
             assert isinstance((id := kwargs["id"]), RepoId)
-            return f"{RepositoryApi._detail_uri(id.type)}{id.uuid}/modify/"
+            return f"{RepositoryApi._detail_uri(id.type)}{id.uuid}/{action}/"
+        else:
+            raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
+
+
+class RemoteApi(PulpApi):
+    @staticmethod
+    def _translate_apt_fields(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Translate apt fields (eg dists) into whitespace separated strings."""
+        for field in ["distributions", "components", "architectures"]:
+            if val := data.get(field, None):
+                data[field] = " ".join(val)
+        return data
+
+    async def create(self, data: Dict[str, Any]) -> Any:
+        """Override the distro create method to set repository."""
+        type = data.pop("type")
+        data = self._translate_apt_fields(data)
+        resp = await self.post(self.endpoint("create", type=type), json=data)
+        return translate_response(resp.json())
+
+    async def update(self, id: Identifier, data: Dict[str, Any]) -> Any:
+        data = self._translate_apt_fields(data)
+        return await super().update(id, data)
+
+    @staticmethod
+    def _detail_uri(type: Any) -> str:
+        assert isinstance(type, (str, DistroType))
+
+        if type == RemoteType.apt:
+            return "/remotes/deb/apt/"
+        elif type == RemoteType.yum:
+            return "/remotes/rpm/rpm/"
+        else:
+            raise TypeError(f"Received invalid type: {type}")
+
+    @staticmethod
+    def endpoint(action: str, **kwargs: Any) -> str:
+        """Construct a distro endpoint from action and id."""
+        if action == "list":
+            return "/remotes/"
+        elif action == "create":
+            return RemoteApi._detail_uri(kwargs["type"])
+        elif action in ("read", "delete", "update"):
+            assert isinstance((id := kwargs["id"]), RemoteId)
+            return f"{RemoteApi._detail_uri(id.type)}{id.uuid}/"
         else:
             raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
 

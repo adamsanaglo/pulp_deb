@@ -76,7 +76,7 @@ A default Service Principal is available to simplify your dev environment
   - `./update_role.sh Repo_Admin --create`
   - You can call this script again any time you wish to change roles (`./update_role.sh Account_Admin`)
 
-## Example Workflow
+## Example Workflows
 
 ### apt
 
@@ -125,4 +125,17 @@ pmc repo publish $REPO_ID
 
 # check out our repo
 http :8080/pulp/content/awesome/path/
+```
+
+### syncing
+
+```
+# create a remote
+REMOTE_ID=$(pmc --id-only remote create microsoft-ubuntu-focal-prod apt "https://packages.microsoft.com/repos/microsoft-ubuntu-focal-prod/" --distributions nightly)
+
+# create a repo
+REPO_ID=$(pmc --id-only repo create microsoft-ubuntu-focal-prod apt --remote $REMOTE_ID)
+
+# sync
+pmc repo sync $REPO_ID
 ```

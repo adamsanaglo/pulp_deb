@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Union
 import typer
 
 from pmc.client import get_client, handle_response
+from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT
 
 app = typer.Typer()
@@ -33,8 +34,8 @@ def create(
     distribution: str = typer.Argument(..., help="Name under which to distribute release."),
     codename: str = typer.Argument(..., help="Codename for the release."),
     suite: str = typer.Argument(..., help="Suite for the release (e.g. stable)."),
-    components: str = typer.Option(None, help="Comma-separated list of components."),
-    architectures: str = typer.Option(None, help="Comma-separated list of architectures."),
+    components: str = typer.Option(None, help="Semicolon-separated list of components."),
+    architectures: str = typer.Option(None, help="Semicolon-separated list of architectures."),
 ) -> None:
     """Create a release for a repository."""
     data: Dict[str, Union[str, List[str]]] = {
@@ -44,9 +45,9 @@ def create(
     }
 
     if components:
-        data["components"] = components.split(",")
+        data["components"] = components.split(LIST_SEPARATOR)
     if architectures:
-        data["architectures"] = architectures.split(",")
+        data["architectures"] = architectures.split(LIST_SEPARATOR)
 
     with get_client(ctx.obj) as client:
         resp = client.post(f"/repositories/{repo_id}/releases/", json=data)

@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -12,6 +12,7 @@ from app.core.models import Account, OwnedPackage, RepoAccess, Role
 from app.core.schemas import (
     PackageListResponse,
     Pagination,
+    RemoteId,
     RepoId,
     RepositoryCreate,
     RepositoryListResponse,
@@ -61,6 +62,16 @@ async def update_repository(id: RepoId, repo: RepositoryUpdate) -> Any:
 async def delete_repository(id: RepoId) -> Any:
     async with RepositoryApi() as api:
         return await api.destroy(id)
+
+
+@router.post(
+    "/repositories/{id}/sync/",
+    response_model=TaskResponse,
+    dependencies=[Depends(requires_repo_admin)],
+)
+async def sync_repository(id: RepoId, remote: Optional[RemoteId] = None) -> Any:
+    async with RepositoryApi() as api:
+        return await api.sync(id, remote)
 
 
 @router.get("/repositories/{id}/packages/", response_model=PackageListResponse)
