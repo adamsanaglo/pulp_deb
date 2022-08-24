@@ -14,6 +14,7 @@ COPY poetry.lock .
 COPY .env .
 COPY alembic.ini .
 COPY README.md .
+COPY deployment/DigiCertGlobalRootCA.crt.pem .
 COPY app app/
 COPY migrations migrations/
 
