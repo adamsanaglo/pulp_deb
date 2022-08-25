@@ -2,7 +2,7 @@ import json
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator, List, Optional, Union
+from typing import Any, Dict, Generator, List, Optional, Union
 
 import pytest
 
@@ -18,7 +18,7 @@ from .utils import (
 )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def set_config() -> Path:
     settings = Path.cwd() / "tests" / "settings.toml"
     assert settings.is_file(), f"Could not find {settings}."
@@ -26,11 +26,11 @@ def set_config() -> Path:
     return settings
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def check_connection(set_config: Path) -> None:
     try:
-        result = invoke_command(["repo", "list"])
-        assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+        result = invoke_command(["account", "list"])
+        assert result.exit_code == 0, f"account list failed: {result.stderr}"
     except Exception as exc:
         raise Exception(f"{exc}. Is your server running?")
 
@@ -157,6 +157,28 @@ def account_one() -> Generator[Any, None, None]:
 def account_two() -> Generator[Any, None, None]:
     """Generate multiple accounts."""
     with _object_manager(_account_create_command(), Role.Account_Admin) as o:
+        yield o
+
+
+@pytest.fixture()
+def repo_access(account_one: Dict[str, Any]) -> Generator[Any, None, None]:
+    """Generate a repo access perm for account_one."""
+
+    def _my_cmd(action: str) -> List[str]:
+        return ["access", "repo", action, account_one["name"], "'.*'"]
+
+    with _object_manager(_my_cmd("grant"), Role.Account_Admin, cleanup_cmd=_my_cmd("revoke")) as o:
+        yield o
+
+
+@pytest.fixture()
+def package_access(account_one: Dict[str, Any]) -> Generator[Any, None, None]:
+    """Generate a package access perm for account_one."""
+
+    def _my_cmd(action: str) -> List[str]:
+        return ["access", "package", action, account_one["name"], "'.*'", "vim"]
+
+    with _object_manager(_my_cmd("grant"), Role.Account_Admin, cleanup_cmd=_my_cmd("revoke")) as o:
         yield o
 
 

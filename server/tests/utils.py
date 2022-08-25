@@ -1,3 +1,4 @@
+from datetime import datetime
 from random import choice
 from typing import Any, Dict, List, Optional, Union
 from unittest.mock import AsyncMock
@@ -32,6 +33,14 @@ def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, str]:
         return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type)
 
 
+def gen_pulp_repo_response(type: RepoType, name: str) -> Dict[str, Any]:
+    if type == RepoType.apt:
+        id = f"repositories-deb-apt-{uuid4()}"
+    else:
+        id = f"repositories-rpm-rpm-{uuid4()}"
+    return {"id": id, "pulp_created": datetime.now(), "name": name}
+
+
 def gen_release_attrs() -> Dict[str, Union[str, List[str]]]:
     return dict(
         distribution=f"pmc_cli_test_release_{uuid4()}",
@@ -51,7 +60,10 @@ def gen_distro_attrs() -> Dict[str, str]:
 
 
 def assert_expected_response(
-    response: Response, expected_status_code: int, api_method: AsyncMock
+    response: Response,
+    expected_status_code: int,
+    api_method: AsyncMock,
+    expected_num_list_items: Optional[int] = None,
 ) -> None:
     __tracebackhide__ = True
     if response.status_code != expected_status_code:
@@ -61,3 +73,10 @@ def assert_expected_response(
             "Expected api_method to be called once but was instead called "
             f"{api_method.call_count} times!"
         )
+    if expected_num_list_items:
+        body = response.json()
+        if not isinstance(body, type([])) and len(body) != expected_num_list_items:
+            pytest.fail(
+                f"Expected to return a list of {expected_num_list_items} items but instead"
+                f"received {body}"
+            )

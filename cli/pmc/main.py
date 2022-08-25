@@ -9,7 +9,7 @@ import typer
 from pydantic import AnyHttpUrl
 from pydantic.tools import parse_obj_as
 
-from .commands import account
+from .commands import access, account
 from .commands import config as config_cmd
 from .commands import distribution, orphan, package, remote, repository, task
 from .context import PMCContext
@@ -24,6 +24,7 @@ app.add_typer(package.app, name="package")
 app.add_typer(repository.app, name="repo")
 app.add_typer(task.app, name="task")
 app.add_typer(account.app, name="account")
+app.add_typer(access.app, name="access")
 app.add_typer(orphan.app, name="orphan")
 
 

@@ -1,7 +1,17 @@
 from fastapi import APIRouter, Depends
 
 from app.api import auth
-from app.api.routes import account, distribution, orphan, package, release, remote, repository, task
+from app.api.routes import (
+    access,
+    account,
+    distribution,
+    orphan,
+    package,
+    release,
+    remote,
+    repository,
+    task,
+)
 
 # get_active_account ensures the request is at least authenticated with an active Account.
 # For some routes that's all we care about, but that's the minimum.
@@ -13,6 +23,9 @@ router.include_router(repository.router, tags=["repositories"])
 router.include_router(task.router, tags=["tasks"])
 router.include_router(
     account.router, tags=["accounts"], dependencies=[Depends(auth.requires_account_admin)]
+)
+router.include_router(
+    access.router, tags=["access"], dependencies=[Depends(auth.requires_account_admin)]
 )
 router.include_router(
     orphan.router, tags=["orphans"], dependencies=[Depends(auth.requires_package_admin)]

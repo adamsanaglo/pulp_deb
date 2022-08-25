@@ -521,3 +521,27 @@ class AccountResponse(AccountCreate):
 
 class AccountListResponse(ListResponse):
     results: List[AccountResponse]
+
+
+class AccountRepoPermissionUpdate(BaseModel):
+    account_names: List[str]
+    repo_regex: str
+    operator: bool = False
+
+
+class AccountRepoPackagePermissionUpdate(BaseModel):
+    account_names: List[str]
+    repo_regex: str
+    package_names: List[str]
+
+
+class RepoAccessResponse(BaseModel):
+    account_id: UUID
+    repo_id: str
+    operator: bool
+
+
+class OwnedPackageResponse(BaseModel):
+    account_id: UUID
+    repo_id: str
+    package_name: str
