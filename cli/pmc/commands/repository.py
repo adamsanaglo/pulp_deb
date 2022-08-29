@@ -4,12 +4,16 @@ import typer
 
 from pmc.client import get_client, handle_response
 from pmc.commands.release import releases
+from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoType
 
 app = typer.Typer()
 packages = typer.Typer(help="Manage a repo's packages.")
 app.add_typer(packages, name="packages")
 app.add_typer(releases, name="releases")
+
+ADD_PACKAGES_HELP = "Semicolon-separated list of package ids to add."
+REMOVE_PACKAGES_HELP = "Semicolon-separated list of package ids to remove."
 
 
 @app.command()
@@ -127,15 +131,15 @@ def update_packages(
     repo_id: str,
     release: str = typer.Argument(None, help="Release/dist to add packages to."),
     component: str = typer.Argument(None, help="Component to add packages to."),
-    add_packages: Optional[str] = typer.Option(None),
-    remove_packages: Optional[str] = typer.Option(None),
+    add_packages: Optional[str] = typer.Option(None, help=ADD_PACKAGES_HELP),
+    remove_packages: Optional[str] = typer.Option(None, help=REMOVE_PACKAGES_HELP),
 ) -> None:
     """Add or remove packages from a repository."""
     data: Dict[str, Union[str, List[str]]] = {}
     if add_packages:
-        data["add_packages"] = add_packages.split(",")
+        data["add_packages"] = add_packages.split(LIST_SEPARATOR)
     if remove_packages:
-        data["remove_packages"] = remove_packages.split(",")
+        data["remove_packages"] = remove_packages.split(LIST_SEPARATOR)
     if release:
         data["release"] = release
     if component:

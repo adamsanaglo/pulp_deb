@@ -1,6 +1,7 @@
 import typer
 
 from pmc.client import get_client, handle_response
+from pmc.constants import LIST_SEPARATOR
 
 app = typer.Typer()
 repo = typer.Typer()
@@ -31,7 +32,7 @@ def repo_access_grant(
 ) -> None:
     """Grant account(s) access to repo(s)"""
     data = {
-        "account_names": account_names.split(";"),
+        "account_names": account_names.split(LIST_SEPARATOR),
         "repo_regex": repo_regex,
     }
     if operator:
@@ -48,7 +49,7 @@ def repo_access_revoke(
     repo_regex: str = typer.Argument(..., help=REPO_REGEX_HELP),
 ) -> None:
     """Revoke account(s) access to repo(s)"""
-    data = {"account_names": account_names.split(";"), "repo_regex": repo_regex}
+    data = {"account_names": account_names.split(LIST_SEPARATOR), "repo_regex": repo_regex}
     with get_client(ctx.obj) as client:
         resp = client.post("/access/repo/revoke/", json=data)
         handle_response(ctx.obj, resp)
@@ -70,9 +71,9 @@ def package_ownership_grant(
     package_names: str = typer.Argument(..., help=PACKAGE_NAMES_HELP),
 ) -> None:
     data = {
-        "account_names": account_names.split(";"),
+        "account_names": account_names.split(LIST_SEPARATOR),
         "repo_regex": repo_regex,
-        "package_names": package_names.split(";"),
+        "package_names": package_names.split(LIST_SEPARATOR),
     }
     """Grant account(s) ownership of package(s) in specific repo(s)"""
     with get_client(ctx.obj) as client:
@@ -89,9 +90,9 @@ def package_ownership_revoke(
 ) -> None:
     """Revoke account(s) ownership of package(s) in specific repo(s)"""
     data = {
-        "account_names": account_names.split(";"),
+        "account_names": account_names.split(LIST_SEPARATOR),
         "repo_regex": repo_regex,
-        "package_names": package_names.split(";"),
+        "package_names": package_names.split(LIST_SEPARATOR),
     }
     with get_client(ctx.obj) as client:
         resp = client.post("/access/package/revoke/", json=data)
