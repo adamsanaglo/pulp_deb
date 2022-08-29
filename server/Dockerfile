@@ -1,7 +1,9 @@
-FROM mcr.microsoft.com/mirror/docker/library/python:3.10-slim
+FROM mcr.microsoft.com/cbl-mariner/base/python:3.9
 
 ARG uid=1000
 ARG gid=1000
+
+RUN tdnf install -y binutils postgresql shadow-utils
 
 RUN groupadd -g $gid pmc
 RUN useradd -r -m -u $uid -g $gid pmc
@@ -21,9 +23,7 @@ COPY migrations migrations/
 RUN pip install --upgrade pip && \
     pip install poetry && \
     poetry config virtualenvs.create false && \
-    poetry install && \
-    apt-get update && \
-    apt-get install -y rpm binutils gpg postgresql-client
+    poetry install
 
 
 ENTRYPOINT ["python", "app/main.py"]

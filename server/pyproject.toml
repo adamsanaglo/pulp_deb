@@ -32,7 +32,7 @@ black = "^22.3.0"
 
 [tool.black]
 line-length = 100
-extend-exclude = "migrations"
+extend-exclude = "(migrations|pulp/container-assets)"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
