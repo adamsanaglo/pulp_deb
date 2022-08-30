@@ -26,4 +26,4 @@ RUN pip install --upgrade pip && \
     poetry install
 
 
-ENTRYPOINT ["python", "app/main.py"]
+ENTRYPOINT ["python3", "app/main.py"]

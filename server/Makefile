@@ -52,7 +52,7 @@ down:				## stop and remove the containers
 	docker compose down
 
 teardown: down		## stop the containers and remove the container volumes
-	-for vol in pulp_storage pgsql containers postgres-data; do \
+	-for vol in pulp_storage pgsql containers; do \
 		docker volume rm pmcserver_$$vol ; \
 	done
 
