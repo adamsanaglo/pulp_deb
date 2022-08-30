@@ -37,7 +37,7 @@ services:
         - .env
 
     pulp-api:
-      image: quay.io/pulp/pulp
+      image: localhost/pulp:stable
       container_name: pulp-api
       command: pulp-api
       healthcheck:
@@ -61,7 +61,7 @@ services:
         - .env
 
     pulp-worker:
-      image: quay.io/pulp/pulp
+      image: localhost/pulp:stable
       container_name: pulp-worker
       command: pulp-worker
       depends_on:
@@ -78,7 +78,7 @@ services:
         - .env
 
     pulp-content:
-      image: quay.io/pulp/pulp
+      image: localhost/pulp:stable
       container_name: pulp-content
       command: pulp-content
       depends_on:

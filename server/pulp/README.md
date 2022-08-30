@@ -45,9 +45,8 @@ You will need `ansible` installed.
 Once you have a workable Dockerfile build, tag, and test the image.
 
 1. `cd server`
-1. `docker build pulp/ --pull`\
-   If build is successful it will output a line like `writing image sha256:d5bbecdfe...` at the end.
-1. `docker tag d5bbecdfe localhost/pulp:stable`
+1. `docker build pulp/ --pull --tag localhost/pulp:stable`\
+   If build is successful it will output a line like `naming to localhost/pulp:stable` at the end.
 1. Optionally delete all untagged images if you have a bunch of leftovers from iterating on changes
    to the Dockerfile:\
    `docker rmi $(docker images | grep "^<none>" | awk "{print $3}")`

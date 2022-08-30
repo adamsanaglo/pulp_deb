@@ -31,6 +31,11 @@ sudo apt-get update
 sudo apt-get install docker docker-compose-plugin
 ```
 
+The first time you do this you will have to build a local pulp image:
+```
+make build_pulp
+```
+
 Then run:
 
 ```

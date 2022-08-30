@@ -37,6 +37,9 @@ grant_access:		## allow our dev principal access to the application
 
 reset_rebuild:	teardown rebuild_env rebuild grant_access	## reset and rebuild everything
 
+build_pulp:			## build and locally tag the pulp image
+	docker build pulp/ --pull --tag localhost/pulp:stable
+
 run:				## run the containers
 	docker compose up -d
 	docker exec -it pmcserver alembic upgrade head
@@ -52,7 +55,7 @@ down:				## stop and remove the containers
 	docker compose down
 
 teardown: down		## stop the containers and remove the container volumes
-	-for vol in pulp_storage pgsql containers; do \
+	-for vol in pulp_storage postgres-data containers; do \
 		docker volume rm pmcserver_$$vol ; \
 	done
 
