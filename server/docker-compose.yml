@@ -11,7 +11,7 @@ services:
       container_name: pmcserver
       user: "${UID}:${GID}"
       depends_on:
-        pulp:
+        pulp-api:
           condition: service_healthy
         db:
           condition: service_started
@@ -25,24 +25,6 @@ services:
       env_file:
         - .env
 
-    pulp:
-      image: pulp/pulp
-      container_name: pulp
-      healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost/pulp/api/v3/status/"]
-        interval: 30s
-        timeout: 10s
-        retries: 10
-      ports:
-        - "8080:80"
-      volumes:
-        - ./pulp/settings.py:/etc/pulp/settings.py
-        - pulp_storage:/var/lib/pulp
-        - pgsql:/var/lib/pgsql
-        - containers:/var/lib/containers
-      devices:
-        - /dev/fuse
-
     db:
       image: postgres
       container_name: db
@@ -50,11 +32,71 @@ services:
         - 5432:5432
       volumes:
         - postgres-data:/var/lib/postgresql/data
+        - ./pulp/pulp_db_init.sh:/docker-entrypoint-initdb.d/01_pulp_db_init.sh
+      env_file:
+        - .env
+
+    pulp-api:
+      image: quay.io/pulp/pulp
+      container_name: pulp-api
+      command: pulp-api
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:24817/pulp/api/v3/status/"]
+        interval: 5s
+        timeout: 1s
+        retries: 30
+      depends_on:
+        db:
+          condition: service_started
+      ports:
+        - "8080:24817"
+      volumes:
+        - ./pulp/settings.py:/etc/pulp/settings.py
+        - ./pulp/.pulp_symmetric_key:/etc/pulp/pulp_symmetric_key
+        - pulp_storage:/var/lib/pulp
+        - containers:/var/lib/containers
+      devices:
+        - /dev/fuse
+      env_file:
+        - .env
+
+    pulp-worker:
+      image: quay.io/pulp/pulp
+      container_name: pulp-worker
+      command: pulp-worker
+      depends_on:
+        db:
+          condition: service_started
+      volumes:
+        - ./pulp/settings.py:/etc/pulp/settings.py
+        - ./pulp/.pulp_symmetric_key:/etc/pulp/pulp_symmetric_key
+        - pulp_storage:/var/lib/pulp
+        - containers:/var/lib/containers
+      devices:
+        - /dev/fuse
+      env_file:
+        - .env
+
+    pulp-content:
+      image: quay.io/pulp/pulp
+      container_name: pulp-content
+      command: pulp-content
+      depends_on:
+        db:
+          condition: service_started
+      ports:
+        - "8081:24816"
+      volumes:
+        - ./pulp/settings.py:/etc/pulp/settings.py
+        - ./pulp/.pulp_symmetric_key:/etc/pulp/pulp_symmetric_key
+        - pulp_storage:/var/lib/pulp
+        - containers:/var/lib/containers
+      devices:
+        - /dev/fuse
       env_file:
         - .env
 
 volumes:
   pulp_storage:
-  pgsql:
   containers:
   postgres-data:
