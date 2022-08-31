@@ -31,15 +31,16 @@ sudo apt-get update
 sudo apt-get install docker docker-compose-plugin
 ```
 
-The first time you do this you will have to build a local pulp image:
-```
-make build_pulp
-```
-
 Then run:
 
 ```
 make run
+```
+
+Create an initial account admin:
+
+```
+make grant_access
 ```
 
 Now try to use the v4 api with httpie:
@@ -47,7 +48,6 @@ Now try to use the v4 api with httpie:
 ```
 http :8000/api/
 http :8000/api/v4/repositories/
-http :8000/api/v4/repositories/ name=test type=yum
 ```
 
 ### Configuring Authentication

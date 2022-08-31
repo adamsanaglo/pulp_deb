@@ -38,6 +38,8 @@ services:
 
     pulp-api:
       image: localhost/pulp:stable
+      build:
+        context: pulp
       container_name: pulp-api
       command: pulp-api
       healthcheck:
@@ -62,6 +64,8 @@ services:
 
     pulp-worker:
       image: localhost/pulp:stable
+      build:
+        context: pulp
       container_name: pulp-worker
       command: pulp-worker
       depends_on:
@@ -79,6 +83,8 @@ services:
 
     pulp-content:
       image: localhost/pulp:stable
+      build:
+        context: pulp
       container_name: pulp-content
       command: pulp-content
       depends_on:
