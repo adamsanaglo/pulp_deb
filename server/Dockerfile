@@ -13,7 +13,6 @@ WORKDIR /pmcserver
 
 COPY pyproject.toml .
 COPY poetry.lock .
-COPY .env .
 COPY alembic.ini .
 COPY README.md .
 COPY deployment/DigiCertGlobalRootCA.crt.pem .
