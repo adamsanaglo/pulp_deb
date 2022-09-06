@@ -1,0 +1,100 @@
+# Docker
+# Build and push an image to Azure Container Registry
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+name: ${{ lower(variables['Build.SourceBranchName']) }}_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+
+variables:
+  tag: '$(Build.BuildId)'
+  LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004:vnext'
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+resources:
+  repositories: 
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates # https://aka.ms/obpipelines/templates
+  parameters:
+    featureFlags:
+      sbom: true  # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/6089/Generating-SBOM
+      # linuxEsrpSigningPreview: true    # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/4623/Signing?anchor=linux-signing
+
+    globalSdl: # https://aka.ms/obpipelines/sdl
+      tsa:
+        enabled: true
+      # policheck:
+      #   break: true
+      # suppression:  # suppress warnings in vendored open source projects
+      #   suppressionFile: $(Build.SourcesDirectory)/.gdn/.gdnsuppress
+      #   suppressionSet: default
+      # codeql:     # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/4634/SDL?anchor=codeql-(semmle)-for-compiled-languages
+      #   python: 
+      #     enabled: true
+      #   compiled: 
+      #     enabled: true
+      # bandit:
+      #   enabled: true
+
+    stages:
+    - stage: build_images
+      jobs:
+      - job: build_image
+        pool:
+          type: docker
+          os: linux
+        variables: # More settings at https://aka.ms/obpipelines/yaml/jobs
+          ob_git_checkout: true
+          ob_outputDirectory: '$(Build.SourcesDirectory)/out' # this directory is uploaded to pipeline artifacts, reddog and cloudvault. More info at https://aka.ms/obpipelines/artifacts
+        
+        steps:
+          - task: onebranch.pipeline.imagebuildinfo@1
+            displayName: 'Build PMC image'
+            inputs:
+              registry: pmcprod.azurecr.io
+              repositoryName: pmc
+              dockerFileRelPath: server/Dockerfile
+              dockerFileContextPath: server
+              addPipelineData: false
+              push: true
+              saveImageToPath: pmc-image.tar
+              buildkit: 0
+              enable_network: true
+              build_tag: $(Build.BuildNumber)            # Docker image tag
+          - task: onebranch.pipeline.imagebuildinfo@1
+            displayName: 'Build Pulp image'
+            inputs:
+              registry: pmcprod.azurecr.io
+              repositoryName: pulp
+              dockerFileRelPath: server/pulp/Dockerfile
+              dockerFileContextPath: server/pulp
+              addPipelineData: false
+              push: true
+              saveImageToPath: pulp-image.tar
+              buildkit: 0
+              enable_network: true
+              build_tag: $(Build.BuildNumber)            # Docker image tag
+          - task: onebranch.pipeline.imagebuildinfo@1
+            displayName: 'Build Signer image'
+            inputs:
+              registry: pmcprod.azurecr.io
+              repositoryName: signer
+              dockerFileRelPath: signer/Dockerfile
+              dockerFileContextPath: signer
+              addPipelineData: false
+              push: true
+              saveImageToPath: signer-image.tar
+              buildkit: 0
+              enable_network: true
+              build_tag: $(Build.BuildNumber)            # Docker image tag
