@@ -107,5 +107,6 @@ COPY container-assets/pulp-api /usr/bin/pulp-api
 COPY container-assets/pulp-content /usr/bin/pulp-content
 #COPY container-assets/pulp-resource-manager /usr/bin/pulp-resource-manager
 COPY container-assets/pulp-worker /usr/bin/pulp-worker
+COPY container-assets/pmc-secrets-exporter.sh /usr/bin/pmc-secrets-exporter.sh
 
 ENTRYPOINT ["/pulp-common-entrypoint.sh"]

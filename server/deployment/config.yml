@@ -15,12 +15,14 @@ data:
   PULP_HOST: "http://localhost:24817"  # pmc-server talks to pulp api via in-pod localhost
   POSTGRES_SERVER: $pg_server
   POSTGRES_SERVER_CA_CERT: "/pmcserver/DigiCertGlobalRootCA.crt.pem"
+  SECRETS_MOUNTPOINT: "/mnt/secrets"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: pulp-settings
 data:
+  SECRETS_MOUNTPOINT: "/mnt/secrets"
   PULP_DB_ENCRYPTION_KEY: "/mnt/secrets/pulpSymmetricKey"
   PULP_TOKEN_AUTH_DISABLED: "True"
   PULP_CONTENT_ORIGIN: "http://${destination_env}:80"
@@ -62,16 +64,6 @@ metadata:
   name: pmc-secret-provider
 spec:
   provider: azure
-  # In addition to syncing the keys configured below, this syncs them into an aks secret so we
-  # can add them to the env variables.
-  secretObjects:
-  - secretName: pmc-secret
-    type: Opaque
-    data:
-    - objectName: "pmcPostgresPassword"
-      key: pmc_postgres_password
-    - objectName: "pulpAdminPassword"
-      key: pulp_admin_password
   parameters:
     usePodIdentity: "false"
     useVMManagedIdentity: "true"
@@ -94,18 +86,6 @@ metadata:
   name: pulp-secret-provider
 spec:
   provider: azure
-  # In addition to syncing the keys configured below, this syncs them into an aks secret so we
-  # can add them to the env variables.
-  secretObjects:
-  - secretName: pulp-secret
-    type: Opaque
-    data:
-    - objectName: "pulpPostgresPassword"
-      key: pulp_postgres_password
-    - objectName: "pulpAdminPassword"
-      key: pulp_admin_password
-    - objectName: "pulpSecret"
-      key: pulp_secret
   parameters:
     usePodIdentity: "false"
     useVMManagedIdentity: "true"

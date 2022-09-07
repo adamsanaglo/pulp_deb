@@ -34,17 +34,6 @@ spec:
         envFrom:
           - configMapRef:
               name: pulp-settings
-        env:
-          - name: PULP_DATABASES__default__PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: pulp-secret
-                key: pulp_postgres_password
-          - name: PULP_SECRET_KEY
-            valueFrom:
-              secretKeyRef:
-                name: pulp-secret
-                key: pulp_secret
       # TODO: signer container gets deployed here and communicates with pulp-worker over localhost
       volumes:
         - name: files-storage
@@ -103,17 +92,6 @@ spec:
         envFrom:
           - configMapRef:
               name: pulp-settings
-        env:
-          - name: PULP_DATABASES__default__PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: pulp-secret
-                key: pulp_postgres_password
-          - name: PULP_SECRET_KEY
-            valueFrom:
-              secretKeyRef:
-                name: pulp-secret
-                key: pulp_secret
       volumes:
         - name: files-storage
           persistentVolumeClaim:

@@ -43,17 +43,6 @@ spec:
         envFrom:
           - configMapRef:
               name: pmc-settings
-        env:
-          - name: PULP_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: pmc-secret
-                key: pulp_admin_password 
-          - name: POSTGRES_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: pmc-secret
-                key: pmc_postgres_password
       - name: pulp-api
         image: quay.io/pulp/pulp:latest
         command: ['pulp-api']
@@ -83,22 +72,6 @@ spec:
         envFrom:
           - configMapRef:
               name: pulp-settings
-        env:
-          - name: PULP_ADMIN_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: pulp-secret
-                key: pulp_admin_password
-          - name: PULP_DATABASES__default__PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: pulp-secret
-                key: pulp_postgres_password
-          - name: PULP_SECRET_KEY
-            valueFrom:
-              secretKeyRef:
-                name: pulp-secret
-                key: pulp_secret
       volumes:
         - name: files-storage
           persistentVolumeClaim:

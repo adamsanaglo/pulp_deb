@@ -16,6 +16,7 @@ COPY poetry.lock .
 COPY alembic.ini .
 COPY README.md .
 COPY deployment/DigiCertGlobalRootCA.crt.pem .
+COPY deployment/entrypoint.sh .
 COPY app app/
 COPY migrations migrations/
 
@@ -25,4 +26,4 @@ RUN pip install --upgrade pip && \
     poetry install
 
 
-ENTRYPOINT ["python3", "app/main.py"]
+ENTRYPOINT ["./entrypoint.sh"]

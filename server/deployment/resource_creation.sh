@@ -33,20 +33,24 @@ az network vnet subnet create -g $rg --vnet-name $vnet -n $pg_subnet --address-p
 az network vnet subnet update -g $rg --vnet-name $vnet --name $aks_subnet --service-endpoints "Microsoft.KeyVault"
 # The tr command may not be necessary in all setups, but in my case the az command is installed in windows and is leaving in an extra \r character which blows everything up.
 aks_sub_id=$(az network vnet subnet show -g $rg --vnet-name $vnet --name $aks_subnet --query id -o tsv | tr -d '\r')
+
 # ... create and setup keyvault
 az keyvault create --location $region -g $rg --name $kv
+az keyvault network-rule add --name $kv --vnet-name $vnet --subnet $aks_subnet
+# add SAW datacenter ip ranges to allow access from SAWs
+# https://microsoft.sharepoint.com/sites/Security_Tools_Services/SitePages/SAS/SAW%20KB/SAW-datacenter-IP-ranges.aspx
+az keyvault network-rule add --name $kv --ip-address 157.58.216.64/26 207.68.190.32/27 13.106.78.32/27 194.69.119.64/26 13.106.174.32/27 167.220.249.128/26 13.106.4.96/27
+# You may also want to add (and later remove) a network rule for your ip address here so that you can complete the next steps
+az keyvault update --name $kv --default-action Deny
 az keyvault secret set --vault-name $kv --name pulpAdminPassword --value $PULP_PASSWORD
 az keyvault secret set --vault-name $kv --name pmcPostgresPassword --value $PMC_POSTGRES_PASSWORD
 az keyvault secret set --vault-name $kv --name pulpPostgresPassword --value $PULP_POSTGRES_PASSWORD
 az keyvault secret set --vault-name $kv --name pulpSecret --value "$PULP_SECRET"
 az keyvault secret set --vault-name $kv --name pulpSymmetricKey --value $PULP_SYMMETRIC_KEY
-az keyvault network-rule add --name $kv --vnet-name $vnet --subnet $aks_subnet
-# add SAW datacenter ip ranges to allow access from SAWs
-# https://microsoft.sharepoint.com/sites/Security_Tools_Services/SitePages/SAS/SAW%20KB/SAW-datacenter-IP-ranges.aspx
-az keyvault network-rule add --name $kv --ip-address 157.58.216.64/26 207.68.190.32/27 13.106.78.32/27 194.69.119.64/26 13.106.174.32/27 167.220.249.128/26 13.106.4.96/27
-az keyvault update --name $kv --default-action Deny
+
 # ... create container registry
 az acr create -g $rg --name $acr --sku Standard --location $region --admin-enabled  # --zone-redundancy is in preview, should we use it?
+
 # ... create kubernetes cluster, attack to keyvault, grab credentials for kubectl
 # Will have to JIT to "Owner" of the subscription to perform this operation, both for creating the necessary vnet roles and for attaching the acr.
 az aks create -g $rg -n $aks --enable-addons monitoring --location $region \
@@ -55,11 +59,14 @@ az aks create -g $rg -n $aks --enable-addons monitoring --location $region \
 az aks enable-addons -g $rg --name $aks --addons=azure-keyvault-secrets-provider --enable-secret-rotation
 export AZURE_TENANT_ID=$(az account show --query tenantId -o tsv | tr -d '\r')
 export CLIENT_ID=$(az aks show -g $rg -n $aks --query addonProfiles.azureKeyvaultSecretsProvider.identity.clientId -o tsv | tr -d '\r')
+
 az keyvault set-policy -n $kv --key-permissions get --spn $CLIENT_ID
 az keyvault set-policy -n $kv --secret-permissions get --spn $CLIENT_ID
 az keyvault set-policy -n $kv --certificate-permissions get --spn $CLIENT_ID
+
 az aks install-cli
 az aks get-credentials -g $rg --name $aks
+
 # ... create postgres server
 az postgres flexible-server create -g $rg -n $pg --version 13 --high-availability Enabled --vnet $vnet --subnet $pg_subnet --admin-user pmcserver --admin-password $PMC_POSTGRES_PASSWORD
 export pg_server=$(az postgres flexible-server show -g $rg -n $pg --query 'fullyQualifiedDomainName' -o tsv | tr -d '\r')
