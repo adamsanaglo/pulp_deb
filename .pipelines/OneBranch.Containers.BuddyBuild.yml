@@ -77,7 +77,7 @@ extends:
             inputs:
               registry: pmcppe.azurecr.io
               repositoryName: pulp
-              dockerFileRelPath: server/pulp/Dockerfile
+              dockerFileRelPath: pulp/Dockerfile
               dockerFileContextPath: server/pulp
               addPipelineData: false
               push: true

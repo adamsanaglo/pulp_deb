@@ -1,5 +1,4 @@
 .env
-pulp/.pulp_symmetric_key
 
 # rpm db and gpg keyring-related files get generated here, but we don't want to check them in
 app/services/package/keys/
