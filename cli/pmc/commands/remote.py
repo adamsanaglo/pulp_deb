@@ -91,13 +91,13 @@ def update(
         with get_client(ctx.obj) as client:
             return client.get(f"/remotes/{id}/")
 
-    data = {}
+    data: Dict[str, Any] = {}
     if name:
         data["name"] = name
     if url:
         data["url"] = url
     if distributions:
-        data["distributions"] = distributions
+        data["distributions"] = distributions.split(LIST_SEPARATOR)
     if components:
         data["components"] = components
     if architectures:
