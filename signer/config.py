@@ -3,9 +3,9 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     KEYVAULT: str
-    AUTH_CERT: str
+    AUTH_CERT_PATH: str  # path to the on-disk esrp auth cert
     SIGN_CERT: str
-    LEGACY_KEY: str # Name of the legacy key in keyvault
+    LEGACY_KEY_PATH: str  # path to the on-disk private legacy signing key
     APP_ID: str
     TENANT_ID: str
     # Separate multiple key-codes with ';'

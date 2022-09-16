@@ -34,8 +34,6 @@ spec:
             port: pmc-port
           initialDelaySeconds: 5
           periodSeconds: 5
-        # Note that we don't actually care about reading secrets from the disk, but you MUST
-        # still mount them because that's what triggers the syncing from keyvault -> aks secret
         volumeMounts:
         - name: pmc-secrets-volume
           mountPath: "/mnt/secrets"

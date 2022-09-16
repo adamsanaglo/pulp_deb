@@ -124,16 +124,57 @@ class PulpApi:
         raise NotImplementedError
 
 
+class SigningService(PulpApi):
+    @staticmethod
+    async def list_relevant(repo_type: str) -> Dict[str, str]:
+        """
+        List the signing services available for this repo type. This will also strip out the type
+        from the name to present a unified interface, so for example "legacy_yum" -> "legacy", and
+        the caller doesn't have to know or care that there are really two different "legacy"
+        signing services in the backend.
+        """
+        async with PulpApi() as pa:
+            resp = (await pa.get("/signing-services/")).json()
+        ret = {}
+        suffix = "_" + repo_type
+        for service in resp["results"]:
+            if service["name"].endswith(suffix):
+                ret[service["name"].removesuffix(suffix)] = service["pulp_href"]
+        return ret
+
+
 class RepositoryApi(PulpApi):
+    SS = "signing_service"
+    MSS = "metadata_signing_service"
+    PL = "pulp_labels"
+
+    @staticmethod
+    async def _set_gpg_fields(data: Dict[str, Any], type: str) -> None:
+        signing_service = data.pop(RepositoryApi.SS, None)
+        services = await SigningService.list_relevant(type)
+        if signing_service not in services:
+            raise Exception("Requested signing service is not registered in pulp.")
+
+        if signing_service and type == RepoType.yum:
+            data[RepositoryApi.MSS] = services[signing_service]
+            data["gpgcheck"] = 1
+            data["repo_gpgcheck"] = 1
+        elif signing_service:  # deb
+            # A work-around until https://github.com/pulp/pulp_deb/issues/641 is fixed.
+            data[RepositoryApi.PL] = {RepositoryApi.SS: services[signing_service]}
+
     async def create(self, data: Dict[str, Any]) -> Any:
         """Call the create endpoint."""
         type = data.pop("type")
+        await self._set_gpg_fields(data, type)
         if remote := data.get("remote", None):
             data["remote"] = id_to_pulp_href(remote)
         resp = await self.post(self.endpoint("create", type=type), json=data)
         return translate_response(resp.json())
 
-    async def update(self, id: Identifier, data: Dict[str, Any]) -> Any:
+    async def update(self, id: RepoId, data: Dict[str, Any]) -> Any:
+        if self.SS in data:
+            await self._set_gpg_fields(data, id.type)
         if data.get("remote", False):
             data["remote"] = id_to_pulp_href(data.pop("remote"))
         return await super().update(id, data)
@@ -223,6 +264,10 @@ class RepositoryApi(PulpApi):
 
         if id.type == RepoType.apt:
             data["structured"] = True
+            # pulp-deb plugin wants us to specify the metadata signer every time we call publish,
+            # so we must look up the href we stored in pulp_labels and add it here.
+            details = await self.read(id)
+            data[RepositoryApi.SS] = details[RepositoryApi.PL][RepositoryApi.SS]
 
         resp = await self.post(path, json=data)
         return translate_response(resp.json())

@@ -2,7 +2,7 @@ import json
 import subprocess
 from pathlib import Path
 from random import choice
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from click.testing import Result
@@ -15,7 +15,18 @@ from pmc.schemas import DistroType, RepoType, Role
 def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, str]:
     if not type:
         type = choice([RepoType.apt, RepoType.yum])
-    return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type)
+    return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type, signing_service="legacy")
+
+
+def repo_create_cmd(attrs: Dict[str, str]) -> List[str]:
+    return [
+        "repo",
+        "create",
+        attrs["name"],
+        attrs["type"],
+        "--signing-service",
+        attrs["signing_service"],
+    ]
 
 
 def gen_distro_attrs() -> Dict[str, str]:

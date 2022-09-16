@@ -5,7 +5,7 @@ import typer
 from pmc.client import get_client, handle_response
 from pmc.commands.release import releases
 from pmc.constants import LIST_SEPARATOR
-from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoType
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoSigningService, RepoType
 
 app = typer.Typer()
 packages = typer.Typer(help="Manage a repo's packages.")
@@ -38,10 +38,11 @@ def create(
     ctx: typer.Context,
     name: str,
     repo_type: RepoType,
+    signing_service: Optional[RepoSigningService] = typer.Option(RepoSigningService.esrp),
     remote: Optional[str] = typer.Option(None, help="Remote id to use for sync."),
 ) -> None:
     """Create a repository."""
-    data = {"name": name, "type": repo_type, "remote": remote}
+    data = {"name": name, "type": repo_type, "signing_service": signing_service, "remote": remote}
     with get_client(ctx.obj) as client:
         resp = client.post("/repositories/", json=data)
         handle_response(ctx.obj, resp)
@@ -60,6 +61,7 @@ def update(
     ctx: typer.Context,
     id: str,
     name: str = typer.Option(""),
+    signing_service: RepoSigningService = typer.Option(None, help="What signing service to use."),
     remote: Optional[str] = typer.Option(None, help="Remote id to use for sync"),
 ) -> None:
     """Update a repository."""
@@ -71,6 +73,8 @@ def update(
     data: Dict[str, Any] = {}
     if name:
         data["name"] = name
+    if signing_service:
+        data["signing_service"] = signing_service
     if remote is not None:
         if remote == "":
             data["remote"] = None  # unset remote

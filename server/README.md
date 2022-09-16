@@ -3,15 +3,15 @@ For Ubuntu server, you can use `bootstrap.sh`, which is included in this folder.
 It will install docker-engine and start a server/API instance for you. Alternatively,
 use the following steps to get started.
 
-## Generating .env
+## Initial Setup
 
 To manually generate an env file, you can run:
 
 ```
+make regen_test_key
 make .env
+make register_signing_service
 ```
-
-Alternatively, you can copy .env.example to .env and fill in the values.
 
 
 ## Dev environment
@@ -60,6 +60,15 @@ Configuring your environment is simple:
 - For production, run `make .env` specifying `APP_CLIENT_ID` and `TENANT_ID` on the command line to use custom values.
 
 That's it! Clients will request a token from AAD, scoped to this `APP_CLIENT_ID` and `fastapi_microsoft_identity` library will vet the token.
+
+
+### Repodata Signing
+Your dev environment will automatically create and register "legacy" signing services with
+locally-constructed test keys, which you can and should use to test repodata signing locally.
+See the example workflows in [the cli README](../cli/README.md#example-workflows) for examples.
+However we cannot (easily) test ESRP signing in dev, so if you're doing anything that touches ESRP
+signing you **must** test those changes in the PPE before pushing things to tux-dev / prod.
+
 
 ### Managing your dev environment
 

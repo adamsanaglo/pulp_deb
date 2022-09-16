@@ -36,6 +36,23 @@ services:
       env_file:
         - .env
 
+    signer:
+      image: signer
+      build:
+        context: ../signer
+      container_name: signer
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8888/status"]
+        interval: 5s
+        timeout: 1s
+        retries: 5
+      ports:
+        - "8888:8888"
+      volumes:
+        - ../server/.test.key:/mnt/test.key
+      env_file:
+        - ../server/.env
+
     pulp-api:
       image: localhost/pulp:stable
       build:
@@ -69,11 +86,14 @@ services:
       container_name: pulp-worker
       command: pulp-worker
       depends_on:
+        signer:
+          condition: service_healthy
         db:
           condition: service_started
       volumes:
         - ../pulp/settings.py:/etc/pulp/settings.py
         - ../pulp/.pulp_symmetric_key:/etc/pulp/pulp_symmetric_key
+        - ../server/.test.pub:/sign_cli/msopentech.asc  # overwrite the MS OpenTech pub key 
         - pulp_storage:/var/lib/pulp
         - containers:/var/lib/containers
       devices:

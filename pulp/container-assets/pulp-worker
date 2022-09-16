@@ -1,5 +1,13 @@
 #!/bin/bash -x
 
+## PMC: import the public signing keys and create sign_cli env
+if [ -n "$SIGNER_HOST" ]; then
+  echo "SIGNER_HOST=$SIGNER_HOST" > /sign_cli/.env
+fi
+gpg --import /sign_cli/msopentech.asc
+gpg --import /sign_cli/prsslinuxtest.asc
+gpg --import /sign_cli/microsoft.asc
+
 /usr/bin/wait_on_postgres.py
 /usr/bin/wait_on_database_migrations.sh
 

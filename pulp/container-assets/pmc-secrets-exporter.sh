@@ -2,6 +2,8 @@
 
 if [ -z "$SECRETS_MOUNTPOINT" ]; then
   echo "SECRETS_MOUNTPOINT is not set or empty, not reading secrets"
+elif [ ! -d "$SECRETS_MOUNTPOINT" ]; then
+  echo "SECRETS_MOUNTPOINT is not a directory, not reading secrets"
 else
   for path in $SECRETS_MOUNTPOINT/*; do
     # Translate some known secret names into their appropriate ENV name.

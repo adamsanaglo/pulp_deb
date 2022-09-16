@@ -1,3 +1,4 @@
+#!/bin/bash
 # This script depends on the az cli and docker commands already being installed. If you
 # don't have them already then take a minute an install them.
 # az cli: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
@@ -94,8 +95,24 @@ pmc_run "PGPASSWORD=$PMC_POSTGRES_PASSWORD psql -h $pg_server -U pmcserver -d po
 # restart the deployment so that pulp-api will actally connect to the db and create schema
 kubectl rollout restart deployment api-pod
 
-# Give pulp-api about 5 minutes to create the schema, then start pulp-worker and scale everything up
+# Give pulp-api about 5 minutes to create the schema, then start pulp-worker and create the signing services.
 envsubst < worker-pod.yml | kubectl apply -f -
+WORKERPOD=$(kubectl get pod -l app=pulp-worker -o jsonpath="{.items[0].metadata.name}")
+alias worker_run="kubectl exec --stdin -c pulp-worker --tty $WORKERPOD -- /bin/bash -c"
+register_signing_services () {
+  worker_run "/usr/local/bin/pulpcore-manager add-signing-service \"${1}_yum\" ${2}.py \"\$(gpg --show-keys $3 | head -n 2 | tail -n 1 | tail -c 17)\"";
+  worker_run "/usr/local/bin/pulpcore-manager add-signing-service \"${1}_apt\" ${2}_apt.py --class deb:AptReleaseSigningService \"\$(gpg --show-keys $3 | head -n 2 | tail -n 1 | tail -c 17)\"";
+}
+register_signing_services "legacy" "/sign_cli/sign_legacy" "/sign_cli/msopentech.asc"
+if [[ "$prefix" =~ "ppe" ]]; then 
+  # In PPE-like environments, register the ESRP test scripts for test signing.
+  register_signing_services "esrp" "/sign_cli/sign_esrp_test" "/sign_cli/prsslinuxtest.asc"
+else
+  # In Prod / Tux-Dev-like environments, register the real ESRP scripts for real signing.
+  register_signing_services "esrp" "/sign_cli/sign_esrp_prod" "/sign_cli/microsoft.asc"
+fi
+
+# Scale everything up
 kubectl autoscale deployment api-pod --min=2 --max=3
 kubectl autoscale deployment worker-pod --min=2 --max=10
 kubectl autoscale deployment pulp-content --min=2 --max=10

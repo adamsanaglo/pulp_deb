@@ -28,9 +28,14 @@ def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, str]:
     if not type:
         type = choice([RepoType.apt, RepoType.yum])
     if type == RepoType.apt:
-        return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type, release="jammy")
+        return dict(
+            name=f"pmc_cli_test_repo_{uuid4()}",
+            type=type,
+            release="jammy",
+            signing_service="legacy",
+        )
     else:
-        return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type)
+        return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type, signing_service="legacy")
 
 
 def gen_pulp_repo_response(type: RepoType, name: str) -> Dict[str, Any]:

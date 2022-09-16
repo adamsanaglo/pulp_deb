@@ -15,6 +15,7 @@ from .utils import (
     gen_release_attrs,
     gen_repo_attrs,
     invoke_command,
+    repo_create_cmd,
 )
 
 
@@ -29,6 +30,7 @@ def set_config() -> Path:
 @pytest.fixture(autouse=True, scope="session")
 def check_connection(set_config: Path) -> None:
     try:
+        become(Role.Account_Admin)
         result = invoke_command(["account", "list"])
         assert result.exit_code == 0, f"account list failed: {result.stderr}"
     except Exception as exc:
@@ -65,25 +67,19 @@ def _object_manager(
 
 @pytest.fixture()
 def repo() -> Generator[Any, None, None]:
-    attrs = gen_repo_attrs()
-    cmd = ["repo", "create", attrs["name"], attrs["type"]]
-    with _object_manager(cmd, Role.Repo_Admin) as r:
+    with _object_manager(repo_create_cmd(gen_repo_attrs()), Role.Repo_Admin) as r:
         yield r
 
 
 @pytest.fixture()
 def apt_repo() -> Generator[Any, None, None]:
-    attrs = gen_repo_attrs(RepoType.apt)
-    cmd = ["repo", "create", attrs["name"], attrs["type"]]
-    with _object_manager(cmd, Role.Repo_Admin) as r:
+    with _object_manager(repo_create_cmd(gen_repo_attrs(RepoType.apt)), Role.Repo_Admin) as r:
         yield r
 
 
 @pytest.fixture()
 def yum_repo() -> Generator[Any, None, None]:
-    attrs = gen_repo_attrs(RepoType.yum)
-    cmd = ["repo", "create", attrs["name"], attrs["type"]]
-    with _object_manager(cmd, Role.Repo_Admin) as r:
+    with _object_manager(repo_create_cmd(gen_repo_attrs(RepoType.yum)), Role.Repo_Admin) as r:
         yield r
 
 

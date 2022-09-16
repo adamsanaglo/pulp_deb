@@ -347,6 +347,11 @@ reports/
 
 # virtualenvs
 .venv
+signer/.venv
 
 # ctags
 tags
+
+# The test keys used to do "legacy signing" in dev environements should never get checked in.
+server/.test.key
+server/.test.pub

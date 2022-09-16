@@ -1,66 +1,80 @@
-import json
 import logging
-import signer
-
-from fastapi import BackgroundTasks, FastAPI, Request, Response, UploadFile
-from pathlib import Path
-from redis import Redis
-from typing import Dict, Optional
+from typing import Dict
 from uuid import uuid4
 
+from fastapi import BackgroundTasks, FastAPI, Response, UploadFile
+from redis import Redis
+
+import signer
+
 app = FastAPI()
-redis = Redis(host='localhost')
-log = logging.getLogger('uvicorn')
-pending = 'Pending'
-done = 'Done'
-failure = 'Failure'
+redis = Redis(host="localhost")
+log = logging.getLogger("uvicorn")
+PENDING = "Pending"
+DONE = "Done"
+FAILURE = "Failure"
 
 
-def handle_request(unsigned_file: UploadFile, key_id: str, task_id: str):
-    '''
-    Handles signing of uploaded artifacts
-    '''
+def handle_request(file: UploadFile, clearsign: bool, key_id: str, task_id: str):
+    """
+    This method will run in the background and signal status when it is complete.
+    """
     # Locking unnecessary; Pulp does this for us.
-    log.info(f'Processing request for {task_id}, {key_id}')
+    log.info(f"Processing request for {task_id}, {key_id}")
     # Get Spooled Temporary File that represents our file in memory
-    spooled_file = unsigned_file.file
-    # TODO pass task_id
-    if signer.sign_request(spooled_file, key_id, task_id):
-        log.info(f'Successfully processed request for {task_id}')
-        redis.set(task_id, done)
+    if signer.sign_request(file.file, clearsign, key_id, task_id):
+        log.info(f"Successfully processed request for {task_id}")
+        redis.set(task_id, DONE)
     else:
-        log.error(f'FAILED request for {task_id}')
-        redis.set(task_id, failure)
+        log.error(f"FAILED request for {task_id}")
+        redis.set(task_id, FAILURE)
 
 
-@app.post('/sign')
-async def sign(background_tasks: BackgroundTasks,
-               key_id: Optional[str],
-               file: UploadFile) -> Dict:
-    
+@app.post("/sign")
+async def sign(
+        background_tasks: BackgroundTasks, clearsign: bool, key_id: str, file: UploadFile
+    ) -> Dict:
+    """
+    Request a signature, which will be processed in the background.
+    Required params:
+    clearsign: Whether or not to also do a clearsign signature.
+    key_id: ("legacy"|"CP-450778-Pgp"(in PPE)|"CP-450779-Pgp"(in tux-dev/prod)) Which key to use.
+    """
     task_id = str(uuid4())
-    redis.set(task_id, pending)
-    background_tasks.add_task(handle_request, file, key_id, task_id)
-    log.info(f'Received signing request with task ID {task_id} and key ID {key_id}')
-    return {'x-ms-workflow-run-id': task_id}
+    redis.set(task_id, PENDING)
+    background_tasks.add_task(handle_request, file, clearsign, key_id, task_id)
+    log.info(f"Received signing request with task ID {task_id} and key ID {key_id}")
+    return {"x-ms-workflow-run-id": task_id}
 
 
-@app.get('/signature', status_code=200)
-async def signature(background_tasks: BackgroundTasks,
-               task_id: str,
-               response: Response) -> Dict:
-    if not redis.exists(task_id):
-        log.info(f'Request {task_id} does not exist')
-        response.status_code = 400
-        return
-    request_status = redis.get(task_id)
-    if request_status == bytes(pending, 'utf-8'):
-        # Still working
-        log.info(f'Request {task_id} is still pending')
-        response.status_code = 204
-        return
-    if request_status == bytes(done, 'utf-8'):
-        # Done
-        return signer.get_signature_file(task_id)
-    # Unknown request
+@app.get("/signature", status_code=200)
+async def signature(task_id: str, response: Response) -> Response:
+    """
+    Get the signed file(s). Depending on the type of signature requested may include the following:
+    {
+        "detached": UTF-8 encoded detached signature,
+        "clearsigned": [Optional] UTF-8 encoded clearsigned signature.
+    }
+    """
     response.status_code = 400
+    request_status = redis.get(task_id)
+    if request_status is None:
+        log.info(f"Request {task_id} does not exist")
+    elif request_status == bytes(PENDING, "utf-8"):
+        # Still working
+        log.info(f"Request {task_id} is still pending")
+        response.status_code = 204
+    elif request_status == bytes(DONE, "utf-8"):
+        # Done
+        response.status_code = 200
+        redis.delete(task_id)
+        return signer.get_signature_file(task_id)
+
+    return response
+
+
+@app.get("/status", status_code=200)
+async def status() -> Dict:
+    redis.set("heartbeat", "thump")
+    redis.get("heartbeat")
+    return {"Computer?": "WORKING"}

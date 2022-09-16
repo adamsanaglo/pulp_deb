@@ -2,7 +2,7 @@ import json
 from typing import Any
 
 from pmc.schemas import RepoType
-from tests.utils import gen_release_attrs, gen_repo_attrs, invoke_command
+from tests.utils import gen_release_attrs, gen_repo_attrs, invoke_command, repo_create_cmd
 
 
 def test_create_with_comps_architectures(orphan_cleanup: None, apt_repo: Any) -> None:
@@ -87,9 +87,7 @@ def test_dupe_release_another_repo(release: Any) -> None:
     repo = dict()
     try:
         # create another repo
-        attrs = gen_repo_attrs(RepoType.apt)
-        repo_cmd = ["repo", "create", attrs["name"], attrs["type"]]
-        result = invoke_command(repo_cmd)
+        result = invoke_command(repo_create_cmd(gen_repo_attrs(RepoType.apt)))
         repo = json.loads(result.stdout)
 
         # create the same release for the new repo

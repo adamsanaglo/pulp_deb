@@ -86,7 +86,8 @@ RUN pip install  \
 RUN mkdir -p /etc/pulp \
 			 /var/lib/pulp/media \
 			 /var/lib/pulp/assets \
-			 /var/lib/pulp/tmp
+			 /var/lib/pulp/tmp \
+			 /sign_cli
 
 # https://github.com/python-ldap/python-ldap/issues/432#issuecomment-1016756358
 #RUN ln -s /usr/lib64/libldap.so /usr/lib64/libldap_r.so
@@ -108,5 +109,8 @@ COPY container-assets/pulp-content /usr/bin/pulp-content
 #COPY container-assets/pulp-resource-manager /usr/bin/pulp-resource-manager
 COPY container-assets/pulp-worker /usr/bin/pulp-worker
 COPY container-assets/pmc-secrets-exporter.sh /usr/bin/pmc-secrets-exporter.sh
+
+# Copy over stuff for signing repodata
+COPY sign_cli /sign_cli
 
 ENTRYPOINT ["/pulp-common-entrypoint.sh"]

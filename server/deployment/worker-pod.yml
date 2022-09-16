@@ -28,23 +28,54 @@ spec:
         volumeMounts:
           - name: files-storage
             mountPath: "/var/lib/pulp"
-          - name: secrets-volume
+          - name: pulp-secrets-volume
             mountPath: "/mnt/secrets"
             readOnly: true
         envFrom:
           - configMapRef:
               name: pulp-settings
-      # TODO: signer container gets deployed here and communicates with pulp-worker over localhost
+      - name: signer
+        image: $loginserver/signer
+        resources:
+          requests:
+            cpu: 100m
+            memory: 1Gi
+          limits:
+            cpu: 250m
+            memory: 1Gi
+        ports:
+          - containerPort: 8888
+            name: signer-port
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /status
+            port: signer-port
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+          - name: signer-secrets-volume
+            mountPath: "/mnt/secrets"
+            readOnly: true
+        envFrom:
+          - configMapRef:
+              name: signer-settings
       volumes:
         - name: files-storage
           persistentVolumeClaim:
             claimName: pulp-files-claim
-        - name: secrets-volume
+        - name: pulp-secrets-volume
           csi:
             driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
               secretProviderClass: "pulp-secret-provider"
+        - name: signer-secrets-volume
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "signer-secret-provider"
 ---
 apiVersion: apps/v1
 kind: Deployment

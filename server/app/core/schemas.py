@@ -69,6 +69,13 @@ class RepoType(str, Enum):
     yum = "yum"  # maps to 'rpm' in Pulp
 
 
+class RepoSigningService(str, Enum):
+    """What Signing Service to use to sign the repo metadata."""
+
+    legacy = "legacy"
+    esrp = "esrp"
+
+
 class PackageType(str, Enum):
     """Type for a package."""
 
@@ -310,11 +317,13 @@ class RemoteListResponse(ListResponse):
 class RepositoryCreate(BaseModel):
     name: NonEmptyStr
     type: RepoType
+    signing_service: RepoSigningService
     remote: Optional[RemoteId]
 
 
 class RepositoryUpdate(BaseModel):
     name: Optional[str]
+    signing_service: Optional[RepoSigningService]
     remote: Union[RemoteId, EmptyStr, None]
 
 

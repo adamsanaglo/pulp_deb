@@ -40,6 +40,13 @@ class RepoType(StringEnum):
     yum = "yum"  # maps to 'rpm' in Pulp
 
 
+class RepoSigningService(StringEnum):
+    """The Signing Service to use for this repo."""
+
+    legacy = "legacy"
+    esrp = "esrp"
+
+
 class DistroType(StringEnum):
     """Type for a distribution."""
 

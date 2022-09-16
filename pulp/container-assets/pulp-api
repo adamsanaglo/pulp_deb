@@ -16,9 +16,9 @@
 
 bash +x
 
-if [ -n "${PULP_SIGNING_KEY_FINGERPRINT}" ]; then
-    /usr/local/bin/pulpcore-manager add-signing-service "${SIGNING_SERVICE}" /var/lib/pulp/scripts/collection_sign.sh "${PULP_SIGNING_KEY_FINGERPRINT}"
-fi
+#if [ -n "${PULP_SIGNING_KEY_FINGERPRINT}" ]; then
+#    /usr/local/bin/pulpcore-manager add-signing-service "${SIGNING_SERVICE}" /var/lib/pulp/scripts/collection_sign.sh "${PULP_SIGNING_KEY_FINGERPRINT}"
+#fi
 
 ADMIN_PASSWORD_FILE=/etc/pulp/pulp-admin-password
 if [[ -f "$ADMIN_PASSWORD_FILE" ]]; then

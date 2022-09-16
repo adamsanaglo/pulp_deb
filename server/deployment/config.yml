@@ -29,6 +29,20 @@ data:
   PULP_CONTENT_ORIGIN: "http://${destination_env}:80"
   POSTGRES_SERVICE_HOST: $pg_server
   PULP_DATABASES__default__HOST: $pg_server
+  SIGNER_HOST: "localhost"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: signer-settings
+data:
+  KEYVAULT: $kv
+  SIGN_CERT: "esrp-sign-test"
+  AUTH_CERT_PATH: "/mnt/secrets/esrp-auth-test"
+  LEGACY_KEY_PATH: "/mnt/secrets/legacy-sign"
+  APP_ID: "1ce02e3e-1bf3-4d28-8cdc-e921f824399d"
+  TENANT_ID: $AZURE_TENANT_ID
+  KEY_CODES: "CP-450778-Pgp"
 ---
 kind: PersistentVolume
 apiVersion: v1
@@ -106,5 +120,27 @@ spec:
           objectType: secret
         - |
           objectName: "pulpSymmetricKey"
+          objectType: secret
+    tenantId: $AZURE_TENANT_ID
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: signer-secret-provider
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"
+    userAssignedIdentityID: $CLIENT_ID
+    keyvaultName: $kv
+    # This configures what secrets we pull from the keyvault
+    objects: |
+      array:
+        - |
+          objectName: "esrp-auth-test"
+          objectType: secret
+        - |
+          objectName: "legacy-sign"
           objectType: secret
     tenantId: $AZURE_TENANT_ID

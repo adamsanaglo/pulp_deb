@@ -81,8 +81,8 @@ A default Service Principal is available to simplify your dev environment
 ### apt
 
 ```
-# create a repo
-REPO_ID=$(pmc --id-only repo create myrepo apt)
+# create a repo. Note: only legacy signing is available in dev environments.
+REPO_ID=$(pmc --id-only repo create myrepo apt legacy)
 
 # create a repo release
 pmc repo releases create $REPO_ID jammy jammy stable
@@ -101,14 +101,14 @@ pmc repo packages update $REPO_ID jammy --add-packages $PACKAGE_ID
 pmc repo publish $REPO_ID
 
 # check out our repo
-http :8080/pulp/content/some/path/
+http :8081/pulp/content/some/path/
 ```
 
 ### yum
 
 ```
-# create a repo
-REPO_ID=$(pmc --id-only repo create myrepo yum)
+# create a repo. Note: only legacy signing is available in dev environments.
+REPO_ID=$(pmc --id-only repo create myrepo yum legacy)
 
 # create a distro
 pmc distro create mydistro yum "awesome/path" --repository $REPO_ID
@@ -124,7 +124,7 @@ pmc repo packages update $REPO_ID --add-packages $PACKAGE_ID
 pmc repo publish $REPO_ID
 
 # check out our repo
-http :8080/pulp/content/awesome/path/
+http :8081/pulp/content/awesome/path/
 ```
 
 ### syncing

@@ -7,8 +7,6 @@ This API is invoked using `az xsign`. The code in this container uses
 `az xsign` to initiate ESRP signing and to send the resultant signatures
 to the requestor.
 
-**NOTE**: Per the docs (linked below) Pulp will only request *detached* signatures. Presumably it has its own mechanism for generating an "attached" signature (file contents with signature appended).
-
 Workflow
 --------
 1. Requestor (Pulp) POSTs an unsigned metadata file to the `/sign` endpoint of this API.

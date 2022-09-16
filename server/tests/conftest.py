@@ -199,3 +199,10 @@ def task_api(monkeypatch) -> Type[pulp_service_api.TaskApi]:
     for method in ("create", "update", "read", "destroy", "list", "cancel"):
         monkeypatch.setattr(pulp_service_api.TaskApi, method, get_async_mock())
     return pulp_service_api.TaskApi
+
+
+@pytest.fixture
+def signing_service_api(monkeypatch) -> Type[pulp_service_api.TaskApi]:
+    for method in ("create", "update", "read", "destroy", "list", "list_relevant"):
+        monkeypatch.setattr(pulp_service_api.SigningService, method, get_async_mock())
+    return pulp_service_api.SigningService

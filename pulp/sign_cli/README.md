@@ -7,4 +7,6 @@ Per the [documentation](https://docs.pulpproject.org/pulpcore/workflows/signed-m
     - The filename that was signed
     - The filename of the signature that was generated
 
-The tool in this folder is the *client* portion of a signing solution, which interacts with a signing API, which in turn interacts with ESRP. The API is located at [../signer](../signer).
+The tool in this folder is the *client* portion of a signing solution, which interacts with a signing API, which in turn interacts with ESRP.
+The API is located at [../../signer](../../signer).
+These client scripts get built into the [Pulp container image](../Dockerfile).
