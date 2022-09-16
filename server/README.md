@@ -43,11 +43,11 @@ Create an initial account admin:
 make grant_access
 ```
 
-Now try to use the v4 api with httpie:
+Most of the pmcserver API surface requires authentication that httpie can't easily perform.  However,
+as a quick "smoke test", you can invoke the very top of the REST API space without authentication:
 
 ```
 http :8000/api/
-http :8000/api/v4/repositories/
 ```
 
 ### Configuring Authentication

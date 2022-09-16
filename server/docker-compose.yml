@@ -77,7 +77,8 @@ services:
       devices:
         - /dev/fuse
       env_file:
-        - ../server/.env
+        - .env
+        - .env.storage
 
     pulp-worker:
       image: localhost/pulp:stable
@@ -99,7 +100,8 @@ services:
       devices:
         - /dev/fuse
       env_file:
-        - ../server/.env
+        - .env
+        - .env.storage
 
     pulp-content:
       image: localhost/pulp:stable
@@ -120,7 +122,8 @@ services:
       devices:
         - /dev/fuse
       env_file:
-        - ../server/.env
+        - .env
+        - .env.storage
 
 volumes:
   pulp_storage:

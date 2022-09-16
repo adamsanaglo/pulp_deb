@@ -75,9 +75,8 @@ RUN pip install  \
 	#rhsm \
 	setproctitle \
 	gunicorn \
-    python-nginx \
-	"django-storages[boto3,azure]>=1.12.2" \
-	"azure-storage-blob<12.10.0" \
+	python-nginx \
+	"azure-storage-blob<12.14.0" \
 	"requests[use_chardet_on_py3]" \
 	# A couple more pulp-rpm dependencies
 	scikit-build \
@@ -112,5 +111,9 @@ COPY container-assets/pmc-secrets-exporter.sh /usr/bin/pmc-secrets-exporter.sh
 
 # Copy over stuff for signing repodata
 COPY sign_cli /sign_cli
+
+# Enable use of cloud storage using vendored clone of github.com/jasonzio/django_storages
+COPY container-assets/django_storages /tmp/django_storages
+RUN pip install /tmp/django_storages
 
 ENTRYPOINT ["/pulp-common-entrypoint.sh"]
