@@ -78,7 +78,7 @@ extends:
               registry: pmcprod.azurecr.io
               repositoryName: pulp
               dockerFileRelPath: pulp/Dockerfile
-              dockerFileContextPath: server/pulp
+              dockerFileContextPath: pulp
               addPipelineData: false
               push: true
               saveImageToPath: pulp-image.tar
