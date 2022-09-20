@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-from tests.utils import gen_account_attrs, invoke_command
+from tests.utils import account_create_command, gen_account_attrs, invoke_command
 
 # Note that create and delete are exercised by the fixture.
 
@@ -16,21 +16,21 @@ def test_list(account_one: Any, account_two: Any) -> None:
 
 
 def test_duplicate_name(account_one: Any) -> None:
-    cmd = [
-        "account",
-        "create",
-        gen_account_attrs()["id"],
-        account_one["name"],
-        "dd@contoso.com",
-        "contoso_test",
-        "contoso",
-    ]
-    result = invoke_command(cmd)
+    result = invoke_command(account_create_command(name=account_one["name"]))
     response = json.loads(result.stdout)
     assert result.exit_code != 0
     assert response["http_status"] == 409
     assert list(response["details"].keys()) == ["name"]
     assert response["details"]["name"] == ["This field must be unique."]
+
+
+def test_duplicate_oid(account_one: Any) -> None:
+    result = invoke_command(account_create_command(oid=account_one["oid"]))
+    response = json.loads(result.stdout)
+    assert result.exit_code != 0
+    assert response["http_status"] == 409
+    assert list(response["details"].keys()) == ["oid"]
+    assert response["details"]["oid"] == ["This field must be unique."]
 
 
 def test_show(account_one: Any) -> None:
@@ -41,12 +41,13 @@ def test_show(account_one: Any) -> None:
 
 
 def test_update(account_one: Any) -> None:
-    new_name = gen_account_attrs()["name"]
-    cmd = ["account", "update", account_one["id"], "--name", new_name]
+    new = gen_account_attrs()
+    cmd = ["account", "update", account_one["id"], "--name", new["name"], "--oid", new["oid"]]
     result = invoke_command(cmd)
     assert result.exit_code == 0
     response = json.loads(result.stdout)
-    assert response["name"] == new_name
+    assert response["name"] == new["name"]
+    assert response["oid"] == new["oid"]
 
 
 def test_disable(account_one: Any) -> None:

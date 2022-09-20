@@ -4,6 +4,7 @@ import fastapi_microsoft_identity
 from fastapi import Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.exc import NoResultFound
 
 from app.core.db import get_session
 from app.core.models import Account, RepoAccess, Role
@@ -34,10 +35,12 @@ async def get_active_account(
 
     # oid is a UUID for an account that we get from Azure Active Directory.
     # https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens#payload-claims
-    id = fastapi_microsoft_identity.get_token_claims(request)["oid"]
+    oid = fastapi_microsoft_identity.get_token_claims(request)["oid"]
 
-    account = await session.get(Account, id)
-    if not account:
+    statement = select(Account).where(Account.oid == oid)
+    try:
+        account = (await session.execute(statement)).one()[0]
+    except NoResultFound:
         raise HTTPException(
             status_code=403, detail=f"Domain UUID {id} is not provisioned in PMC. {SUPPORT}"
         )

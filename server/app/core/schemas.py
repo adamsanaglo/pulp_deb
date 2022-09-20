@@ -515,7 +515,7 @@ class TaskListResponse(ListResponse):
 
 
 class AccountCreate(BaseModel):
-    id: UUID  # Must be the Azure Active Directory "oid" of the user/principal.
+    oid: UUID  # Must be the Azure Active Directory "oid" of the user/principal.
     name: NonEmptyStr
     is_enabled: bool = True
     role: Role
@@ -540,6 +540,7 @@ class AccountUpdate(BaseModel):
 
 class AccountResponse(AccountCreate):
     id: UUID
+    oid: UUID
     created_at: datetime
     last_edited: datetime
 

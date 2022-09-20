@@ -9,8 +9,8 @@ import pytest
 from pmc.schemas import RepoType, Role
 
 from .utils import (
+    account_create_command,
     become,
-    gen_account_attrs,
     gen_distro_attrs,
     gen_release_attrs,
     gen_repo_attrs,
@@ -130,29 +130,16 @@ def release(orphan_cleanup: None, apt_repo: Any) -> Generator[Any, None, None]:
     yield release
 
 
-def _account_create_command() -> List[str]:
-    p = gen_account_attrs()
-    return [
-        "account",
-        "create",
-        p["id"],
-        p["name"],
-        p["contact_email"],
-        p["icm_service"],
-        p["icm_team"],
-    ]
-
-
 @pytest.fixture()
 def account_one() -> Generator[Any, None, None]:
-    with _object_manager(_account_create_command(), Role.Account_Admin) as o:
+    with _object_manager(account_create_command(), Role.Account_Admin) as o:
         yield o
 
 
 @pytest.fixture()
 def account_two() -> Generator[Any, None, None]:
     """Generate multiple accounts."""
-    with _object_manager(_account_create_command(), Role.Account_Admin) as o:
+    with _object_manager(account_create_command(), Role.Account_Admin) as o:
         yield o
 
 

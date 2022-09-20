@@ -50,13 +50,27 @@ def gen_release_attrs() -> Dict[str, str]:
 def gen_account_attrs() -> Dict[str, str]:
     my_uuid = str(uuid4())
     return dict(
-        id=my_uuid,
+        oid=my_uuid,
         name=f"pmc_cli_test_account_{my_uuid}",
         contact_email="alice@contoso.com;bob@contoso.com",
         icm_service="test_icm_service",
         icm_team="test_icm_team",
         role="Publisher",
     )
+
+
+def account_create_command(**kwargs: str) -> List[str]:
+    p = gen_account_attrs()
+    p.update(kwargs)
+    return [
+        "account",
+        "create",
+        p["oid"],
+        p["name"],
+        p["contact_email"],
+        p["icm_service"],
+        p["icm_team"],
+    ]
 
 
 def invoke_command(*args: Any, **kwargs: Any) -> Result:

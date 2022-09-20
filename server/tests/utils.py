@@ -14,7 +14,7 @@ from app.core.schemas import DistroType, RepoType
 def gen_account_attrs(role: Role = Role.Publisher) -> Dict[str, Any]:
     my_uuid = uuid4()
     return dict(
-        id=str(my_uuid),
+        oid=str(my_uuid),
         name=f"pmc_cli_test_account_{my_uuid}",
         contact_email="alice@contoso.com;bob@contoso.com",
         icm_service="test_icm_service",

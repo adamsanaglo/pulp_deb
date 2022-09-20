@@ -37,11 +37,11 @@ class Role(str, enum.Enum):
 class Account(ModelBase, table=True):
     """Model representing accounts."""
 
-    __table_args__ = (UniqueConstraint("name"),)
+    __table_args__ = (UniqueConstraint("name"), UniqueConstraint("oid"))
     name: str
-    # oid is a UUID for an account that we get from Azure Active Directory. We'll use it as our PK.
+    # oid is a UUID for an account that we get from Azure Active Directory.
     # https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens#payload-claims
-    id: uuid.UUID = Field(primary_key=True, index=True, nullable=False)  # no default_factory
+    oid: uuid.UUID
     is_enabled: bool
     role: Role = Field(sa_column=Column(EnumCol(Role)))
     icm_service: str

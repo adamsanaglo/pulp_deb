@@ -9,10 +9,10 @@ from pmc.utils import id_or_name
 app = typer.Typer()
 
 
-ID_ARG = typer.Argument(
-    ...,
-    help="The Azure Active Directory 'oid' of the principal / account being operated on. "
-    "https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens#payload-claims",
+ID_ARG = typer.Argument(..., help="The random UUID for this account.")
+OID_HELP = (
+    "The Azure Active Directory 'oid' of the principal / account being created. "
+    "https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens#payload-claims"
 )
 NAME_HELP = "A human-helpful name for the account."
 EMAIL_HELP = "Contact email(s) (full address, semicolon-separated) for this principal / account."
@@ -23,6 +23,7 @@ ROLE_HELP = "The access level of the account. All normal accounts will be 'Publi
 
 ACCOUNT_FIELDS = {
     "id",
+    "oid",
     "name",
     "is_enabled",
     "role",
@@ -49,7 +50,7 @@ def list(
 @app.command()
 def create(
     ctx: typer.Context,
-    id: str = ID_ARG,
+    oid: str = typer.Argument(..., help=OID_HELP),
     name: str = typer.Argument(..., help=NAME_HELP),
     contact_email: str = typer.Argument(..., help=EMAIL_HELP),
     icm_service: str = typer.Argument(..., help=SERVICE_HELP),
@@ -59,7 +60,7 @@ def create(
 ) -> None:
     """Create an account."""
     ld = locals()
-    data = {field: ld[field] for field in ACCOUNT_FIELDS}
+    data = {field: ld[field] for field in ACCOUNT_FIELDS if field in ld}
 
     with get_client(ctx.obj) as client:
         resp = client.post("/accounts/", json=data)
@@ -78,6 +79,7 @@ def show(ctx: typer.Context, id: str = id_or_name("accounts", ID_ARG)) -> None:
 def update(
     ctx: typer.Context,
     id: str = id_or_name("accounts", ID_ARG),
+    oid: str = typer.Option(None, help=OID_HELP),
     name: str = typer.Option(None, help=NAME_HELP),
     is_enabled: bool = typer.Option(None, "--enabled/--disabled", help=ENABLED_HELP),
     icm_service: str = typer.Option(None, help=SERVICE_HELP),
