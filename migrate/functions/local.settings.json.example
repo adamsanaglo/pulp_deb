@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureServiceBusConnectionString": "fill_me_in",
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "WEBSITE_MAX_DYNAMIC_APPLICATION_SCALE_OUT": 1,
+  }
+}

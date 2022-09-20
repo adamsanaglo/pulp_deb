@@ -5,11 +5,13 @@ from fastapi import APIRouter, Depends, UploadFile
 from app.api.auth import requires_package_admin_or_publisher
 from app.core.schemas import (
     DebPackageListResponse,
+    DebPackageQuery,
     PackageId,
     PackageResponse,
     PackageType,
     Pagination,
     RpmPackageListResponse,
+    RpmPackageQuery,
     TaskResponse,
 )
 from app.services.package.verify import verify_signature
@@ -19,15 +21,19 @@ router = APIRouter()
 
 
 @router.get("/deb/packages/", response_model=DebPackageListResponse)
-async def deb_packages(pagination: Pagination = Depends(Pagination)) -> Any:
+async def deb_packages(
+    pagination: Pagination = Depends(Pagination), query: DebPackageQuery = Depends()
+) -> Any:
     async with PackageApi() as api:
-        return await api.list(pagination, type=PackageType.deb)
+        return await api.list(pagination, params=query.dict(), type=PackageType.deb)
 
 
 @router.get("/rpm/packages/", response_model=RpmPackageListResponse)
-async def rpm_packages(pagination: Pagination = Depends(Pagination)) -> Any:
+async def rpm_packages(
+    pagination: Pagination = Depends(Pagination), query: RpmPackageQuery = Depends()
+) -> Any:
     async with PackageApi() as api:
-        return await api.list(pagination, type=PackageType.rpm)
+        return await api.list(pagination, params=query.dict(), type=PackageType.rpm)
 
 
 @router.post(

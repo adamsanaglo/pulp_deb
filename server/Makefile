@@ -61,7 +61,11 @@ regen_test_key:		## wipe and regenerate the test keys used to do legacy signing 
 grant_access:		## allow our dev principal access to the application
 	../cli/update_role.sh Account_Admin --create
 
-reset_rebuild:	teardown regen_test_key rebuild_env rebuild grant_access  ## reset and rebuild everything
+reset: teardown run grant_access ## reset container volumes and restart containers
+
+reset_rebuild: teardown rebuild grant_access ## reset and rebuild the containers
+
+reset_all:	teardown regen_test_key rebuild_env rebuild grant_access  ## reset and rebuild everything
 
 build_pulp:			## build and locally tag the pulp image
 	docker build pulp/ --pull --tag localhost/pulp:stable
@@ -94,10 +98,6 @@ update: env.storage		## pull the latest images and run the containers
 	docker compose up -d
 	docker exec -it pmcserver alembic upgrade head
 
-reset: teardown env.storage	## remove container volumes and restart containers
-	docker compose up -d
-	docker exec -it pmcserver alembic upgrade head
-
 migrate:			## apply any database migrations to the api container
 	docker exec -it pmcserver alembic upgrade head
 
@@ -121,4 +121,4 @@ help:
 	@echo 'usage: make [target] ...'
 	@echo
 	@echo 'targets:'
-	@gawk '/^\S.*:.*##/ { print gensub(/^([[:alnum:]\.]+):.*##\s+(.*)/, "\\1: \\2", "g") }' $(MAKEFILE_LIST)
+	@gawk '/^\S.*:.*##/ { print gensub(/^([[:alnum:]\._]+):.*##\s+(.*)/, "\\1: \\2", "g") }' $(MAKEFILE_LIST)

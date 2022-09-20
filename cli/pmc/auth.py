@@ -1,18 +1,24 @@
+from pathlib import Path
 from typing import List
 
 from msal import ConfidentialClientApplication
 from OpenSSL.crypto import FILETYPE_PEM, X509, dump_certificate, load_certificate
 
-from .schemas import Config
-
 
 class pmcauth:
-    def __init__(self, config: Config):
+    def __init__(
+        self,
+        msal_client_id: str,
+        msal_scope: str,
+        msal_cert_path: Path,
+        msal_authority: str,
+        msal_SNIAuth: bool = True,
+    ):
         """
         Initialize an instance of pmcauth
         """
-        self.scope = config.msal_scope
-        self.client_certificate_contents = config.msal_cert_path.expanduser().read_text()
+        self.scope = msal_scope
+        self.client_certificate_contents = msal_cert_path.expanduser().read_text()
         # Find the leaf cert and thumbprint
         self.leaf_cert = self.find_leaf_cert()
         self.client_certificate_thumbprint = self._get_cert_thumbprint()
@@ -21,12 +27,12 @@ class pmcauth:
             "private_key": self.client_certificate_contents,
         }
 
-        if config.msal_SNIAuth:
+        if msal_SNIAuth:
             # Include the leaf cert, for SNIssuer Auth
             client_credential["public_certificate"] = self.leaf_cert  # Todo - parse cert
         self.app = ConfidentialClientApplication(
-            config.msal_client_id,
-            authority=config.msal_authority,
+            msal_client_id,
+            authority=msal_authority,
             client_credential=client_credential,
         )
 

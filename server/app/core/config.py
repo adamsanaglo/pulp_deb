@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     APP_CLIENT_ID: str = ""
     TENANT_ID: str = ""
 
+    # TODO: [MIGRATE] Remove me.
+    AF_QUEUE_ACTION_URL: str = ""
+
     def db_uri(self) -> Any:
         return PostgresDsn.build(
             scheme="postgresql+asyncpg",

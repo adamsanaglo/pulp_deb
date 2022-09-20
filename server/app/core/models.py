@@ -27,6 +27,7 @@ class Role(str, enum.Enum):
     Account_Admin = "Account_Admin"
     Repo_Admin = "Repo_Admin"
     Package_Admin = "Package_Admin"
+    Migration = "Migration"  # TODO: [MIGRATE] Remove this role
 
     def __str__(self) -> str:
         """Return value as the string representation."""

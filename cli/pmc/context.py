@@ -13,4 +13,4 @@ class PMCContext:
         self.config = config
         self.config_path = config_path
         self.isatty = sys.stdout.isatty()
-        self.auth = pmcauth(self.config)
+        self.auth = pmcauth(**self.config.auth_fields())

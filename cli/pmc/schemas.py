@@ -1,5 +1,6 @@
 from enum import Enum
 from pathlib import Path
+from typing import Any, Dict
 
 import click
 import typer
@@ -31,6 +32,7 @@ class Role(StringEnum):
     Account_Admin = "Account_Admin"
     Repo_Admin = "Repo_Admin"
     Package_Admin = "Package_Admin"
+    Migration = "Migration"  # TODO: [MIGRATE] remove this option
 
 
 class RepoType(StringEnum):
@@ -99,3 +101,6 @@ class Config(BaseModel):
         except Exception:
             # we encountered a problem; just use the original value and let validation handle it
             return v
+
+    def auth_fields(self) -> Dict[str, Any]:
+        return {k: v for k, v in self.dict().items() if k.startswith("msal_")}

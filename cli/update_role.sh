@@ -2,7 +2,7 @@
 # This helper script will only work in the dev environment because it requires direct access to the
 # database. The intent is to help you "become" different types of accounts so that you can get
 # through the RBAC restrictions and actually test your code.
-usage="Usage: update_role.sh <Account_Admin|Repo_Admin|Package_Admin|Publisher> [--create]"
+usage="Usage: update_role.sh <Account_Admin|Repo_Admin|Package_Admin|Publisher|Migration> [--create]"
 
 if [ $# -eq 0 ]
  then
@@ -16,6 +16,7 @@ case "$1" in
   Repo_Admin) ;;
   Package_Admin) ;;
   Publisher) ;;
+  Migration) ;;
   *) echo $usage; exit 1;;
 esac
 

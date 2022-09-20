@@ -6,7 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.auth import get_active_account, requires_repo_admin, requires_repo_permission
+from app.api.auth import (
+    get_active_account,
+    requires_repo_admin,
+    requires_repo_admin_or_migration,
+    requires_repo_permission,
+)
+from app.core.config import settings
 from app.core.db import get_session
 from app.core.models import Account, OwnedPackage, RepoAccess, Role
 from app.core.schemas import (
@@ -29,9 +35,11 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/repositories/", response_model=RepositoryListResponse)
-async def list_repos(pagination: Pagination = Depends(Pagination)) -> Any:
+async def list_repos(
+    pagination: Pagination = Depends(Pagination), name: Optional[str] = None
+) -> Any:
     async with RepositoryApi() as api:
-        return await api.list(pagination)
+        return await api.list(pagination, params={"name": name})
 
 
 @router.post(
@@ -67,7 +75,7 @@ async def delete_repository(id: RepoId) -> Any:
 @router.post(
     "/repositories/{id}/sync/",
     response_model=TaskResponse,
-    dependencies=[Depends(requires_repo_admin)],
+    dependencies=[Depends(requires_repo_admin_or_migration)],
 )
 async def sync_repository(id: RepoId, remote: Optional[RemoteId] = None) -> Any:
     async with RepositoryApi() as api:
@@ -164,6 +172,10 @@ async def update_packages(
         ):
             pass  # Account can remove whatever they want
 
+        # TODO: [MIGRATE] remove this check
+        elif account.role == Role.Migration:
+            pass
+
         elif account.role not in (Role.Repo_Admin, Role.Publisher):
             raise HTTPException(status_code=403, detail=f"Account {account.id} is not a Publisher")
 
@@ -178,8 +190,20 @@ async def update_packages(
     # Commit the newly added package ownership records, if any.
     await session.commit()
 
+    # TODO: [MIGRATE] remove these lines
+    package_update = repo_update.dict()
+    migration = package_update.pop("migration")
+
     async with RepositoryApi() as api:
-        return await api.update_packages(id, **repo_update.dict())
+        resp = await api.update_packages(id, **package_update)
+
+    # TODO: [MIGRATE] remove these lines
+    from app.services.migration import remove_vcurrent_packages
+
+    if settings.AF_QUEUE_ACTION_URL and repo_update.remove_packages and not migration:
+        await remove_vcurrent_packages(repo_update.remove_packages, id, repo_update.release)
+
+    return resp
 
 
 @router.post(

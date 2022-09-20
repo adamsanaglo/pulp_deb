@@ -62,6 +62,14 @@ async def requires_repo_admin(account: Account = Depends(get_active_account)) ->
         )
 
 
+# TODO: [MIGRATE] Remove this function
+async def requires_repo_admin_or_migration(account: Account = Depends(get_active_account)) -> None:
+    if account.role not in [Role.Repo_Admin, Role.Migration]:
+        raise HTTPException(
+            status_code=403, detail=f"Account {account.id} is not a Repo Admin. {SUPPORT}"
+        )
+
+
 async def requires_package_admin(account: Account = Depends(get_active_account)) -> None:
     if account.role != Role.Package_Admin:
         raise HTTPException(
@@ -88,6 +96,10 @@ async def requires_repo_permission(
     Publishers can do things only if they've been granted access to this repo.
     """
     if account.role == Role.Repo_Admin:
+        return
+
+    # TODO: [MIGRATE] Remove this if
+    if account.role == Role.Migration:
         return
 
     if account.role == Role.Publisher:

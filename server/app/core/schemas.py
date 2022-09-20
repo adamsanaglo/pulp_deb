@@ -17,10 +17,10 @@ from typing import (
 from uuid import UUID
 
 from pydantic import (
+    AnyHttpUrl,
     BaseModel,
     EmailStr,
     FileUrl,
-    HttpUrl,
     NonNegativeInt,
     PositiveInt,
     StrictStr,
@@ -262,7 +262,7 @@ class DistributionListResponse(ListResponse):
 class RemoteCreate(BaseModel):
     name: NonEmptyStr
     type: RemoteType
-    url: Union[HttpUrl, FileUrl]
+    url: Union[AnyHttpUrl, FileUrl]
     download_concurrency: Optional[PositiveInt]
     max_retries: Optional[NonNegativeInt]
     rate_limit: Optional[NonNegativeInt]
@@ -273,7 +273,7 @@ class RemoteCreate(BaseModel):
 
 class RemoteUpdate(BaseModel):
     name: Optional[str]
-    url: Union[HttpUrl, FileUrl, None]
+    url: Union[AnyHttpUrl, FileUrl, None]
     download_concurrency: Optional[PositiveInt]
     max_retries: Optional[NonNegativeInt]
     rate_limit: Optional[NonNegativeInt]
@@ -286,7 +286,7 @@ class BaseRemoteResponse(BaseModel):
     id: RemoteId
     pulp_created: datetime
     name: str
-    url: Union[HttpUrl, FileUrl]
+    url: Union[AnyHttpUrl, FileUrl]
     download_concurrency: Optional[PositiveInt]
     max_retries: Optional[NonNegativeInt]
     rate_limit: Optional[NonNegativeInt]
@@ -345,6 +345,7 @@ class RepositoryPackageUpdate(BaseModel):
     remove_packages: Optional[List[PackageId]]
     release: Optional[str]
     component: str = "main"
+    migration: bool = False  # TODO: [MIGRATE] Remove this parameter
 
     @root_validator
     @classmethod
@@ -368,6 +369,7 @@ class DebPackageResponse(BasePackageResponse):
     source: Optional[str]
     version: str
     architecture: str
+    relative_path: str
     section: Optional[str]
     priority: Optional[str]
     origin: Optional[str]
@@ -395,6 +397,12 @@ class DebPackageResponse(BasePackageResponse):
     pre_depends: Optional[str]
     provides: Optional[str]
     replaces: Optional[str]
+
+
+class DebPackageQuery(BaseModel):
+    package: Optional[str]
+    version: Optional[str]
+    architecture: Optional[str]
 
 
 class DebPackageListResponse(ListResponse):
@@ -445,6 +453,14 @@ class RpmPackageResponse(BasePackageResponse):
 
     time_build: Optional[int]
     time_file: Optional[int]
+
+
+class RpmPackageQuery(BaseModel):
+    name: Optional[str]
+    epoch: Optional[str]
+    version: Optional[str]
+    release: Optional[str]
+    arch: Optional[str]
 
 
 class RpmPackageListResponse(ListResponse):
