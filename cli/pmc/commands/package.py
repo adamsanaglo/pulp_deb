@@ -37,13 +37,6 @@ def rpm_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OP
 def upload(
     ctx: typer.Context,
     file: typer.FileBinaryRead,
-    force_name: bool = typer.Option(
-        False,
-        "--force-name",
-        show_default=False,
-        help="Force the current filename to persist, and not be reset to standard naming "
-        "conventions. We recommend you do NOT set this unless you have a good reason.",
-    ),
     ignore_signature: bool = typer.Option(
         False,
         "--ignore-signature",
@@ -59,7 +52,7 @@ def upload(
         with get_client(ctx.obj) as client:
             return client.get(f"/packages/{package_id}/")
 
-    data = {"force_name": force_name, "ignore_signature": ignore_signature}
+    data = {"ignore_signature": ignore_signature}
     files = {"file": file}
     with get_client(ctx.obj) as client:
         resp = client.post("/packages/", params=data, files=files)

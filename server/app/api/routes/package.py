@@ -35,13 +35,11 @@ async def rpm_packages(pagination: Pagination = Depends(Pagination)) -> Any:
     response_model=TaskResponse,
     dependencies=[Depends(requires_package_admin_or_publisher)],
 )
-async def create_package(
-    file: UploadFile, force_name: Optional[bool] = False, ignore_signature: Optional[bool] = False
-) -> Any:
+async def create_package(file: UploadFile, ignore_signature: Optional[bool] = False) -> Any:
     if not ignore_signature:
         await verify_signature(file)
     async with PackageApi() as api:
-        return await api.create({"file": file, "force_name": force_name})
+        return await api.create({"file": file})
 
 
 @router.get("/packages/{id}/", response_model=PackageResponse)

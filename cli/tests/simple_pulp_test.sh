@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ./update_role.sh Package_Admin
-PACKAGE_ID=$(poetry run pmc --id-only package upload tests/assets/signed-by-us.rpm --force-name)
+PACKAGE_ID=$(poetry run pmc --id-only package upload tests/assets/signed-by-us.rpm)
 
 ./update_role.sh Repo_Admin
 REPO_ID=$(poetry run pmc --id-only repo create test_repo yum)

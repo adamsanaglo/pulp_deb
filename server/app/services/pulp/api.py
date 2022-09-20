@@ -414,10 +414,6 @@ class PackageApi(PulpApi):
         type = PackageType(extension)
         path = self.endpoint("create", type=type)
 
-        force_name = data.pop("force_name")
-        if force_name:
-            data["relative_path"] = file.filename
-
         resp = await self.post(path, files={"file": file.file}, data=data)
         return translate_response(resp.json())
 

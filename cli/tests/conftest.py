@@ -182,10 +182,6 @@ def package_upload_command(package_name: str, unsigned: Optional[bool] = False) 
     package = Path.cwd() / "tests" / "assets" / package_name
     cmd = ["package", "upload", str(package)]
 
-    # Required until https://github.com/pulp/pulp_rpm/pull/2537 is in current Pulp.
-    if package.suffix == ".rpm":
-        cmd.append("--force-name")
-
     if unsigned:
         cmd.append("--ignore-signature")
 
