@@ -6,6 +6,7 @@ from pmc.client import get_client, handle_response
 from pmc.commands.release import releases
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoSigningService, RepoType
+from pmc.utils import id_or_name
 
 app = typer.Typer()
 packages = typer.Typer(help="Manage a repo's packages.")
@@ -39,7 +40,9 @@ def create(
     name: str,
     repo_type: RepoType,
     signing_service: Optional[RepoSigningService] = typer.Option(RepoSigningService.esrp),
-    remote: Optional[str] = typer.Option(None, help="Remote id to use for sync."),
+    remote: Optional[str] = id_or_name(
+        "remotes", typer.Option(None, help="Remote id or name to use for sync.")
+    ),
 ) -> None:
     """Create a repository."""
     data = {"name": name, "type": repo_type, "signing_service": signing_service, "remote": remote}
@@ -49,7 +52,7 @@ def create(
 
 
 @app.command()
-def show(ctx: typer.Context, id: str) -> None:
+def show(ctx: typer.Context, id: str = id_or_name("repositories")) -> None:
     """Show details for a particular repository."""
     with get_client(ctx.obj) as client:
         resp = client.get(f"/repositories/{id}/")
@@ -59,10 +62,12 @@ def show(ctx: typer.Context, id: str) -> None:
 @app.command()
 def update(
     ctx: typer.Context,
-    id: str,
+    id: str = id_or_name("repositories"),
     name: str = typer.Option(""),
     signing_service: RepoSigningService = typer.Option(None, help="What signing service to use."),
-    remote: Optional[str] = typer.Option(None, help="Remote id to use for sync"),
+    remote: Optional[str] = id_or_name(
+        "remotes", typer.Option(None, help="Remote id or name to use for sync.")
+    ),
 ) -> None:
     """Update a repository."""
 
@@ -87,7 +92,7 @@ def update(
 
 
 @app.command()
-def delete(ctx: typer.Context, id: str) -> None:
+def delete(ctx: typer.Context, id: str = id_or_name("repositories")) -> None:
     """Delete a repository."""
     with get_client(ctx.obj) as client:
         resp = client.delete(f"/repositories/{id}/")
@@ -97,7 +102,7 @@ def delete(ctx: typer.Context, id: str) -> None:
 @app.command()
 def sync(
     ctx: typer.Context,
-    id: str,
+    id: str = id_or_name("repositories"),
     remote: Optional[str] = typer.Option(None, help="Optional remote id to use for sync."),
 ) -> None:
     """Sync a repository."""
@@ -107,7 +112,7 @@ def sync(
 
 
 @app.command()
-def publish(ctx: typer.Context, id: str) -> None:
+def publish(ctx: typer.Context, id: str = id_or_name("repositories")) -> None:
     """Publish a repository making its packages available and updating its metadata."""
     with get_client(ctx.obj) as client:
         resp = client.post(f"/repositories/{id}/publish/")
@@ -117,7 +122,7 @@ def publish(ctx: typer.Context, id: str) -> None:
 @packages.command(name="list")
 def list_packages(
     ctx: typer.Context,
-    repo_id: str,
+    repo_id: str = id_or_name("repositories"),
     limit: Optional[int] = LIMIT_OPT,
     offset: Optional[int] = OFFSET_OPT,
 ) -> None:
@@ -132,7 +137,7 @@ def list_packages(
 @packages.command(name="update")
 def update_packages(
     ctx: typer.Context,
-    repo_id: str,
+    repo_id: str = id_or_name("repositories"),
     release: str = typer.Argument(None, help="Release/dist to add packages to."),
     component: str = typer.Argument(None, help="Component to add packages to."),
     add_packages: Optional[str] = typer.Option(None, help=ADD_PACKAGES_HELP),

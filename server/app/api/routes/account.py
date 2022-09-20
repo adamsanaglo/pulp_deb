@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -35,9 +35,13 @@ async def _get_list(
 
 @router.get("/accounts/", response_model=AccountListResponse)
 async def list_account(
-    pagination: Pagination = Depends(Pagination), session: AsyncSession = Depends(get_session)
+    pagination: Pagination = Depends(Pagination),
+    session: AsyncSession = Depends(get_session),
+    name: Optional[str] = None,
 ) -> AccountListResponse:
     query = select(Account)
+    if name:
+        query = query.where(Account.name == name)
     accounts, count = await _get_list(session, query, **pagination.dict())
     return AccountListResponse(count=count, results=accounts, **pagination.dict())
 

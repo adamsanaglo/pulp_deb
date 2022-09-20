@@ -5,17 +5,20 @@ import typer
 from pmc.client import get_client, handle_response
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT
+from pmc.utils import id_or_name
 
 app = typer.Typer()
 releases = typer.Typer(help="Manage a repo's releases.")
 
-REPO_ID_ARG = typer.Argument(..., help="Repository ID for which to manage releases.")
+repo_option = id_or_name(
+    "repositories", typer.Argument(..., help="Repository id or name for which to manage releases.")
+)
 
 
 @releases.command()
 def list(
     ctx: typer.Context,
-    repo_id: str = REPO_ID_ARG,
+    repo_id: str = repo_option,
     limit: Optional[int] = LIMIT_OPT,
     offset: Optional[int] = OFFSET_OPT,
 ) -> None:
@@ -30,7 +33,7 @@ def list(
 @releases.command()
 def create(
     ctx: typer.Context,
-    repo_id: str = REPO_ID_ARG,
+    repo_id: str = repo_option,
     distribution: str = typer.Argument(..., help="Name under which to distribute release."),
     codename: str = typer.Argument(..., help="Codename for the release."),
     suite: str = typer.Argument(..., help="Suite for the release (e.g. stable)."),

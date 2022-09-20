@@ -38,6 +38,13 @@ def test_show(distro: Any) -> None:
     assert distro["id"] == response["id"]
 
 
+def test_show_with_name(distro: Any) -> None:
+    result = invoke_command(["distro", "show", distro["name"]])
+    assert result.exit_code == 0
+    response = json.loads(result.stdout)
+    assert distro["id"] == response["id"]
+
+
 def test_duplicate_path(distro: Any) -> None:
     cmd = ["distro", "create", "pmc_cli_test_name", "apt", distro["base_path"]]
     result = invoke_command(cmd)

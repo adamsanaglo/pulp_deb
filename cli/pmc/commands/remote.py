@@ -6,10 +6,9 @@ import typer
 from pmc.client import get_client, handle_response
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RemoteType
+from pmc.utils import id_or_name
 
 app = typer.Typer()
-
-repo_option = typer.Option(None, help="Repository to distribute.")
 
 
 @app.command()
@@ -64,7 +63,7 @@ def create(
 
 
 @app.command()
-def show(ctx: typer.Context, id: str) -> None:
+def show(ctx: typer.Context, id: str = id_or_name("remotes")) -> None:
     """Show details for a remote."""
     with get_client(ctx.obj) as client:
         resp = client.get(f"/remotes/{id}/")
@@ -74,7 +73,7 @@ def show(ctx: typer.Context, id: str) -> None:
 @app.command()
 def update(
     ctx: typer.Context,
-    id: str,
+    id: str = id_or_name("remotes"),
     name: Optional[str] = typer.Option(None),
     url: Optional[str] = typer.Option(None),
     distributions: Optional[str] = typer.Option(
@@ -109,7 +108,7 @@ def update(
 
 
 @app.command()
-def delete(ctx: typer.Context, id: str) -> None:
+def delete(ctx: typer.Context, id: str = id_or_name("remotes")) -> None:
     """Delete a remote."""
     with get_client(ctx.obj) as client:
         resp = client.delete(f"/remotes/{id}/")

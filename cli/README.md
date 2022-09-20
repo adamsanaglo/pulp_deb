@@ -82,23 +82,23 @@ A default Service Principal is available to simplify your dev environment
 
 ```
 # create a repo. Note: only legacy signing is available in dev environments.
-REPO_ID=$(pmc --id-only repo create myrepo apt legacy)
+pmc repo create myrepo-apt apt --signing-service legacy
 
 # create a repo release
-pmc repo releases create $REPO_ID jammy jammy stable
+pmc repo releases create myrepo-apt jammy jammy stable
 
 # create a distro
-pmc distro create mydistro apt "some/path" --repository $REPO_ID
+pmc distro create mydistro-apt apt "some/path" --repository myrepo-apt
 
 # upload a package
 cp tests/assets/signed-by-us.deb .
 PACKAGE_ID=$(pmc --id-only package upload signed-by-us.deb)
 
 # add our package to the repo release
-pmc repo packages update $REPO_ID jammy --add-packages $PACKAGE_ID
+pmc repo packages update myrepo-apt jammy --add-packages $PACKAGE_ID
 
 # publish the repo
-pmc repo publish $REPO_ID
+pmc repo publish myrepo-apt
 
 # check out our repo
 http :8081/pulp/content/some/path/
@@ -108,20 +108,20 @@ http :8081/pulp/content/some/path/
 
 ```
 # create a repo. Note: only legacy signing is available in dev environments.
-REPO_ID=$(pmc --id-only repo create myrepo yum legacy)
+pmc repo create myrepo-yum yum --signing-service legacy
 
 # create a distro
-pmc distro create mydistro yum "awesome/path" --repository $REPO_ID
+pmc distro create mydistro-yum yum "awesome/path" --repository myrepo-yum
 
 # upload a package
 cp tests/assets/signed-by-us.rpm .
 PACKAGE_ID=$(pmc --id-only package upload signed-by-us.deb)
 
 # add our package to the repo release
-pmc repo packages update $REPO_ID --add-packages $PACKAGE_ID
+pmc repo packages update myrepo-yum --add-packages $PACKAGE_ID
 
 # publish the repo
-pmc repo publish $REPO_ID
+pmc repo publish myrepo-yum
 
 # check out our repo
 http :8081/pulp/content/awesome/path/
@@ -131,11 +131,11 @@ http :8081/pulp/content/awesome/path/
 
 ```
 # create a remote
-REMOTE_ID=$(pmc --id-only remote create microsoft-ubuntu-focal-prod apt "https://packages.microsoft.com/repos/microsoft-ubuntu-focal-prod/" --distributions nightly)
+pmc remote create microsoft-ubuntu-focal-prod apt "https://packages.microsoft.com/repos/microsoft-ubuntu-focal-prod/" --distributions nightly
 
 # create a repo
-REPO_ID=$(pmc --id-only repo create microsoft-ubuntu-focal-prod apt --remote $REMOTE_ID)
+pmc repo create microsoft-ubuntu-focal-prod apt --remote microsoft-ubuntu-focal-prod
 
 # sync
-pmc repo sync $REPO_ID
+pmc repo sync microsoft-ubuntu-focal-prod
 ```

@@ -36,9 +36,25 @@ def test_show(repo: Any) -> None:
     assert repo["id"] == response["id"]
 
 
+def test_show_with_name(repo: Any) -> None:
+    result = invoke_command(["repo", "show", repo["name"]])
+    assert result.exit_code == 0, f"repo show {repo['name']} failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert repo["id"] == response["id"]
+
+
 def test_update(repo: Any) -> None:
     new_name = gen_repo_attrs()["name"]
     cmd = ["repo", "update", repo["id"], "--name", new_name]
+    result = invoke_command(cmd)
+    assert result.exit_code == 0, f"{cmd} failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert response["name"] == new_name
+
+
+def test_update_with_name(repo: Any) -> None:
+    new_name = gen_repo_attrs()["name"]
+    cmd = ["repo", "update", repo["name"], "--name", new_name]
     result = invoke_command(cmd)
     assert result.exit_code == 0, f"{cmd} failed: {result.stderr}"
     response = json.loads(result.stdout)
@@ -126,5 +142,12 @@ def test_yum_update_packages_with_release(rpm_package: Any, yum_repo: Any) -> No
 def test_publish(repo: Any) -> None:
     result = invoke_command(["repo", "publish", repo["id"]])
     assert result.exit_code == 0, f"repo publish {repo['id']} failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert response["state"] == "completed"
+
+
+def test_publish_with_name(repo: Any) -> None:
+    result = invoke_command(["repo", "publish", repo["name"]])
+    assert result.exit_code == 0, f"repo publish {repo['name']} failed: {result.stderr}"
     response = json.loads(result.stdout)
     assert response["state"] == "completed"

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 
@@ -18,9 +18,11 @@ router = APIRouter()
 
 
 @router.get("/remotes/", response_model=RemoteListResponse)
-async def list_remotes(pagination: Pagination = Depends(Pagination)) -> Any:
+async def list_remotes(
+    pagination: Pagination = Depends(Pagination), name: Optional[str] = None
+) -> Any:
     async with RemoteApi() as api:
-        return await api.list(pagination)
+        return await api.list(pagination, params={"name": name})
 
 
 @router.post(

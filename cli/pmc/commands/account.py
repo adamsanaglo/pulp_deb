@@ -4,6 +4,7 @@ import typer
 
 from pmc.client import get_client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, Role
+from pmc.utils import id_or_name
 
 app = typer.Typer()
 
@@ -66,7 +67,7 @@ def create(
 
 
 @app.command()
-def show(ctx: typer.Context, id: str = ID_ARG) -> None:
+def show(ctx: typer.Context, id: str = id_or_name("accounts", ID_ARG)) -> None:
     """Show details for a particular account."""
     with get_client(ctx.obj) as client:
         resp = client.get(f"/accounts/{id}/")
@@ -76,7 +77,7 @@ def show(ctx: typer.Context, id: str = ID_ARG) -> None:
 @app.command()
 def update(
     ctx: typer.Context,
-    id: str = ID_ARG,
+    id: str = id_or_name("accounts", ID_ARG),
     name: str = typer.Option(None, help=NAME_HELP),
     is_enabled: bool = typer.Option(None, "--enabled/--disabled", help=ENABLED_HELP),
     icm_service: str = typer.Option(None, help=SERVICE_HELP),
@@ -94,7 +95,7 @@ def update(
 
 
 @app.command()
-def delete(ctx: typer.Context, id: str = ID_ARG) -> None:
+def delete(ctx: typer.Context, id: str = id_or_name("accounts", ID_ARG)) -> None:
     """Delete an account."""
     with get_client(ctx.obj) as client:
         resp = client.delete(f"/accounts/{id}/")

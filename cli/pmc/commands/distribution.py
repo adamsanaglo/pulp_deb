@@ -5,10 +5,13 @@ import typer
 
 from pmc.client import get_client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, DistroType
+from pmc.utils import id_or_name
 
 app = typer.Typer()
 
-repo_option = typer.Option(None, help="Repository to distribute.")
+repo_option = id_or_name(
+    "repositories", typer.Option(None, help="Repository id or name to distribute.")
+)
 
 
 @app.command()
@@ -54,7 +57,7 @@ def create(
 
 
 @app.command()
-def show(ctx: typer.Context, id: str) -> None:
+def show(ctx: typer.Context, id: str = id_or_name("distributions")) -> None:
     """Show details for a distribution."""
     with get_client(ctx.obj) as client:
         resp = client.get(f"/distributions/{id}/")
@@ -64,7 +67,7 @@ def show(ctx: typer.Context, id: str) -> None:
 @app.command()
 def update(
     ctx: typer.Context,
-    id: str,
+    id: str = id_or_name("distributions"),
     name: Optional[str] = typer.Option(None),
     base_path: Optional[str] = typer.Option(None),
     repository: Optional[str] = repo_option,
@@ -89,7 +92,7 @@ def update(
 
 
 @app.command()
-def delete(ctx: typer.Context, id: str) -> None:
+def delete(ctx: typer.Context, id: str = id_or_name("distributions")) -> None:
     """Delete a distribution."""
     with get_client(ctx.obj) as client:
         resp = client.delete(f"/distributions/{id}/")

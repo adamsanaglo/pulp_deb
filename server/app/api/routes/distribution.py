@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 
@@ -18,9 +18,11 @@ router = APIRouter()
 
 
 @router.get("/distributions/", response_model=DistributionListResponse)
-async def list_distros(pagination: Pagination = Depends(Pagination)) -> Any:
+async def list_distros(
+    pagination: Pagination = Depends(Pagination), name: Optional[str] = None
+) -> Any:
     async with DistributionApi() as api:
-        return await api.list(pagination)
+        return await api.list(pagination, params={"name": name})
 
 
 @router.post(
