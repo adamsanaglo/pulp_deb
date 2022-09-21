@@ -18,4 +18,8 @@ else
   done
 fi
 
-python3 app/main.py
+if [ "$1" == "migrate" ]; then
+  alembic upgrade head
+else
+  python3 app/main.py
+fi

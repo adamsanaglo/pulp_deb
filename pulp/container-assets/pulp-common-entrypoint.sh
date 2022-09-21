@@ -10,7 +10,7 @@
 ## PMC addition: read secrets from the KeyVault into env variables
 source /usr/bin/pmc-secrets-exporter.sh
 
-if [[ "$@" = "pulp-content" || "$@" = "pulp-api" || "$@" = "pulp-worker" || "$@" = "pulp-resource-manager" ]]; then
+if [[ "$@" = "pulp-content" || "$@" = "pulp-api" || "$@" = "pulp-worker" || "$@" = "pulp-migrate" ]]; then
         exec "/usr/bin/$@"
 else
         exec "$@"

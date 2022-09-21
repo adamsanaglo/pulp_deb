@@ -2,6 +2,26 @@ version: "3"
 
 services:
 
+    api-migrate:
+      build:
+        context: .
+        args:
+          - uid=${UID}
+          - gid=${GID}
+      container_name: pmcserver-migrate
+      command: migrate
+      user: "${UID}:${GID}"
+      depends_on:
+        db:
+          condition: service_started
+      volumes:
+        - ./app:/pmcserver/app
+        - ./setup.cfg:/pmcserver/setup.cfg
+        - ./tests:/pmcserver/tests
+        - ./migrations:/pmcserver/migrations
+      env_file:
+        - .env
+
     api:
       build:
         context: .
@@ -15,6 +35,8 @@ services:
           condition: service_healthy
         db:
           condition: service_started
+        api-migrate:
+          condition: service_completed_successfully
       volumes:
         - ./app:/pmcserver/app
         - ./setup.cfg:/pmcserver/setup.cfg
@@ -53,6 +75,23 @@ services:
       env_file:
         - ../server/.env
 
+    pulp-migrate:
+      image: localhost/pulp:stable
+      build:
+        context: ../pulp
+      container_name: pulp-migrate
+      command: pulp-migrate
+      depends_on:
+        db:
+          condition: service_started
+      volumes:
+        - ../pulp/settings.py:/etc/pulp/settings.py
+        - ../pulp/.pulp_symmetric_key:/etc/pulp/pulp_symmetric_key
+        - pulp_storage:/var/lib/pulp
+        - containers:/var/lib/containers
+      env_file:
+        - .env
+
     pulp-api:
       image: localhost/pulp:stable
       build:
@@ -67,6 +106,8 @@ services:
       depends_on:
         db:
           condition: service_started
+        pulp-migrate:
+          condition: service_completed_successfully
       ports:
         - "8080:24817"
       volumes:

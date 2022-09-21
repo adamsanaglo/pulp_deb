@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migration
+spec:
+  replicas: 1
+  template:
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: pulp-migrate
+        image: $loginserver/pulp:latest
+        command: ['pulp-migrate']
+        volumeMounts:
+          - name: pulp-secrets-volume
+            mountPath: "/mnt/secrets"
+            readOnly: true
+        envFrom:
+          - configMapRef:
+              name: pulp-settings
+      - name: pmc-migrate
+        image: $loginserver/pmcserver_api
+        command: ['migrate']
+        volumeMounts:
+        - name: pmc-secrets-volume
+          mountPath: "/mnt/secrets"
+          readOnly: true
+        envFrom:
+          - configMapRef:
+              name: pmc-settings
+      restartPolicy: Never
+      volumes:
+        - name: pulp-secrets-volume
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "pulp-secret-provider"
+        - name: pmc-secrets-volume
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "pmc-secret-provider"

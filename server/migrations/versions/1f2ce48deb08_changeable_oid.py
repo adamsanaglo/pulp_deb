@@ -1,7 +1,7 @@
 """changeable_oid
 
 Revision ID: 1f2ce48deb08
-Revises: 067f450caa29
+Revises: 45dc84923230
 Create Date: 2022-09-20 14:48:10.021534
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1f2ce48deb08"
-down_revision = "067f450caa29"
+down_revision = "45dc84923230"
 branch_labels = None
 depends_on = None
 

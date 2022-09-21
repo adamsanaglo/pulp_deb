@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/cbl-mariner/base/python:3.9
 ARG uid=1000
 ARG gid=1000
 
-RUN tdnf install -y binutils postgresql shadow-utils
+RUN tdnf install -y binutils postgresql shadow-utils util-linux vim
 
 RUN groupadd -g $gid pmc
 RUN useradd -r -m -u $uid -g $gid pmc

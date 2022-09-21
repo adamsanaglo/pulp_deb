@@ -74,7 +74,6 @@ run: env.storage		## run the containers
 	docker compose up -d
 	-docker exec -it pulp-worker bash -c '/usr/local/bin/pulpcore-manager add-signing-service "legacy_yum" /sign_cli/sign_legacy.py "$$(gpg --show-keys /sign_cli/msopentech.asc | head -n 2 | tail -n 1 | tail -c 17)"'
 	-docker exec -it pulp-worker bash -c '/usr/local/bin/pulpcore-manager add-signing-service "legacy_apt" /sign_cli/sign_legacy_apt.py --class deb:AptReleaseSigningService "$$(gpg --show-keys /sign_cli/msopentech.asc | head -n 2 | tail -n 1 | tail -c 17)"'
-	docker exec -it pmcserver alembic upgrade head
 
 build: env.storage		## build the container images
 	docker compose build
@@ -83,7 +82,6 @@ rebuild: env.storage		## rebuild the container images and run them
 	docker compose up -d --build
 	-docker exec -it pulp-worker bash -c '/usr/local/bin/pulpcore-manager add-signing-service "legacy_yum" /sign_cli/sign_legacy.py "$$(gpg --show-keys /sign_cli/msopentech.asc | head -n 2 | tail -n 1 | tail -c 17)"'
 	-docker exec -it pulp-worker bash -c '/usr/local/bin/pulpcore-manager add-signing-service "legacy_apt" /sign_cli/sign_legacy_apt.py --class deb:AptReleaseSigningService "$$(gpg --show-keys /sign_cli/msopentech.asc | head -n 2 | tail -n 1 | tail -c 17)"'
-	docker exec -it pmcserver alembic upgrade head
 
 down:				## stop and remove the containers
 	docker compose down
@@ -96,7 +94,6 @@ teardown: down		## stop the containers and remove the container volumes
 update: env.storage		## pull the latest images and run the containers
 	docker compose pull
 	docker compose up -d
-	docker exec -it pmcserver alembic upgrade head
 
 migrate:			## apply any database migrations to the api container
 	docker exec -it pmcserver alembic upgrade head

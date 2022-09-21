@@ -80,6 +80,11 @@ docker push $loginserver/pmcserver_api
 
 # run deployment
 envsubst < config.yml | kubectl apply -f -  # substitutes the environment variables in the file and sets up prerequisits
+# run and wait for the db migrations
+envsubst < migration.yml | kubectl apply -f -
+kubectl wait --for=condition=complete --timeout=500s job/migration
+kubectl delete job/migration
+# start the api-pod
 envsubst < api-pod.yml | kubectl apply -f -  # the only env variable substition here is the ACR loginserver. Is there a way to do that automatically?
  
 # Init pmc db and prep for pulp access
