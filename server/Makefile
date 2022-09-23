@@ -55,7 +55,7 @@ regen_test_key:		## wipe and regenerate the test keys used to do legacy signing 
 	mkdir gpg_home
 	gpg --homedir gpg_home --batch --generate-key .test_key_config
 	gpg --homedir gpg_home --armor --export > .test.pub
-	gpg --homedir gpg_home --armor --export-secret-keys > .test.key
+	gpg --homedir gpg_home --armor --export-secret-keys | base64 -w 0 > .test.key
 	rm -rf gpg_home
 
 grant_access:		## allow our dev principal access to the application

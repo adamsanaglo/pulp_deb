@@ -59,6 +59,9 @@ class LegacySigner(AbstractSigner):
         super().__init__(clearsign, key_id, task_id, working_dir)
 
         # Ensure that the legacy key has been imported.
+        _import_legacy_key()
+
+    def _import_legacy_key():
         # Check for the legacy signing key
         res = util.run_cmd_out("/usr/bin/gpg --list-secret-keys")
         if res.returncode != 0:
@@ -70,11 +73,14 @@ class LegacySigner(AbstractSigner):
 
         # Import the key to gpg and delete the file from disk
         log.info("Importing legacy key from disk")
-        res = util.run_cmd_out(f"/usr/bin/gpg --import {settings.LEGACY_KEY_PATH}")
+        # Let the caller handle the exception, i.e. if file is not B64
+        decoded_key = util.decodeB64ToFile(settings.LEGACY_KEY_PATH)
+        res = util.run_cmd_out(f"/usr/bin/gpg --import {decoded_key}")
+        util.shred_file(decoded_key)
         if res.returncode != 0:
             # Failure importing key
             raise Exception(f"Error importing gpg key: {res.stderr}")
-        
+
     def _sign(self, operation: esrp.SigningOperation, filename: str) -> bool:
         signature_option = "--detach-sign"
         if operation == esrp.SigningOperation.attached:

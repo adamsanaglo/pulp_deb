@@ -109,6 +109,7 @@ COPY container-assets/pulp-content /usr/bin/pulp-content
 COPY container-assets/pulp-worker /usr/bin/pulp-worker
 COPY container-assets/pulp-migrate /usr/bin/pulp-migrate
 COPY container-assets/pmc-secrets-exporter.sh /usr/bin/pmc-secrets-exporter.sh
+COPY container-assets/add_signer.sh /usr/bin/add_signer.sh
 
 # Copy over stuff for signing repodata
 COPY sign_cli /sign_cli

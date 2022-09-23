@@ -16,8 +16,8 @@ spec:
         "kubernetes.io/os": linux
       containers:
       - name: pulp-worker
-        image: quay.io/pulp/pulp:latest
-        command: ['pulp-worker']
+        image: $loginserver/pulp:latest
+        command: ['/pulp-common-entrypoint.sh', 'pulp-worker']
         resources:
           requests:
             cpu: 100m
@@ -35,7 +35,7 @@ spec:
           - configMapRef:
               name: pulp-settings
       - name: signer
-        image: $loginserver/signer
+        image: $loginserver/signer:latest
         resources:
           requests:
             cpu: 100m
@@ -95,8 +95,8 @@ spec:
         "kubernetes.io/os": linux
       containers:
       - name: pulp-content
-        image: quay.io/pulp/pulp:latest
-        command: ['pulp-content']
+        image: $loginserver/pulp:latest
+        command: ['/pulp-common-entrypoint.sh', 'pulp-content']
         resources:
           requests:
             cpu: 100m

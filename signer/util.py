@@ -1,3 +1,4 @@
+import base64
 import logging
 import subprocess
 import tempfile
@@ -57,9 +58,24 @@ def shred_working_dir(dir: Path) -> bool:
     """Securely delete files in the specified dir."""
     ret = True
     for file in dir.glob('*'):
-        result = run_cmd(f"shred -uz {str(file)}")
+        result = shred_file(str(file))
         if not result:
             log.error(f"Could not shred file for some reason: {str(file)}")
         ret = ret and result
     dir.rmdir()
     return ret
+
+
+def shred_file(filename: str) -> bool:
+    return run_cmd(f"shred -uz {filename}")
+
+
+def decodeB64ToFile(srcFile: str) -> str:
+    """
+    Decode the B64 content of srcFile and write it to a temporary file
+    """
+    with open(srcFile, "r") as f:
+        encoded = f.read()
+
+    decodedBytes = base64.b64decode(encoded)
+    return write_to_temporary_file(decodedBytes)

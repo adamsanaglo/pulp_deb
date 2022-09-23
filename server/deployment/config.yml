@@ -8,8 +8,8 @@ data:
   SERVER_PORT: "80"
   DEBUG: "0"
   PULP_USERNAME: "admin"
-  APP_CLIENT_ID: "1ce02e3e-1bf3-4d28-8cdc-e921f824399d"
-  TENANT_ID: "72f988bf-86f1-41af-91ab-2d7cd011db47"
+  APP_CLIENT_ID: $pmcAppId
+  TENANT_ID: $AZURE_TENANT_ID
   POSTGRES_USER: "pmcserver"
   POSTGRES_DB: "pmcserver"
   PULP_HOST: "http://localhost:24817"  # pmc-server talks to pulp api via in-pod localhost
@@ -40,9 +40,10 @@ data:
   SIGN_CERT: "esrp-sign-test"
   AUTH_CERT_PATH: "/mnt/secrets/esrp-auth-test"
   LEGACY_KEY_PATH: "/mnt/secrets/legacy-sign"
-  APP_ID: "1ce02e3e-1bf3-4d28-8cdc-e921f824399d"
+  LEGACY_KEY_THUMBPRINT: $legacyKeyThumprint
+  APP_ID: $esrp_app_id
   TENANT_ID: $AZURE_TENANT_ID
-  KEY_CODES: "CP-450778-Pgp"
+  KEY_CODES: $esrpKeyCode
 ---
 kind: PersistentVolume
 apiVersion: v1

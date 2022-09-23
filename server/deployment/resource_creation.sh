@@ -2,21 +2,18 @@
 # This script depends on the az cli and docker commands already being installed. If you
 # don't have them already then take a minute an install them.
 # az cli: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
+. ./shared.sh
 
-region='eastus'
-sub='b88ca4c8-592e-4ef9-a17e-b4f29727824c'
-account_id="1334b698-bee4-4556-ae45-a5e7b5698504"  # the account of the client principals we're using
-destination_env="packages.microsoft.com"  # Pulp uses this to construct distribution base_url.
-# These are just names and can be changed to whatever you want
-prefix='pmc-ppe'
-rg="${prefix}-rg"
-vnet="${prefix}-vnet"
-aks_subnet="${prefix}-aks-subnet"
-pg_subnet="${prefix}-pg-subnet"
-aks="${prefix}-kube-cluster"
-acr="$(echo $prefix | tr -cd '[:alnum:]')acr"  # alphanumeric only
-pg="${prefix}-pg"
-export kv="${prefix}-keyvault"  # anything that we'll use in envsubst later must be exported
+environment=${1}
+if [[ -z "${environment}" ]]; then
+    bail "Must specify environment (ppe); tux|prod not yet supported"
+elif [[ "${environment}" == "ppe" ]]; then
+    . ./ppe.sh
+else
+    bail "Environment '${environment}' not supported"
+fi
+
+set_initial_vars
 
 # secrets
 PULP_PASSWORD=$(openssl rand -base64 12)
@@ -52,70 +49,46 @@ az keyvault secret set --vault-name $kv --name pulpSymmetricKey --value $PULP_SY
 # ... create container registry
 az acr create -g $rg --name $acr --sku Standard --location $region --admin-enabled  # --zone-redundancy is in preview, should we use it?
 
-# ... create kubernetes cluster, attack to keyvault, grab credentials for kubectl
+# ... create postgres server
+az postgres flexible-server create -g $rg -n $pg --version 13 --high-availability Enabled --vnet $vnet --subnet $pg_subnet --admin-user pmcserver --admin-password $PMC_POSTGRES_PASSWORD
+
+# ... create kubernetes cluster, attach to keyvault, grab credentials for kubectl
 # Will have to JIT to "Owner" of the subscription to perform this operation, both for creating the necessary vnet roles and for attaching the acr.
 az aks create -g $rg -n $aks --enable-addons monitoring --location $region \
     --node-vm-size standard_d4ds_v4 --vnet-subnet-id $aks_sub_id --zones 1 2 3 --attach-acr $acr \
     --enable-cluster-autoscaler --min-count 2 --max-count 6
 az aks enable-addons -g $rg --name $aks --addons=azure-keyvault-secrets-provider --enable-secret-rotation
-export AZURE_TENANT_ID=$(az account show --query tenantId -o tsv | tr -d '\r')
-export CLIENT_ID=$(az aks show -g $rg -n $aks --query addonProfiles.azureKeyvaultSecretsProvider.identity.clientId -o tsv | tr -d '\r')
+get_az_cli_vars
 
 az keyvault set-policy -n $kv --key-permissions get --spn $CLIENT_ID
 az keyvault set-policy -n $kv --secret-permissions get --spn $CLIENT_ID
 az keyvault set-policy -n $kv --certificate-permissions get --spn $CLIENT_ID
 
 az aks install-cli
-az aks get-credentials -g $rg --name $aks
-
-# ... create postgres server
-az postgres flexible-server create -g $rg -n $pg --version 13 --high-availability Enabled --vnet $vnet --subnet $pg_subnet --admin-user pmcserver --admin-password $PMC_POSTGRES_PASSWORD
-export pg_server=$(az postgres flexible-server show -g $rg -n $pg --query 'fullyQualifiedDomainName' -o tsv | tr -d '\r')
+get_aks_creds
 
 # Push our pmcserver_api container into the registry
 az acr login --name $acr
-export loginserver=$(az acr show -g $rg --name $acr --query 'loginServer' -o tsv | tr -d '\r')
 docker tag pmcserver_api $loginserver/pmcserver_api
 docker push $loginserver/pmcserver_api
 
-# run deployment
-envsubst < config.yml | kubectl apply -f -  # substitutes the environment variables in the file and sets up prerequisits
-# run and wait for the db migrations
-envsubst < migration.yml | kubectl apply -f -
-kubectl wait --for=condition=complete --timeout=500s job/migration
-kubectl delete job/migration
-# start the api-pod
-envsubst < api-pod.yml | kubectl apply -f -  # the only env variable substition here is the ACR loginserver. Is there a way to do that automatically?
- 
-# Init pmc db and prep for pulp access
-PMCPOD=$(kubectl get pod -l app=pmc -o jsonpath="{.items[0].metadata.name}")
-alias pmc_run="kubectl exec --stdin -c pmc --tty $PMCPOD -- /bin/bash -c"
-pmc_run "PGPASSWORD=$PMC_POSTGRES_PASSWORD psql -h $pg_server -U pmcserver -d postgres -c 'create database pmcserver'"
-pmc_run "alembic upgrade head"
-pmc_run "PGPASSWORD=$PMC_POSTGRES_PASSWORD psql -h $pg_server -U pmcserver -d pmcserver -c \"insert into account (id, oid, name, role, icm_service, icm_team, contact_email, is_enabled, created_at, last_edited) values (gen_random_uuid(), '$account_id', 'dev', 'Account_Admin', 'dev', 'dev', 'dev@user.com', 't', now(), now())\""
-pmc_run "PGPASSWORD=$PMC_POSTGRES_PASSWORD psql -h $pg_server -U pmcserver -d postgres -c \"create user pulp with encrypted password '$PULP_POSTGRES_PASSWORD'\""
-pmc_run "PGPASSWORD=$PMC_POSTGRES_PASSWORD psql -h $pg_server -U pmcserver -d postgres -c 'create database pulp'"
-pmc_run "PGPASSWORD=$PMC_POSTGRES_PASSWORD psql -h $pg_server -U pmcserver -d postgres -c 'grant all privileges on database pulp to pulp'"
+# Initialize the DB
+initializePMCDB
 
-# restart the deployment so that pulp-api will actally connect to the db and create schema
+# Run deployment
+apply_kube_config config.yml  # substitutes the environment variables in the file and sets up prerequisits
+
+# Apply migrations in a one-off container
+apply_migrations
+
+# Start the api-pod
+apply_kube_config api-pod.yml  # the only env variable substition here is the ACR loginserver. Is there a way to do that automatically?
+
+# restart the deployment so that pulp-api will actually connect to the db and create schema
 kubectl rollout restart deployment api-pod
 
-# Give pulp-api about 5 minutes to create the schema, then start pulp-worker and create the signing services.
-envsubst < worker-pod.yml | kubectl apply -f -
-WORKERPOD=$(kubectl get pod -l app=pulp-worker -o jsonpath="{.items[0].metadata.name}")
-alias worker_run="kubectl exec --stdin -c pulp-worker --tty $WORKERPOD -- /bin/bash -c"
-register_signing_services () {
-  worker_run "/usr/local/bin/pulpcore-manager add-signing-service \"${1}_yum\" ${2}.py \"\$(gpg --show-keys $3 | head -n 2 | tail -n 1 | tail -c 17)\"";
-  worker_run "/usr/local/bin/pulpcore-manager add-signing-service \"${1}_apt\" ${2}_apt.py --class deb:AptReleaseSigningService \"\$(gpg --show-keys $3 | head -n 2 | tail -n 1 | tail -c 17)\"";
-}
-register_signing_services "legacy" "/sign_cli/sign_legacy" "/sign_cli/msopentech.asc"
-if [[ "$prefix" =~ "ppe" ]]; then 
-  # In PPE-like environments, register the ESRP test scripts for test signing.
-  register_signing_services "esrp" "/sign_cli/sign_esrp_test" "/sign_cli/prsslinuxtest.asc"
-else
-  # In Prod / Tux-Dev-like environments, register the real ESRP scripts for real signing.
-  register_signing_services "esrp" "/sign_cli/sign_esrp_prod" "/sign_cli/microsoft.asc"
-fi
+apply_kube_config worker-pod.yml
+configureSigningServices
 
 # Scale everything up
 kubectl autoscale deployment api-pod --min=2 --max=3
