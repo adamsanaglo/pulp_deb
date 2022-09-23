@@ -13,6 +13,7 @@ from app.core.schemas import (
     OwnedPackageResponse,
     Pagination,
     RepoAccessResponse,
+    RepoId,
     RepositoryResponse,
 )
 from app.services.pulp.api import RepositoryApi
@@ -53,6 +54,32 @@ async def list_repo_access(
     statement = select(RepoAccess)
     results = (await session.execute(statement)).all()
     return [x[0] for x in results]
+
+
+@router.post("/access/repo/{id}/clone_from/{original_id}/", response_model=List[RepoAccessResponse])
+async def clone_repo_access_from(
+    id: RepoId,
+    original_id: RepoId,
+    session: AsyncSession = Depends(get_session),
+) -> Any:
+    """Additively clone the repo permissions from another repo."""
+    statement = select(RepoAccess).where(RepoAccess.repo_id == id)
+    current_perms = (await session.execute(statement)).all()
+    current_perms_accounts = [x[0].account_id for x in current_perms]
+
+    statement = select(RepoAccess).where(RepoAccess.repo_id == original_id)
+    original_perms = (await session.execute(statement)).all()
+
+    new_perms = []
+    for perm in original_perms:
+        perm = perm[0]  # unwrap the row tuple
+        if perm.account_id not in current_perms_accounts:
+            new_perm = RepoAccess(account_id=perm.account_id, repo_id=id, operator=perm.operator)
+            new_perms.append(new_perm)
+            session.add(new_perm)
+
+    await session.commit()
+    return new_perms
 
 
 @router.post("/access/repo/grant/", response_model=List[RepositoryResponse])

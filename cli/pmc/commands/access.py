@@ -2,6 +2,7 @@ import typer
 
 from pmc.client import get_client, handle_response
 from pmc.constants import LIST_SEPARATOR
+from pmc.utils import id_or_name
 
 app = typer.Typer()
 repo = typer.Typer()
@@ -13,6 +14,7 @@ ACCOUNT_NAMES_HELP = "Semicolon-separated list of account names you want to oper
 REPO_REGEX_HELP = "A regular expression that matches the names of the repos."
 REPO_OPERATOR_HELP = "Whether or not to grant the Repo Operator special role."
 PACKAGE_NAMES_HELP = "Semicolon-separated list of package names you want to operate on."
+REPO_CLONE_HELP = "Repository id or name to clone permissions %s"
 
 
 @repo.command(name="list")
@@ -52,6 +54,18 @@ def repo_access_revoke(
     data = {"account_names": account_names.split(LIST_SEPARATOR), "repo_regex": repo_regex}
     with get_client(ctx.obj) as client:
         resp = client.post("/access/repo/revoke/", json=data)
+        handle_response(ctx.obj, resp)
+
+
+@repo.command(name="clone")
+def repo_access_clone(
+    ctx: typer.Context,
+    new_repo: str = id_or_name("repositories", typer.Argument(..., help=REPO_CLONE_HELP % "into")),
+    old_repo: str = id_or_name("repositories", typer.Argument(..., help=REPO_CLONE_HELP % "from")),
+) -> None:
+    """Additively clone repo access from one repo to another."""
+    with get_client(ctx.obj) as client:
+        resp = client.post(f"/access/repo/{new_repo}/clone_from/{old_repo}/")
         handle_response(ctx.obj, resp)
 
 

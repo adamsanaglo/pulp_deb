@@ -46,6 +46,39 @@ async def test_access_list_repo(async_client, db_session, account, repository_ap
             assert repo_access["operator"] is False
 
 
+async def test_roles_clone_repo_access_from(async_client, db_session, account, repository_api):
+    """Dual-purpose test, checks access perms on the method, and also response."""
+    publisher1, artful, bionic, _, _ = _setup_repos(
+        repository_api.list, db_session, account, user_has_access=False
+    )
+    publisher2 = Account(**gen_account_attrs(Role.Publisher))
+    publisher3 = Account(**gen_account_attrs(Role.Publisher))
+    db_session.add(publisher2)
+    db_session.add(publisher3)
+    db_session.add(RepoAccess(repo_id=artful["id"], account_id=publisher1.id, operator=False))
+    db_session.add(RepoAccess(repo_id=artful["id"], account_id=publisher2.id, operator=True))
+    # Publisher3 already has access to both, so they should *not* be granted access.
+    db_session.add(RepoAccess(repo_id=artful["id"], account_id=publisher3.id, operator=False))
+    db_session.add(RepoAccess(repo_id=bionic["id"], account_id=publisher3.id, operator=False))
+
+    response = await async_client.post(
+        f"/api/v4/access/repo/{bionic['id']}/clone_from/{artful['id']}/"
+    )
+
+    assert response.status_code == (200 if account.role == Role.Account_Admin else 403)
+    if response.status_code == 200:
+        json_response = response.json()
+        assert len(json_response) == 2
+        account_ids = set()
+        for repo_access in json_response:
+            assert repo_access["repo_id"] == bionic["id"]
+            # publisher2 is an operator, publisher1 is not
+            assert repo_access["operator"] == (repo_access["account_id"] == str(publisher2.id))
+            account_ids.add(repo_access["account_id"])
+
+        assert account_ids == set([str(publisher1.id), str(publisher2.id)])
+
+
 async def test_roles_access_grant_repo(
     async_client: AsyncClient, db_session, account, repository_api
 ):
