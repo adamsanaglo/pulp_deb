@@ -29,8 +29,23 @@ az group create --name $rg --location $region
 az network vnet create -g $rg  -n $vnet --address-prefix 10.1.0.0/16 --subnet-name $aks_subnet --subnet-prefix 10.1.4.0/22
 az network vnet subnet create -g $rg --vnet-name $vnet -n $pg_subnet --address-prefixes 10.1.8.0/24
 az network vnet subnet update -g $rg --vnet-name $vnet --name $aks_subnet --service-endpoints "Microsoft.KeyVault"
-# The tr command may not be necessary in all setups, but in my case the az command is installed in windows and is leaving in an extra \r character which blows everything up.
+# The tr command may not be necessary in all setups, but in my case the az command is installed
+# in windows and is leaving in an extra \r character which blows everything up.
 aks_sub_id=$(az network vnet subnet show -g $rg --vnet-name $vnet --name $aks_subnet --query id -o tsv | tr -d '\r')
+
+# create storage accounts for pulp artifacts (bstg) and for storage access logs (lstg)
+# Enable blob access logging on bstg; logs are written to lstg
+# Create the "pulp" container in bstg
+stgpfx=$(echo $prefix | tr -d [:punct:])
+lstg="${stgpfx}logstorage"
+bstg="${stgpfx}blobstorage"
+az storage account create -n $lstg -g $rg -l $region --sku Standard_RAGRS --assign-identity
+az storage account create -n $bstg -g $rg -l $region --sku Standard_RAGRS --assign-identity
+bstgid=$(az storage account show -g $rg -n $bstg --query id --out tsv | tr -d '\r')
+bstgblobsvcid="${bstgid}/blobServices/default"
+az monitor diagnostic-settings create --name pulpStorageLogs --storage-account $lstg --resource $bstgblobsvcid --logs '@log_analytics_settings.json'
+bstgkey=$(az storage account keys list -n $bstg -g $rg --query "[? keyName == 'key1'].value" --out tsv | tr -d '\r')
+az storage container create --account-name $bstg --account-key $bstgkey -n pulp
 
 # ... create and setup keyvault
 az keyvault create --location $region -g $rg --name $kv
@@ -45,6 +60,9 @@ az keyvault secret set --vault-name $kv --name pmcPostgresPassword --value $PMC_
 az keyvault secret set --vault-name $kv --name pulpPostgresPassword --value $PULP_POSTGRES_PASSWORD
 az keyvault secret set --vault-name $kv --name pulpSecret --value "$PULP_SECRET"
 az keyvault secret set --vault-name $kv --name pulpSymmetricKey --value $PULP_SYMMETRIC_KEY
+az keyvault secret set --vault-name $kv --name pulpBlobStorageKey --value $bstgkey
+unset bstgkey
+
 
 # ... create container registry
 az acr create -g $rg --name $acr --sku Standard --location $region --admin-enabled  # --zone-redundancy is in preview, should we use it?

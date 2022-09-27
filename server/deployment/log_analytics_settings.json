@@ -1,0 +1,29 @@
+[
+    {
+      "category": "StorageRead",
+      "categoryGroup": null,
+      "enabled": true,
+      "retentionPolicy": {
+        "days": 90,
+        "enabled": true
+      }
+    },
+    {
+      "category": "StorageWrite",
+      "categoryGroup": null,
+      "enabled": true,
+      "retentionPolicy": {
+        "days": 90,
+        "enabled": true
+      }
+    },
+    {
+      "category": "StorageDelete",
+      "categoryGroup": null,
+      "enabled": true,
+      "retentionPolicy": {
+        "days": 90,
+        "enabled": true
+      }
+    }
+  ]
