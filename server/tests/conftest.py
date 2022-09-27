@@ -16,6 +16,7 @@ from app.core.db import async_session, get_session
 from app.core.models import Account, Role
 from app.main import app as fastapi_app
 from app.services.pulp import api as pulp_service_api
+from app.services.pulp import content_manager as content_manager_module
 
 from .utils import gen_account_attrs
 
@@ -159,7 +160,7 @@ def distribution_api(monkeypatch) -> Type[pulp_service_api.DistributionApi]:
 
 @pytest.fixture
 def repository_api(monkeypatch) -> Type[pulp_service_api.RepositoryApi]:
-    for method in ("create", "update", "read", "destroy", "list", "update_packages", "publish"):
+    for method in ("create", "update", "read", "destroy", "list", "update_content", "publish"):
         monkeypatch.setattr(pulp_service_api.RepositoryApi, method, get_async_mock())
     return pulp_service_api.RepositoryApi
 
@@ -202,7 +203,20 @@ def task_api(monkeypatch) -> Type[pulp_service_api.TaskApi]:
 
 
 @pytest.fixture
-def signing_service_api(monkeypatch) -> Type[pulp_service_api.TaskApi]:
+def signing_service_api(monkeypatch) -> Type[pulp_service_api.SigningService]:
     for method in ("create", "update", "read", "destroy", "list", "list_relevant"):
         monkeypatch.setattr(pulp_service_api.SigningService, method, get_async_mock())
     return pulp_service_api.SigningService
+
+
+@pytest.fixture
+def content_manager(monkeypatch) -> Type[content_manager_module.ContentManager]:
+    for method in (
+        "_get_release_ids",
+        "_get_component_ids_in_release",
+        "_find_or_create_prc",
+        "_find_prc",
+        "_update_pulp",
+    ):
+        monkeypatch.setattr(content_manager_module.ContentManager, method, get_async_mock())
+    return content_manager_module.ContentManager

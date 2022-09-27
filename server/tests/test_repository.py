@@ -4,6 +4,7 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
+from tests.conftest import get_async_mock
 
 from app.core.models import Account, OwnedPackage, RepoAccess, Role
 
@@ -88,13 +89,21 @@ def _setup_repo_package(
 
 @pytest.mark.parametrize("repo_perm, package_perm", product((True, False), ("none", "other", "me")))
 async def test_roles_repository_add_package(
-    async_client, db_session, account, repo_perm, package_perm, repository_api, package_api
+    async_client,
+    db_session,
+    account,
+    repo_perm,
+    package_perm,
+    package_api,
+    content_manager,
+    monkeypatch,
 ):
     """
     This test runs a total of 24 times: once for every combination of role (4) * whether or not
     you've been granted repo access (2) * who "owns" the package (nobody, someone else, me) (3).
     """
     # set up db
+    monkeypatch.setattr(content_manager, "add_and_remove_packages", get_async_mock())
     repo_id = f"repositories-rpm-rpm-{uuid4()}"
     package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"
@@ -114,7 +123,7 @@ async def test_roles_repository_add_package(
     )
     if account_allowed and package_perm in ("none", "me"):
         expected_status = 200
-    assert_expected_response(response, expected_status, repository_api.update_packages)
+    assert_expected_response(response, expected_status, content_manager.add_and_remove_packages)
 
     # ensure we're correctly remembering package ownership
     if expected_status == 200:
@@ -131,7 +140,14 @@ async def test_roles_repository_add_package(
     product((False, True, "operator"), ("none", "other", "me")),
 )
 async def test_roles_repository_remove_package(
-    async_client, db_session, account, repo_perm, package_perm, repository_api, package_api
+    async_client,
+    db_session,
+    account,
+    repo_perm,
+    package_perm,
+    package_api,
+    content_manager,
+    monkeypatch,
 ):
     """
     This test runs a total of 36 times: once for every combination of role (4) * whether or not
@@ -139,6 +155,7 @@ async def test_roles_repository_remove_package(
     someone else, me) (3).
     """
     # set up db
+    monkeypatch.setattr(content_manager, "add_and_remove_packages", get_async_mock())
     repo_id = f"repositories-rpm-rpm-{uuid4()}"
     package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"
@@ -164,4 +181,4 @@ async def test_roles_repository_remove_package(
         # can delete all packages
         expected_status = 200
 
-    assert_expected_response(response, expected_status, repository_api.update_packages)
+    assert_expected_response(response, expected_status, content_manager.add_and_remove_packages)

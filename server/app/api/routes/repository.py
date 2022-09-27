@@ -29,6 +29,7 @@ from app.core.schemas import (
     TaskResponse,
 )
 from app.services.pulp.api import PackageApi, RepositoryApi
+from app.services.pulp.content_manager import ContentManager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -95,11 +96,7 @@ async def update_packages(
     account: Account = Depends(get_active_account),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
-    if id.type == RepoType.apt and not repo_update.release:
-        raise HTTPException(
-            status_code=422, detail="Release field is required for apt repositories."
-        )
-    elif id.type == RepoType.yum and repo_update.release:
+    if id.type == RepoType.yum and repo_update.release:
         raise HTTPException(
             status_code=422, detail="Release field is not permitted for yum repositories."
         )
@@ -190,17 +187,13 @@ async def update_packages(
     # Commit the newly added package ownership records, if any.
     await session.commit()
 
-    # TODO: [MIGRATE] remove these lines
-    package_update = repo_update.dict()
-    migration = package_update.pop("migration")
-
-    async with RepositoryApi() as api:
-        resp = await api.update_packages(id, **package_update)
+    cm = ContentManager(id, repo_update.release, repo_update.component)
+    resp = await cm.add_and_remove_packages(repo_update.add_packages, repo_update.remove_packages)
 
     # TODO: [MIGRATE] remove these lines
     from app.services.migration import remove_vcurrent_packages
 
-    if settings.AF_QUEUE_ACTION_URL and repo_update.remove_packages and not migration:
+    if settings.AF_QUEUE_ACTION_URL and repo_update.remove_packages and not repo_update.migration:
         await remove_vcurrent_packages(repo_update.remove_packages, id, repo_update.release)
 
     return resp

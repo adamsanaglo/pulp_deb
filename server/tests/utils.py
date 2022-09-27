@@ -8,7 +8,7 @@ import pytest
 from httpx import Response
 
 from app.core.models import Role
-from app.core.schemas import DistroType, RepoType
+from app.core.schemas import ContentId, DistroType, PackageId, RepoId, RepoType
 
 
 def gen_account_attrs(role: Role = Role.Publisher) -> Dict[str, Any]:
@@ -85,3 +85,26 @@ def assert_expected_response(
                 f"Expected to return a list of {expected_num_list_items} items but instead"
                 f"received {body}"
             )
+
+
+def gen_repo_id(type: RepoType) -> RepoId:
+    if type == RepoType.apt:
+        return RepoId(f"repositories-deb-apt-{uuid4()}")
+    else:
+        return RepoId(f"repositories-rpm-rpm-{uuid4()}")
+
+
+def gen_package_id() -> PackageId:
+    return PackageId(f"content-deb-packages-{uuid4()}")
+
+
+def gen_release_id() -> ContentId:
+    return ContentId(f"content-deb-releases-{uuid4()}")
+
+
+def gen_release_component_id() -> ContentId:
+    return ContentId(f"content-deb-release_components-{uuid4()}")
+
+
+def gen_package_release_component_id() -> ContentId:
+    return ContentId(f"content-deb-package_release_components-{uuid4()}")

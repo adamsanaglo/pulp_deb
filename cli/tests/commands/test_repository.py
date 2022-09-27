@@ -80,8 +80,6 @@ def _update_list_packages(
     assert response["results"][0]["id"] == package_id
 
     cmd = ["repo", "packages", "update", repo_id, "--remove-packages", package_id]
-    if release and comp:
-        cmd[4:4] = [release, comp]
     result = invoke_command(cmd)
     assert result.exit_code == 0, f"removing package from repo failed: {result.stderr}"
 
@@ -118,7 +116,7 @@ def test_apt_update_packages_without_release(deb_package: Any, release: Any) -> 
     assert result.exit_code == 1
     error = json.loads(result.stdout)
     assert error["http_status"] == 422
-    assert error["detail"] == "Release field is required for apt repositories."
+    assert error["detail"] == "You must specify a release to add packages to an apt repo."
 
 
 def test_yum_update_packages_with_release(rpm_package: Any, yum_repo: Any) -> None:

@@ -15,6 +15,14 @@ app.add_typer(releases, name="releases")
 
 ADD_PACKAGES_HELP = "Semicolon-separated list of package ids to add."
 REMOVE_PACKAGES_HELP = "Semicolon-separated list of package ids to remove."
+RELEASE_HELP = (
+    "Name of the apt release whose packages you're managing. "
+    "Release is required if you're adding packages to an apt repo, or removing packages from a "
+    "specific apt release only. "
+    "You can also remove the packages from ALL releases in an apt repo by not specifying it in "
+    "a remove operation. "
+    "This option does nothing for yum repos."
+)
 
 
 @app.command()
@@ -138,7 +146,7 @@ def list_packages(
 def update_packages(
     ctx: typer.Context,
     repo_id: str = id_or_name("repositories"),
-    release: str = typer.Argument(None, help="Release/dist to add packages to."),
+    release: str = typer.Argument(None, help=RELEASE_HELP),
     component: str = typer.Argument(None, help="Component to add packages to."),
     add_packages: Optional[str] = typer.Option(None, help=ADD_PACKAGES_HELP),
     remove_packages: Optional[str] = typer.Option(None, help=REMOVE_PACKAGES_HELP),

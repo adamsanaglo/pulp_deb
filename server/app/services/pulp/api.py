@@ -208,55 +208,6 @@ class RepositoryApi(PulpApi):
         resp = await self.post(self.endpoint("modify", id=id), json=data)
         return translate_response(resp.json())
 
-    async def update_packages(
-        self,
-        id: RepoId,
-        release: Optional[str] = None,
-        component: Optional[str] = None,
-        add_packages: Optional[List[PackageId]] = None,
-        remove_packages: Optional[List[PackageId]] = None,
-    ) -> Any:
-        """Update a repo's packages."""
-        add_content = [ContentId(pkg) for pkg in (add_packages or [])]
-        remove_content = [ContentId(pkg) for pkg in (remove_packages or [])]
-
-        if id.type == RepoType.apt:
-            # for apt repos, we need to add/remove the package release components to the repo too
-            # this is the association that joins a package to a repo's release component
-
-            # first find the component we're dealing with
-            async with ReleaseApi() as release_api:
-                releases = await release_api.list(
-                    params={"repository": id, "distribution": release}
-                )
-                rel_id = ContentId(releases["results"][0]["id"])
-            async with ReleaseComponentApi() as comp_api:
-                comps = await comp_api.list(params={"release": rel_id.uuid, "component": component})
-                comp_id = ContentId(comps["results"][0]["id"])
-
-            async with PackageReleaseComponentApi() as prc_api:
-                # find or create the comp packages we need and add them to add_content
-                add_ids = []
-                for pkg_id in add_content:
-                    prc = await prc_api.find_or_create(pkg_id, comp_id)
-                    add_ids.append(ContentId(prc["id"]))
-                add_content.extend(add_ids)
-
-                # find any comp packages we need to remove and add them to remove_content
-                remove_ids = []
-                for pkg_id in remove_content:
-                    resp = await prc_api.list(
-                        params={
-                            "package": pkg_id.uuid,
-                            "release_component": comp_id.uuid,
-                        }
-                    )
-                    if resp["count"] > 0:
-                        remove_ids.append(ContentId(resp["results"][0]["id"]))
-                remove_content.extend(remove_ids)
-
-        return await self.update_content(id, add_content, remove_content)
-
     async def publish(self, id: RepoId) -> Any:
         """Call the publication create endpoint."""
         data: Dict[str, Any] = dict(repository=id_to_pulp_href(id))
@@ -456,16 +407,25 @@ class ReleaseComponentApi(PulpApi):
 class PackageReleaseComponentApi(PulpApi):
     """Api for association between packages and release components."""
 
-    async def find_or_create(self, package_id: ContentId, comp_id: ContentId) -> Any:
-        """Find or create a package release component."""
-        resp = await self.list(package=package_id.uuid, release_component=comp_id.uuid)
+    async def find(self, package_id: ContentId, comp_id: ContentId) -> Optional[ContentId]:
+        """Find a package release component, if it exists."""
+        resp = await self.list(
+            params={"package": package_id.uuid, "release_component": comp_id.uuid}
+        )
         if resp["count"] > 0:
-            prc = resp["results"][0]
-        else:
-            package = id_to_pulp_href(package_id)
-            comp = id_to_pulp_href(comp_id)
-            prc = await self.create(data={"package": package, "release_component": comp})
-        return prc
+            return ContentId(resp["results"][0]["id"])
+        return None
+
+    async def find_or_create(self, package_id: ContentId, comp_id: ContentId) -> ContentId:
+        """Find or create a package release component."""
+        prc_id = await self.find(package_id, comp_id)
+        if prc_id:
+            return prc_id
+
+        package = id_to_pulp_href(package_id)
+        comp = id_to_pulp_href(comp_id)
+        prc = await self.create(data={"package": package, "release_component": comp})
+        return ContentId(prc["id"])
 
     @staticmethod
     def endpoint(action: str, **kwargs: Any) -> str:
