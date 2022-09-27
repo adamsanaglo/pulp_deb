@@ -10,3 +10,4 @@ export esrp_app_id="754be256-20b9-443e-b73c-0977d72f16dc"
 export pmcAppId="1ce02e3e-1bf3-4d28-8cdc-e921f824399d"
 export legacyKeyThumprint="C8D312C8D46CB3CF"
 export esrpKeyCode="CP-450778-Pgp"
+export bstg='pmcppeblobstorage'

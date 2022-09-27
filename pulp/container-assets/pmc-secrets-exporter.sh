@@ -12,7 +12,7 @@ else
       pulpAdminPassword) name="PULP_ADMIN_PASSWORD";;
       pulpPostgresPassword) name="PULP_DATABASES__default__PASSWORD";;
       pulpSecret) name="PULP_SECRET_KEY";;
-      pulpStorageKey) name="PULP_AZURE_ACCOUNT_KEY";;
+      pulpBlobStorageKey) name="PULP_AZURE_ACCOUNT_KEY";;
       *) export name="$f";; # Else use the filename exactly
     esac
     echo "Exporting $SECRETS_MOUNTPOINT/$f to $name"

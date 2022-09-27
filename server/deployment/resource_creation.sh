@@ -38,7 +38,7 @@ aks_sub_id=$(az network vnet subnet show -g $rg --vnet-name $vnet --name $aks_su
 # Create the "pulp" container in bstg
 stgpfx=$(echo $prefix | tr -d [:punct:])
 lstg="${stgpfx}logstorage"
-bstg="${stgpfx}blobstorage"
+# bstg is defined in the per-environment file (above)
 az storage account create -n $lstg -g $rg -l $region --sku Standard_RAGRS --assign-identity
 az storage account create -n $bstg -g $rg -l $region --sku Standard_RAGRS --assign-identity
 bstgid=$(az storage account show -g $rg -n $bstg --query id --out tsv | tr -d '\r')
