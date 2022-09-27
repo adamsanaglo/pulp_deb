@@ -8,6 +8,17 @@ spec:
     spec:
       nodeSelector:
         "kubernetes.io/os": linux
+      initContainers:
+      - name: pmc-migrate
+        image: $loginserver/pmcserver_api
+        command: ['migrate']
+        volumeMounts:
+        - name: pmc-secrets-volume
+          mountPath: "/mnt/secrets"
+          readOnly: true
+        envFrom:
+          - configMapRef:
+              name: pmc-settings
       containers:
       - name: pulp-migrate
         image: $loginserver/pulp:latest
@@ -19,16 +30,6 @@ spec:
         envFrom:
           - configMapRef:
               name: pulp-settings
-      - name: pmc-migrate
-        image: $loginserver/pmcserver_api
-        command: ['migrate']
-        volumeMounts:
-        - name: pmc-secrets-volume
-          mountPath: "/mnt/secrets"
-          readOnly: true
-        envFrom:
-          - configMapRef:
-              name: pmc-settings
       restartPolicy: Never
       volumes:
         - name: pulp-secrets-volume

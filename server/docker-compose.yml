@@ -13,7 +13,7 @@ services:
       user: "${UID}:${GID}"
       depends_on:
         db:
-          condition: service_started
+          condition: service_healthy
       volumes:
         - ./app:/pmcserver/app
         - ./setup.cfg:/pmcserver/setup.cfg
@@ -34,7 +34,7 @@ services:
         pulp-api:
           condition: service_healthy
         db:
-          condition: service_started
+          condition: service_healthy
         api-migrate:
           condition: service_completed_successfully
       volumes:
@@ -50,11 +50,15 @@ services:
     db:
       image: postgres
       container_name: db
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready"]
+        interval: 2s
+        timeout: 5s
+        retries: 5
       ports:
         - 5432:5432
       volumes:
         - postgres-data:/var/lib/postgresql/data
-        - ../pulp/pulp_db_init.sh:/docker-entrypoint-initdb.d/01_pulp_db_init.sh
       env_file:
         - .env
 
@@ -83,7 +87,9 @@ services:
       command: pulp-migrate
       depends_on:
         db:
-          condition: service_started
+          condition: service_healthy
+        api-migrate:
+          condition: service_completed_successfully
       volumes:
         - ../pulp/settings.py:/etc/pulp/settings.py
         - ../pulp/.pulp_symmetric_key:/etc/pulp/pulp_symmetric_key
@@ -105,7 +111,7 @@ services:
         retries: 30
       depends_on:
         db:
-          condition: service_started
+          condition: service_healthy
         pulp-migrate:
           condition: service_completed_successfully
       ports:
@@ -131,7 +137,7 @@ services:
         signer:
           condition: service_healthy
         db:
-          condition: service_started
+          condition: service_healthy
       volumes:
         - ../pulp/settings.py:/etc/pulp/settings.py
         - ../pulp/.pulp_symmetric_key:/etc/pulp/pulp_symmetric_key
@@ -152,7 +158,7 @@ services:
       command: pulp-content
       depends_on:
         db:
-          condition: service_started
+          condition: service_healthy
       ports:
         - "8081:24816"
       volumes:

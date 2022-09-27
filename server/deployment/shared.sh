@@ -44,15 +44,10 @@ function pmc_run() {
     kubectl exec --stdin -c pmc --tty $PMCPOD -- /bin/bash -c ${@}
 }
 
-function initializePMCDB() {
-    # Init pmc db and prep for pulp access
+function create_initial_account() {
+    # Add the initial Account_Admin specified in the env-specific setup script.
     psqlcmd="PGPASSWORD=$PMC_POSTGRES_PASSWORD psql -h $pg_server -U pmcserver"
-    pmc_run "${psqlcmd} -d postgres -c 'create database pmcserver'"
-    pmc_run "alembic upgrade head"
     pmc_run "${psqlcmd} -d pmcserver -c \"insert into account (id, oid, name, role, icm_service, icm_team, contact_email, is_enabled, created_at, last_edited) values (gen_random_uuid(), '$account_id', 'dev', 'Account_Admin', 'dev', 'dev', 'dev@user.com', 't', now(), now())\""
-    pmc_run "${psqlcmd} -d postgres -c \"create user pulp with encrypted password '$PULP_POSTGRES_PASSWORD'\""
-    pmc_run "${psqlcmd} -d postgres -c 'create database pulp'"
-    pmc_run "${psqlcmd} -d postgres -c 'grant all privileges on database pulp to pulp'"
 }
 
 function worker_run() {

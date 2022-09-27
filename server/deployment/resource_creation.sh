@@ -90,9 +90,6 @@ az acr login --name $acr
 docker tag pmcserver_api $loginserver/pmcserver_api
 docker push $loginserver/pmcserver_api
 
-# Initialize the DB
-initializePMCDB
-
 # Run deployment
 apply_kube_config config.yml  # substitutes the environment variables in the file and sets up prerequisits
 
@@ -101,11 +98,10 @@ apply_migrations
 
 # Start the api-pod
 apply_kube_config api-pod.yml  # the only env variable substition here is the ACR loginserver. Is there a way to do that automatically?
-
-# restart the deployment so that pulp-api will actually connect to the db and create schema
-kubectl rollout restart deployment api-pod
-
 apply_kube_config worker-pod.yml
+
+# Create initial Account_Admin and and register the signing services.
+create_initial_account
 configureSigningServices
 
 # Scale everything up

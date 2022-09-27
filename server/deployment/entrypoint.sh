@@ -11,6 +11,7 @@ else
     case "$f" in
       pulpAdminPassword) name="PULP_PASSWORD";;
       pmcPostgresPassword) name="POSTGRES_PASSWORD";;
+      pulpPostgresPassword) name="PULP_DATABASES__default__PASSWORD";;
       *) export name="$f";; # Else use the filename exactly
     esac
     echo "Exporting $SECRETS_MOUNTPOINT/$f to $name"
@@ -19,7 +20,23 @@ else
 fi
 
 if [ "$1" == "migrate" ]; then
+  psql_cmd () { PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_SERVER -U $POSTGRES_USER -c "$1"; }
+  # Create the pmcserver database if it doesn't already exist. Executes first time per env.
+  psql_cmd "SELECT datname FROM pg_catalog.pg_database WHERE datname='$POSTGRES_DB'" | grep -q $POSTGRES_DB
+  if [ $? -eq 1 ]; then
+    psql_cmd "create database $POSTGRES_DB"
+  fi
+
+  # Upgrade pmcserver schema.
   alembic upgrade head
+
+  # Create the pulp database/user if they don't already exist. Executes first time per env.
+  psql_cmd "SELECT datname FROM pg_catalog.pg_database WHERE datname='pulp'" | grep -q pulp
+  if [ $? -eq 1 ]; then
+    psql_cmd "create user pulp with encrypted password '$PULP_DATABASES__default__PASSWORD'"
+    psql_cmd 'create database pulp'
+    psql_cmd 'grant all privileges on database pulp to pulp'
+  fi
 else
   python3 app/main.py
 fi

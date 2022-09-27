@@ -99,6 +99,9 @@ spec:
     objects: |
       array:
         - |
+          objectName: "pulpPostgresPassword"
+          objectType: secret
+        - |
           objectName: "pmcPostgresPassword"
           objectType: secret
         - |
