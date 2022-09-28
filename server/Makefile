@@ -16,7 +16,7 @@ PULP_AZURE_ACCOUNT_NAME ?= none
 PULP_AZURE_ACCOUNT_KEY ?= none
 
 # Deliberately not pulled from process environment
-LEGACY_KEY_THUMBPRINT = $(shell gpg --show-keys .test.key | head -n 2 | tail -n 1 | tail -c 17)
+LEGACY_KEY_THUMBPRINT = $(shell base64 -d .test.key | gpg --show-keys - | head -n 2 | tail -n 1 | tail -c 17)
 
 .PHONY: help run build rebuild down teardown update reset migrate shell lint dbconsole clear_env rebuild_env
 

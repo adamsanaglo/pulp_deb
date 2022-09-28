@@ -55,12 +55,14 @@ class AbstractSigner:
 
 class LegacySigner(AbstractSigner):
     """Sign things locally with the gpg key specified in settings."""
+
     def __init__(self, clearsign: bool, key_id: str, task_id: str, working_dir: str) -> None:
         super().__init__(clearsign, key_id, task_id, working_dir)
 
         # Ensure that the legacy key has been imported.
-        _import_legacy_key()
+        self._import_legacy_key()
 
+    @staticmethod
     def _import_legacy_key():
         # Check for the legacy signing key
         res = util.run_cmd_out("/usr/bin/gpg --list-secret-keys")
@@ -99,6 +101,7 @@ class LegacySigner(AbstractSigner):
 
 class ESRPSigner(AbstractSigner):
     """Call out to "az xsign" to get ESRP to sign the file for us."""
+
     @retry(stop_max_attempt_number=10, wait_exponential_multiplier=1000, wait_exponential_max=60000)
     def _sign(self, operation: esrp.SigningOperation, filename: str) -> bool:
         """
@@ -107,8 +110,12 @@ class ESRPSigner(AbstractSigner):
         try:
             log.info(f"Generating {operation.name} signature for {self.task_id}")
             esrp.az_login()
-            esrp.az_xsign(f"{self.working_dir}/{self.UNSIGNED_FILE}", 
-                f"{self.working_dir}/{filename}", operation, self.key_id)
+            esrp.az_xsign(
+                f"{self.working_dir}/{self.UNSIGNED_FILE}",
+                f"{self.working_dir}/{filename}",
+                operation,
+                self.key_id,
+            )
             log.info(f"Successfully signed file for {self.task_id}")
         except (esrp.ESRPAuthException, ValueError, ClientAuthenticationError) as e:
             # Non-retriable errors
@@ -122,8 +129,8 @@ class ESRPSigner(AbstractSigner):
 
 
 def sign_request(
-        unsigned_file: SpooledTemporaryFile, clearsign: bool, key_id: str, task_id: str
-    ) -> bool:
+    unsigned_file: SpooledTemporaryFile, clearsign: bool, key_id: str, task_id: str
+) -> bool:
     """
     Write the unsigned file to disk
     Submit it to ESRP for signing
