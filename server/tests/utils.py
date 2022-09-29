@@ -48,7 +48,7 @@ def gen_pulp_repo_response(type: RepoType, name: str) -> Dict[str, Any]:
 
 def gen_release_attrs() -> Dict[str, Union[str, List[str]]]:
     return dict(
-        distribution=f"pmc_cli_test_release_{uuid4()}",
+        name=f"pmc_cli_test_release_{uuid4()}",
         codename="cortoso",
         suite="stable",
         components=["main", "contrib", "non-free"],

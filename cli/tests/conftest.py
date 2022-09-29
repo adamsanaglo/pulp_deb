@@ -115,7 +115,7 @@ def release(orphan_cleanup: None, apt_repo: Any) -> Generator[Any, None, None]:
         "releases",
         "create",
         apt_repo["id"],
-        attrs["distribution"],
+        attrs["name"],
         attrs["codename"],
         attrs["suite"],
     ]

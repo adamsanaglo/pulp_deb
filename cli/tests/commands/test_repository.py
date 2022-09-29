@@ -97,7 +97,7 @@ def test_apt_update_list_packages(deb_package: Any, release: Any) -> None:
     _update_list_packages(
         deb_package["id"],
         release["repository_id"],
-        release["distribution"],
+        release["name"],
         release["components"][0],
     )
 

@@ -34,18 +34,18 @@ def list(
 def create(
     ctx: typer.Context,
     repo_id: str = repo_option,
-    distribution: str = typer.Argument(..., help="Name under which to distribute release."),
-    codename: str = typer.Argument(..., help="Codename for the release."),
-    suite: str = typer.Argument(..., help="Suite for the release (e.g. stable)."),
+    name: str = typer.Argument(..., help="Name under which to distribute release."),
+    codename: Optional[str] = typer.Argument(None, help="Codename for the release."),
+    suite: Optional[str] = typer.Argument(None, help="Suite for the release (e.g. stable)."),
     components: str = typer.Option(None, help="Semicolon-separated list of components."),
     architectures: str = typer.Option(None, help="Semicolon-separated list of architectures."),
 ) -> None:
     """Create a release for a repository."""
-    data: Dict[str, Union[str, List[str]]] = {
-        "codename": codename,
-        "suite": suite,
-        "distribution": distribution,
-    }
+    data: Dict[str, Union[str, List[str]]] = {"name": name}
+    if codename:
+        data["codename"] = codename
+    if suite:
+        data["suite"] = suite
 
     if components:
         data["components"] = components.split(LIST_SEPARATOR)

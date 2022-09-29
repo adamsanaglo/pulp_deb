@@ -20,6 +20,7 @@ from pydantic import (
     AnyHttpUrl,
     BaseModel,
     EmailStr,
+    Field,
     FileUrl,
     NonNegativeInt,
     PositiveInt,
@@ -476,11 +477,20 @@ class PackageListResponse(ListResponse):
 
 
 class ReleaseCreate(BaseModel):
-    distribution: str
-    codename: str
-    suite: str
+    # pulp_deb names the identifying field "distribution" but this is confusing so we call it "name"
+    distribution: str = Field(..., alias="name")
+    codename: Optional[str]
+    suite: Optional[str]
     components: List[str] = ["main"]
     architectures: List[str] = ["amd64", "arm64", "armhf"]
+
+    @validator("codename", "suite", always=True)
+    def default_to_name(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+        return v or values.get("distribution")
+
+    class Config:
+        # this allows the pulp response (which uses distribution for name) to populate the field
+        allow_population_by_field_name = True
 
 
 class ReleaseResponse(ReleaseCreate):

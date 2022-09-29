@@ -85,7 +85,7 @@ A default Service Principal is available to simplify your dev environment
 pmc repo create myrepo-apt apt --signing-service legacy
 
 # create a repo release
-pmc repo releases create myrepo-apt jammy jammy stable
+pmc repo releases create myrepo-apt jammy
 
 # create a distro
 pmc distro create mydistro-apt apt "some/path" --repository myrepo-apt

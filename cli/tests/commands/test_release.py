@@ -12,7 +12,7 @@ def test_create_with_comps_architectures(orphan_cleanup: None, apt_repo: Any) ->
         "releases",
         "create",
         apt_repo["id"],
-        attrs["distribution"],
+        attrs["name"],
         attrs["codename"],
         attrs["suite"],
         "--components",
@@ -57,7 +57,7 @@ def test_yum_release(yum_repo: Any) -> None:
         "releases",
         "create",
         yum_repo["id"],
-        attrs["distribution"],
+        attrs["name"],
         attrs["codename"],
         attrs["suite"],
     ]
@@ -73,7 +73,7 @@ def test_dupe_release(release: Any) -> None:
         "releases",
         "create",
         release["repository_id"],
-        release["distribution"],
+        release["name"],
         release["codename"],
         release["suite"],
     ]
@@ -96,7 +96,7 @@ def test_dupe_release_another_repo(release: Any) -> None:
             "releases",
             "create",
             repo["id"],
-            release["distribution"],
+            release["name"],
             release["codename"],
             release["suite"],
         ]
