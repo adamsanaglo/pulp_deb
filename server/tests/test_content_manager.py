@@ -1,4 +1,5 @@
 import pytest
+from fastapi.exceptions import HTTPException
 from tests.utils import (
     gen_package_id,
     gen_package_release_component_id,
@@ -34,8 +35,8 @@ async def test_apt_adding_requires_release(content_manager):
     cm = content_manager(gen_repo_id(RepoType.apt))
     try:
         await cm.add_and_remove_packages([gen_package_id()], None)
-    except Exception as e:
-        assert "You must specify a release to add packages to an apt repo." in str(e)
+    except HTTPException as e:
+        assert "You must specify a release to add packages to an apt repo." in e.detail
     else:
         assert False, "Expected exception not thrown!"
 
