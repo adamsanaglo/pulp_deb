@@ -1,12 +1,13 @@
 #!/bin/bash -e
 . ./shared.sh
 
-if [[ -z "${1}" ]]; then
-    bail "Must specify environment (ppe); tux|prod not yet supported"
-elif [[ "${1}" == "ppe" ]]; then
-    . ./ppe.sh
+environment=${1}
+if [[ -z "${environment}" ]]; then
+    bail "Must specify environment (ppe|tux|prod)"
+elif [[ "${environment}" == "ppe" ]] || [[ "${environment}" == "tux" ]] || [[ "${environment}" == "prod" ]]; then
+    . ./${environment}.sh
 else
-    bail "Environment '${1}' not supported"
+    bail "Environment '${environment}' not supported"
 fi
 
 

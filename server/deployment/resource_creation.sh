@@ -6,9 +6,9 @@
 
 environment=${1}
 if [[ -z "${environment}" ]]; then
-    bail "Must specify environment (ppe); tux|prod not yet supported"
-elif [[ "${environment}" == "ppe" ]]; then
-    . ./ppe.sh
+    bail "Must specify environment (ppe|tux|prod)"
+elif [[ "${environment}" == "ppe" ]] || [[ "${environment}" == "tux" ]] || [[ "${environment}" == "prod" ]]; then
+    . ./${environment}.sh
 else
     bail "Environment '${environment}' not supported"
 fi
