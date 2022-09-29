@@ -93,8 +93,16 @@ RUN mkdir -p /etc/pulp \
 
 RUN pip install pulpcore
 RUN pip install pulp-python
-RUN pip install pulp-deb
+#RUN pip install pulp-deb
 RUN pip install pulp-rpm
+
+# Enable use of cloud storage using vendored clone of github.com/jasonzio/django_storages
+COPY container-assets/django_storages /tmp/django_storages
+RUN pip install /tmp/django_storages
+
+# Enable vendored clone of pulp-deb from github.com/sdherr/pulp_deb
+COPY container-assets/pulp_deb /tmp/pulp_deb
+RUN pip install /tmp/pulp_deb
 
 # In this image the manager is in /usr/bin, not /usr/local/bin
 RUN ["ln", "-s", "/usr/bin/pulpcore-manager", "/usr/local/bin/pulpcore-manager"]
@@ -113,9 +121,5 @@ COPY container-assets/add_signer.sh /usr/bin/add_signer.sh
 
 # Copy over stuff for signing repodata
 COPY sign_cli /sign_cli
-
-# Enable use of cloud storage using vendored clone of github.com/jasonzio/django_storages
-COPY container-assets/django_storages /tmp/django_storages
-RUN pip install /tmp/django_storages
 
 ENTRYPOINT ["/pulp-common-entrypoint.sh"]

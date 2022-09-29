@@ -1,0 +1,11 @@
+coreapi
+django
+djangorestframework
+django-filter
+drf-nested-routers
+plantuml
+pyyaml
+sphinx
+sphinx-rtd-theme
+sphinxcontrib-openapi
+towncrier

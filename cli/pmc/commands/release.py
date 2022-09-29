@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import typer
 
@@ -19,11 +19,19 @@ repo_option = id_or_name(
 def list(
     ctx: typer.Context,
     repo_id: str = repo_option,
+    name: Optional[str] = typer.Argument(None, help="Name of the release we're looking for."),
+    package: Optional[str] = typer.Option(
+        None, help="PackageId, only list releases that contain this package."
+    ),
     limit: Optional[int] = LIMIT_OPT,
     offset: Optional[int] = OFFSET_OPT,
 ) -> None:
     """List a repository's releases."""
-    params = dict(limit=limit, offset=offset)
+    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+    if name:
+        params["name"] = name
+    if package:
+        params["package"] = package
 
     with get_client(ctx.obj) as client:
         resp = client.get(f"/repositories/{repo_id}/releases/", params=params)

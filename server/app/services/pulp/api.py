@@ -344,7 +344,9 @@ class DistributionApi(PulpApi):
 
 
 class PackageApi(PulpApi):
-    async def repository_packages(self, repo_id: RepoId, pagination: Pagination) -> Any:
+    async def repository_packages(
+        self, repo_id: RepoId, pagination: Pagination, release: Optional[ReleaseId] = None
+    ) -> Any:
         """Call the package list endpoint and filter by repo id."""
         if repo_id.type == "apt":
             type = PackageType.deb
@@ -355,8 +357,12 @@ class PackageApi(PulpApi):
 
         async with RepositoryApi() as repo_api:
             version_href = await repo_api.latest_version_href(repo_id)
+            params = {"repository_version": version_href}
 
-        return await self.list(pagination, {"repository_version": version_href}, type=type)
+        if release:
+            params["release"] = release.uuid
+
+        return await self.list(pagination, params, type=type)
 
     async def create(self, data: Dict[str, Any]) -> Any:
         """Call the package create endpoint."""

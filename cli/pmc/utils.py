@@ -64,11 +64,12 @@ def raise_if_task_failed(task: PulpTask) -> None:
 def _lookup_id_or_name(
     resource: str, id_regex: Union[str, Pattern[str]], ctx: typer.Context, field: str, value: str
 ) -> str:
+    url = "/" + (resource % ctx.params) + "/"
     if not value or re.match(id_regex, value):
         return value
 
     with get_client(ctx.obj) as client:
-        resp = client.get(f"/{resource}/", params={"name": value})
+        resp = client.get(url, params={"name": value})
         results = resp.json()
         if results["count"] == 1:
             return str(results["results"][0]["id"])

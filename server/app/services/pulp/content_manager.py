@@ -69,7 +69,9 @@ class ContentManager:
                     detail="Due to a known bug you cannot currently remove a package from only one "
                     "release. To work-around, remove the package from all releases in this repo "
                     "by excluding the release option, then add it back in to the releases where it "
-                    "should still exist. To track this issue you may follow "
+                    "should still exist. To see what releases in this repo a package is currently "
+                    'in, you may do "pmc repo releases list <repo_name> --package <package_id>". '
+                    "To track this issue you may follow "
                     "https://msazure.visualstudio.com/One/_workitems/edit/15641546",
                 )
 
