@@ -23,12 +23,17 @@ elif [[ ! -f "${inputCsv}" ]]; then
     bail "File ${inputCsv} does not exist!"
 fi
 
+failedRemotes=()
+failedRepos=()
+failedDistros=()
+remoteCount=0
+repoCount=0
+distroCount=0
 # Capture absolute path, since we have to change folders
 inputCsvPath=$(realpath ${inputCsv})
 pushd ../cli > /dev/null
-IFS=$'\n'
 # Get a list of unique repo IDs; parse releases/dists separately
-for line in $(cat ${inputCsvPath} | cut -d ',' -f 1,2,4 | sort -u); do
+cat ${inputCsvPath} | while read -r line | cut -d ',' -f 1,2,4 | sort -u); do
     type=$(echo ${line} | cut -d ',' -f 1)     # Type (apt|yum)
     url=$(echo ${line} | cut -d ',' -f 2)      # Url
     prss=$(echo ${line} | cut -d ',' -f 3)     # Prss
@@ -44,12 +49,22 @@ for line in $(cat ${inputCsvPath} | cut -d ',' -f 1,2,4 | sort -u); do
     fi
 
     # 1. Create Remote
-    remote_id=$(poetry run pmc --id-only remote create ${distOption[@]} ${archOption[@]} ${url}-${type} ${type} ${remote_url})
-    echo "Created remote ${url}-${type} ${remote_id}"
+    if ! remote_id=$(poetry run pmc --id-only remote create ${distOption[@]} ${archOption[@]} ${url}-${type} ${type} ${remote_url}); then
+        echo "Failed to add Remote ${url}-${type}. Continue..."
+        failedRemotes+=("${url}-${type}")
+        continue
+    fi
+    remoteCount=$((remoteCount+1))
+    echo "Created remote ${url}-${type} ${remote_id} [${remoteCount}]"
 
     # 2. Create Repo
-    repo_id=$(poetry run pmc --id-only repo create --remote ${remote_id} --signing-service ${signers[${prss}]} ${url}-${type} ${type})
-    echo "Created repo ${url}-${type} ${repo_id}"
+    if ! repo_id=$(poetry run pmc --id-only repo create --remote ${remote_id} --signing-service ${signers[${prss}]} ${url}-${type} ${type});  then
+        echo "Failed to add Repo ${url}-${type}. Continue..."
+        failedRepos+=("${url}-${type}")
+        continue
+    fi
+    repoCount=$((repoCount+1))
+    echo "Created repo ${url}-${type} ${repo_id} [${repoCount}]"
 
     # 3. Create Releases
     if [[ "${type}" == "apt" ]]; then
@@ -62,6 +77,24 @@ for line in $(cat ${inputCsvPath} | cut -d ',' -f 1,2,4 | sort -u); do
 
     #4 Create Distribution
     basePath="${paths[${type}]}/${url}"
-    poetry run pmc distro create ${url}-${type} ${type} ${basePath} --repository ${repo_id}
-    echo "Created distro ${url}-${type}"
+    if ! poetry run pmc distro create ${url}-${type} ${type} ${basePath} --repository ${repo_id}; then
+        echo "Failed to add Distro ${url}-${type}. Continue..."
+        failedDistros+=("${url}-${type}")
+        continue
+    fi
+    distroCount=$((distroCount+1))
+    echo "Created distro ${url}-${type} [${distroCount}]"
+done
+
+echo "Created ${remoteCount} remotes with ${#failedRemotes[@]} failures"
+echo "Created ${repoCount} repos with ${#failedRepos[@]} failures"
+echo "Created ${distroCount} distros with ${#failedDistros[@]} failures"
+for name in ${failedRemotes[@]}; do
+    echo "FAILED remote ${name}"
+done
+for name in ${failedRepos[@]}; do
+    echo "FAILED repo ${name}"
+done
+for name in ${failedDistros[@]}; do
+    echo "FAILED distro ${name}"
 done
