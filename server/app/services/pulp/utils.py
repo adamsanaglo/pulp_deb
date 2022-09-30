@@ -13,7 +13,7 @@ def get_client() -> httpx.AsyncClient:
     return httpx.AsyncClient(
         headers={"Correlation-ID": str(correlation_id.get())},
         base_url=f"{settings.PULP_HOST}{settings.PULP_API_PATH}",
-        auth=(settings.PULP_USERNAME, settings.PULP_PASSWORD),
+        auth=(settings.PULP_ADMIN_USERNAME, settings.PULP_ADMIN_PASSWORD),
     )
 
 

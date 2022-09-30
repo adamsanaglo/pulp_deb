@@ -1,12 +1,8 @@
 include .env
 SHELL := /bin/bash
 
-# Deliberately not "lazy evaluation"
-ifeq ($(origin PULP_PASSWORD), undefined)
-	PULP_PASSWORD := $(shell openssl rand -base64 12)
-endif
-
 PULP_DATABASES__default__PASSWORD ?= $(shell openssl rand -base64 12)
+PULP_ADMIN_PASSWORD ?= $(shell openssl rand -base64 12)
 PULP_SECRET ?= $(shell openssl rand -base64 50)
 PULP_SYMMETRIC_KEY ?= $(shell openssl rand -base64 32)
 POSTGRES_PASSWORD ?= $(shell openssl rand -base64 12)
@@ -25,8 +21,7 @@ default: help
 .env::			## generate an .env file from .env.example
 	@echo "Creating .env file"
 	@echo ${PULP_SYMMETRIC_KEY} > ../pulp/.pulp_symmetric_key
-	@./setvalues.py -s .env.example .env PULP_PASSWORD "${PULP_PASSWORD}" \
-	PULP_ADMIN_PASSWORD "${PULP_PASSWORD}" \
+	@./setvalues.py -s .env.example .env PULP_ADMIN_PASSWORD "${PULP_ADMIN_PASSWORD}" \
 	PULP_DATABASES__default__PASSWORD "${PULP_DATABASES__default__PASSWORD}" PULP_SECRET "${PULP_SECRET}" \
 	POSTGRES_PASSWORD "${POSTGRES_PASSWORD}" APP_CLIENT_ID "${APP_CLIENT_ID}" TENANT_ID "${TENANT_ID}" \
 	LEGACY_KEY_THUMBPRINT "${LEGACY_KEY_THUMBPRINT}"

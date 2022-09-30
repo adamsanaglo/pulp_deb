@@ -7,7 +7,7 @@
 set_initial_vars "${1}"
 
 # secrets
-PULP_PASSWORD=$(openssl rand -base64 12)
+PULP_ADMIN_PASSWORD=$(openssl rand -base64 12)
 PMC_POSTGRES_PASSWORD=$(openssl rand -base64 12)
 PULP_POSTGRES_PASSWORD=$(openssl rand -base64 12)
 PULP_SECRET=$(openssl rand -base64 50)
@@ -43,7 +43,7 @@ az keyvault network-rule add --name $kv --vnet-name $vnet --subnet $aks_subnet
 az keyvault network-rule add --name $kv --ip-address 157.58.216.64/26 207.68.190.32/27 13.106.78.32/27 194.69.119.64/26 13.106.174.32/27 167.220.249.128/26 13.106.4.96/27
 # You may also want to add (and later remove) a network rule for your ip address here so that you can complete the next steps
 az keyvault update --name $kv --default-action Deny
-az keyvault secret set --vault-name $kv --name pulpAdminPassword --value $PULP_PASSWORD
+az keyvault secret set --vault-name $kv --name pulpAdminPassword --value $PULP_ADMIN_PASSWORD
 az keyvault secret set --vault-name $kv --name pmcPostgresPassword --value $PMC_POSTGRES_PASSWORD
 az keyvault secret set --vault-name $kv --name pulpPostgresPassword --value $PULP_POSTGRES_PASSWORD
 az keyvault secret set --vault-name $kv --name pulpSecret --value "$PULP_SECRET"

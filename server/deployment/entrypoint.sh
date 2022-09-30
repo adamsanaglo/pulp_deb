@@ -9,7 +9,7 @@ else
     # Translate some known secret names into their appropriate ENV name.
     f="$(basename $path)"
     case "$f" in
-      pulpAdminPassword) name="PULP_PASSWORD";;
+      pulpAdminPassword) name="PULP_ADMIN_PASSWORD";;
       pmcPostgresPassword) name="POSTGRES_PASSWORD";;
       pulpPostgresPassword) name="PULP_DATABASES__default__PASSWORD";;
       *) export name="$f";; # Else use the filename exactly

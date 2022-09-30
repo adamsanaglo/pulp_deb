@@ -14,8 +14,8 @@ class Settings(BaseSettings):
 
     PULP_HOST: str
     PULP_API_PATH: str = "/pulp/api/v3"
-    PULP_USERNAME: str
-    PULP_PASSWORD: str
+    PULP_ADMIN_USERNAME: str
+    PULP_ADMIN_PASSWORD: str
 
     POSTGRES_SERVER: str
     POSTGRES_USER: str
