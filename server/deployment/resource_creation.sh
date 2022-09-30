@@ -4,16 +4,7 @@
 # az cli: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
 . ./shared.sh
 
-environment=${1}
-if [[ -z "${environment}" ]]; then
-    bail "Must specify environment (ppe|tux|prod)"
-elif [[ "${environment}" == "ppe" ]] || [[ "${environment}" == "tux" ]] || [[ "${environment}" == "prod" ]]; then
-    . ./${environment}.sh
-else
-    bail "Environment '${environment}' not supported"
-fi
-
-set_initial_vars
+set_initial_vars "${1}"
 
 # secrets
 PULP_PASSWORD=$(openssl rand -base64 12)
@@ -36,15 +27,12 @@ aks_sub_id=$(az network vnet subnet show -g $rg --vnet-name $vnet --name $aks_su
 # create storage accounts for pulp artifacts (bstg) and for storage access logs (lstg)
 # Enable blob access logging on bstg; logs are written to lstg
 # Create the "pulp" container in bstg
-stgpfx=$(echo $prefix | tr -d [:punct:])
-lstg="${stgpfx}logstorage"
-# bstg is defined in the per-environment file (above)
 az storage account create -n $lstg -g $rg -l $region --sku Standard_RAGRS --assign-identity
 az storage account create -n $bstg -g $rg -l $region --sku Standard_RAGRS --assign-identity
 bstgid=$(az storage account show -g $rg -n $bstg --query id --out tsv | tr -d '\r')
 bstgblobsvcid="${bstgid}/blobServices/default"
 az monitor diagnostic-settings create --name pulpStorageLogs --storage-account $lstg --resource $bstgblobsvcid --logs '@log_analytics_settings.json'
-bstgkey=$(az storage account keys list -n $bstg -g $rg --query "[? keyName == 'key1'].value" --out tsv | tr -d '\r')
+bstgkey=$(get_blob_storage_key key1)
 az storage container create --account-name $bstg --account-key $bstgkey -n pulp
 
 # ... create and setup keyvault
@@ -110,5 +98,5 @@ kubectl autoscale deployment worker-pod --min=2 --max=10
 kubectl autoscale deployment pulp-content --min=2 --max=10
 
 # Get the ip address of the api and content service
-echo "PMC Server is listening at http://$(kubectl get service/pmc-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/"
-echo "Pulp content will be served at http://$(kubectl get service/pulp-content -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/pulp/content/"
+echo "PMC Server is listening at http://$(get_service_ip pmc-service)/api/"
+echo "Pulp content will be served at http://$(get_service_ip pulp-content)/pulp/content/"

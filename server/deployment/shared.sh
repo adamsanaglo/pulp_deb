@@ -6,6 +6,14 @@ function bail {
 }
 
 function set_initial_vars() {
+    environment="${1}"
+    if [[ -z "${environment}" ]]; then
+        bail "Must specify environment (ppe|tux|prod)"
+    elif [[ "${environment}" == "ppe" ]] || [[ "${environment}" == "tux" ]] || [[ "${environment}" == "prod" ]]; then
+        . ./${environment}.sh
+    else
+        bail "Environment '${environment}' not supported"
+    fi
     rg="${prefix}-rg"
     vnet="${prefix}-vnet"
     aks_subnet="${prefix}-aks-subnet"
@@ -13,6 +21,9 @@ function set_initial_vars() {
     aks="${prefix}-kube-cluster"
     acr="$(echo $prefix | tr -cd '[:alnum:]')acr"  # alphanumeric only
     pg="${prefix}-pg"
+    storageprefix=$(echo $prefix | tr -d [:punct:]) # Storage account names can't include punctuation
+    bstg="${storageprefix}blobstorage"
+    lstg="${storageprefix}logstorage"
 }
 
 function get_az_cli_vars() {
@@ -20,6 +31,10 @@ function get_az_cli_vars() {
     export CLIENT_ID=$(az aks show -g $rg -n $aks --query addonProfiles.azureKeyvaultSecretsProvider.identity.clientId -o tsv | tr -d '\r')
     export pg_server=$(az postgres flexible-server show -g $rg -n $pg --query 'fullyQualifiedDomainName' -o tsv | tr -d '\r')
     export loginserver=$(az acr show -g $rg --name $acr --query 'loginServer' -o tsv | tr -d '\r')
+}
+
+function get_blob_storage_key() {
+    az storage account keys list -n $bstg -g $rg --query "[? keyName == '${1}'].value" --out tsv | tr -d '\r'
 }
 
 function get_aks_creds() {
@@ -37,9 +52,17 @@ function apply_migrations() {
     kubectl delete job/migration
 }
 
+function get_pod_name() {
+    kubectl get pods -l app=${1} -o jsonpath='{.items[0].metadata.name}'
+}
+
+function get_service_ip() {
+    kubectl get service/${1} -o jsonpath="{.status.loadBalancer.ingress[0].ip}"
+}
+
 function pmc_run() {
     if [[ -z "${PMCPOD}" ]]; then
-        PMCPOD=$(kubectl get pod -l app=pmc -o jsonpath="{.items[0].metadata.name}")
+        PMCPOD=$(get_pod_name pmc)
     fi
     kubectl exec --stdin -c pmc --tty $PMCPOD -- /bin/bash -c ${@}
 }
@@ -52,7 +75,7 @@ function create_initial_account() {
 
 function worker_run() {
     if [[ -z "${WORKERPOD}" ]]; then
-        WORKERPOD=$(kubectl get pod -l app=pulp-worker -o jsonpath="{.items[0].metadata.name}")
+        WORKERPOD=$(get_pod_name pulp-worker)
     fi
     kubectl exec --stdin -c pulp-worker --tty $WORKERPOD -- /bin/bash -c ${@}
 }
