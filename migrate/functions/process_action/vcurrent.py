@@ -1,9 +1,8 @@
 import logging
 import os
 
-from schemas import RpmPackage
-
 from process_action.repolib import repolib
+from schemas import RpmPackage
 
 VCURRENT_SERVER = os.environ["VCURRENT_SERVER"]
 VCURRENT_PORT = os.environ["VCURRENT_PORT"]
@@ -70,12 +69,14 @@ def _get_package(repo_id, package):
 
 
 def remove_vcurrent_package(action):
-    logging.info(f"Removing package from vcurent {action.repo} repo: {action.package}.")
-    repo = _get_repo(action.repo)
+    logging.info(
+        f"Removing package from vcurent {action.repo_name} repo: {action.package}."
+    )
+    repo = _get_repo(action.repo_name)
     package = _get_package(repo["id"], action.package)
     response = api.delete_package_by_id(package["id"])
     if response.status_code != 204:
         raise Exception(
             f"Failed to delete package {package['id']} ({response.status_code}): {response.text}"
         )
-    logging.info(f"Deleted package {package['id']} from repo {action.repo}.")
+    logging.info(f"Deleted package {package['id']} from repo {action.repo_name}.")

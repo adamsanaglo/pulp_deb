@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from msal import ConfidentialClientApplication
 from OpenSSL.crypto import FILETYPE_PEM, X509, dump_certificate, load_certificate
@@ -10,15 +10,22 @@ class pmcauth:
         self,
         msal_client_id: str,
         msal_scope: str,
-        msal_cert_path: Path,
         msal_authority: str,
+        msal_cert_path: Optional[Path] = None,
+        msal_cert: Optional[str] = None,
         msal_SNIAuth: bool = True,
     ):
         """
         Initialize an instance of pmcauth
         """
+        if msal_cert_path:
+            self.client_certificate_contents = msal_cert_path.expanduser().read_text()
+        elif msal_cert:
+            self.client_certificate_contents = msal_cert
+        else:
+            raise Exception("No MSAL cert path or cert set for authentication.")
+
         self.scope = msal_scope
-        self.client_certificate_contents = msal_cert_path.expanduser().read_text()
         # Find the leaf cert and thumbprint
         self.leaf_cert = self.find_leaf_cert()
         self.client_certificate_thumbprint = self._get_cert_thumbprint()

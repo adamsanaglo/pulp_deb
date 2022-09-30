@@ -1,0 +1,19 @@
+#!/bin/bash -e
+
+# URLS
+export VNEXT_URL="http://localhost:8000"
+export VCURRENT_SERVER="<vcurrent>"
+export VCURRENT_PORT="8443"
+
+# vnext MSAL vars
+
+echo "Extracting MSAL vars from ~/.config/pmc/settings.toml"
+for var in $(grep msal ~/.config/pmc/settings.toml | sed -e 's/^\(\S*\) = /\U\1=/'); do eval "export $var"; done
+
+# vcurrent AAD vars
+
+export AAD_CLIENT_ID="<client id>"
+export AAD_CLIENT_SECRET="<client secret>"
+export AAD_RESOURCE="<resource>"
+export AAD_TENANT="<tenant>"
+export AAD_AUTHORITY_URL="<authority url>"

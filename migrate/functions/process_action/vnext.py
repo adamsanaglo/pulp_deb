@@ -1,21 +1,25 @@
 import logging
 import os
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator, Optional
 from uuid import UUID, uuid4
-from contextlib import contextmanager
 
 import httpx
-from schemas import DebPackage, RpmPackage
 
 from process_action.auth import pmcauth
+from schemas import DebPackage, RpmPackage
 
 VNEXT_URL = os.environ["VNEXT_URL"]
 MSAL_CLIENT_ID = os.environ["MSAL_CLIENT_ID"]
 MSAL_SCOPE = os.environ["MSAL_SCOPE"]
-MSAL_CERT_PATH = Path(os.environ["MSAL_CERT_PATH"])
 MSAL_AUTHORITY = os.environ["MSAL_AUTHORITY"]
 MSAL_SNIAUTH = os.getenv("MSAL_SNIAUTH", "true").lower() in ["true", "1"]
+
+if os.getenv("MSAL_CERT_PATH"):
+    MSAL_CERT = Path(os.environ["MSAL_CERT_PATH"]).expanduser().read_text()
+else:
+    MSAL_CERT = os.environ["MSAL_CERT"]
 
 
 def _raise_for_status(response: httpx.Response) -> None:
@@ -24,7 +28,8 @@ def _raise_for_status(response: httpx.Response) -> None:
         response.raise_for_status()
     except httpx.HTTPStatusError as e:
         logging.error(
-            f"Error: ({e.response.status_code}) response from {e.response.url}: {e.response.content}"
+            f"Error: ({e.response.status_code}) response from {e.response.url}: "
+            f"{e.response.content}"
         )
         raise e
 
@@ -38,11 +43,15 @@ def _get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, Non
 
     try:
         auth = pmcauth(
-            MSAL_CLIENT_ID, MSAL_SCOPE, MSAL_CERT_PATH, MSAL_AUTHORITY, MSAL_SNIAUTH
+            msal_client_id=MSAL_CLIENT_ID,
+            msal_scope=MSAL_SCOPE,
+            msal_authority=MSAL_AUTHORITY,
+            msal_SNIAuth=MSAL_SNIAUTH,
+            msal_cert=MSAL_CERT,
         )
         token = auth.acquire_token()
-    except Exception:
-        raise Exception("Failed to retrieve AAD token")
+    except Exception as e:
+        raise Exception(f"Failed to retrieve AAD token: {e}")
 
     client = httpx.Client(
         base_url=f"{VNEXT_URL}/api/v4",
@@ -73,7 +82,7 @@ def _wait_for_task(client: httpx.Client, task_response: httpx.Response) -> None:
 
 
 def _get_vnext_repo(client, repo_name):
-    response = client.get(f"/repositories/", params={"name": repo_name})
+    response = client.get("/repositories/", params={"name": repo_name})
 
     resp_json = response.json()
     if resp_json["count"] != 1:
@@ -112,19 +121,21 @@ def remove_vnext_package(action):
                 "version": action.package.version,
                 "architecture": action.package.arch,
             }
-            response = client.get(f"/deb/packages/", params=params)
+            response = client.get("/deb/packages/", params=params)
         elif isinstance(action.package, RpmPackage):
             params = action.package.dict()
-            if params["epoch"] == None:
+            if params["epoch"] is None:
                 # pulp_rpm defaults epoch to 0
                 params["epoch"] = 0
-            response = client.get(f"/rpm/packages/", params=params)
+            response = client.get("/rpm/packages/", params=params)
         else:
             raise Exception(f"Unexpected package type: {type(action.package)}")
 
         resp_json = response.json()
         if resp_json["count"] != 1:
-            raise Exception(f"Found {resp_json['count']} packages for {action.package}.")
+            raise Exception(
+                f"Found {resp_json['count']} packages for {action.package}."
+            )
         package_id = resp_json["results"][0]["id"]
 
         # remove the package id from the repo

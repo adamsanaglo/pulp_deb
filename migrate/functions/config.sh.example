@@ -1,0 +1,34 @@
+#!/bin/bash -e
+
+# publishing settings
+# export resourceGroup="pmc-dev-migrate"
+# export location="eastus"
+
+# URLS
+export VNEXT_URL="http://localhost:8000"
+export VCURRENT_SERVER="vcurrent"
+export VCURRENT_PORT="8443"
+
+# vnext MSAL vars
+
+# uncomment these lines to use the settings from your settings.toml config
+# echo "Extracting MSAL vars from ~/.config/pmc/settings.toml"
+# for var in $(grep msal ~/.config/pmc/settings.toml | sed -e 's/^\(\S*\) = /\U\1=/'); do eval "export $var"; done
+
+export MSAL_CLIENT_ID="<client id>"
+export MSAL_SCOPE="<scope>"
+export MSAL_CERT_PATH="<cert path>"
+export MSAL_AUTHORITY="<authority>"
+export MSAL_SNIAUTH="1"
+
+# use a cert instead of a cert path
+# export MSAL_CERT="<cert>"
+
+
+# vcurrent AAD vars
+
+export AAD_CLIENT_ID="<client id>"
+export AAD_CLIENT_SECRET="<client secret>"
+export AAD_RESOURCE="<resource>"
+export AAD_TENANT="<tenant>"
+export AAD_AUTHORITY_URL="<authority url>"

@@ -1,6 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Union
-from uuid import UUID
+from typing import Optional, Union
 
 from pydantic import BaseModel, MissingError, validator
 

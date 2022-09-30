@@ -1,0 +1,23 @@
+#!/bin/bash -e
+
+export resourceGroup="pmc-ppe-migrate"
+export location="eastus"
+
+# URLS
+export VNEXT_URL="http://20.84.14.60:80"
+export VCURRENT_SERVER="10.0.0.8"
+export VCURRENT_PORT="443"
+
+# vnext MSAL vars
+export MSAL_CLIENT_ID="ed48cd49-8e28-42a1-a23c-43a74e1a5650"
+export MSAL_SCOPE="api://1ce02e3e-1bf3-4d28-8cdc-e921f824399d/.default"
+export MSAL_CERT="@Microsoft.KeyVault(SecretUri=https://pmc-ppe-keyvault-51689.vault.azure.net/secrets/migrationAccount)"
+export MSAL_AUTHORITY="https://login.microsoftonline.com/Microsoft.onmicrosoft.com"
+export MSAL_SNIAUTH="1"
+
+# vcurrent AAD vars
+export AAD_CLIENT_ID="c9f75156-81a1-4c50-94db-276f9f62657f"
+export AAD_CLIENT_SECRET="@Microsoft.KeyVault(SecretUri=https://apt-ppe-repo.vault.azure.net/secrets/CSDAptRepoSecret/22b8b1f0900e4e538e6d10a2b76a5f47)"
+export AAD_RESOURCE="https://microsoft.onmicrosoft.com/0ae1d4bc-f605-4803-816d-551bc3e8c6a5"
+export AAD_TENANT="72f988bf-86f1-41af-91ab-2d7cd011db47"
+export AAD_AUTHORITY_URL="https://login.microsoftonline.com"
