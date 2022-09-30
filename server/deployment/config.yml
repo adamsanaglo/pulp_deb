@@ -7,7 +7,7 @@ data:
   SERVER_HOST: "0.0.0.0"
   SERVER_PORT: "80"
   DEBUG: "0"
-  PULP_USERNAME: "admin"
+  PULP_ADMIN_USERNAME: "admin"
   APP_CLIENT_ID: $pmcAppId
   TENANT_ID: $AZURE_TENANT_ID
   POSTGRES_USER: "pmcserver"
