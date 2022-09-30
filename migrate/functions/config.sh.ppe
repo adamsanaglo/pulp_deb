@@ -6,7 +6,7 @@ export location="eastus"
 # URLS
 export VNEXT_URL="http://20.84.14.60:80"
 export VCURRENT_SERVER="10.0.0.8"
-export VCURRENT_PORT="443"
+export VCURRENT_PORT="8443"
 
 # vnext MSAL vars
 export MSAL_CLIENT_ID="ed48cd49-8e28-42a1-a23c-43a74e1a5650"
