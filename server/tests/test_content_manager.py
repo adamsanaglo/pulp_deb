@@ -60,7 +60,6 @@ async def test_apt_adding_adds_prc(content_manager):
     assert set(cm.remove_content) == set()
 
 
-@pytest.mark.skip(reason="https://msazure.visualstudio.com/One/_workitems/edit/15641546")
 async def test_apt_removing_removes_prc(content_manager):
     cm = content_manager(gen_repo_id(RepoType.apt), release="test", component="main")
     release = gen_release_id()
@@ -80,7 +79,6 @@ async def test_apt_removing_removes_prc(content_manager):
     assert set(cm.remove_content) == set([remove_pkg, prc])
 
 
-@pytest.mark.skip(reason="https://msazure.visualstudio.com/One/_workitems/edit/15641546")
 async def test_apt_multiple_releases_doesnt_remove_package(content_manager):
     cm = content_manager(gen_repo_id(RepoType.apt), release="test", component="main")
     release1 = gen_release_id()

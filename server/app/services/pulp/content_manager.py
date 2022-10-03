@@ -62,19 +62,6 @@ class ContentManager:
                     detail="You must specify a release to add packages to an apt repo.",
                 )
 
-            # TODO: remove when bug is fixed. Un-skip the tests.
-            if self.remove_content and self.release:
-                raise HTTPException(
-                    status_code=422,
-                    detail="Due to a known bug you cannot currently remove a package from only one "
-                    "release. To work-around, remove the package from all releases in this repo "
-                    "by excluding the release option, then add it back in to the releases where it "
-                    "should still exist. To see what releases in this repo a package is currently "
-                    'in, you may do "pmc repo releases list <repo_name> --package <package_id>". '
-                    "To track this issue you may follow "
-                    "https://msazure.visualstudio.com/One/_workitems/edit/15641546",
-                )
-
             new_remove_content = []
             packages_we_cannot_remove = set()
             if self.release:

@@ -360,7 +360,7 @@ class PackageApi(PulpApi):
             params = {"repository_version": version_href}
 
         if release:
-            params["release"] = release.uuid
+            params["release"] = f"{release.uuid},{params['repository_version']}"
 
         return await self.list(pagination, params, type=type)
 
@@ -477,6 +477,8 @@ class ReleaseApi(PulpApi):
             repo_id = DebRepoId(params.pop("repository"))
             async with RepositoryApi() as api:
                 params["repository_version"] = await api.latest_version_href(repo_id)
+            if "package" in params:
+                params["package"] = f"{params['package']},{params['repository_version']}"
 
         releases = await super().list(pagination, params, **endpoint_args)
 
