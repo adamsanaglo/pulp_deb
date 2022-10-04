@@ -153,7 +153,8 @@ def update_packages(
     ctx: typer.Context,
     repo_id: str = id_or_name("repositories"),
     release: str = typer.Argument(None, help=RELEASE_HELP),
-    component: str = typer.Argument(None, help="Component to add packages to."),
+    # We always use the default component, don't expose that unnecessary complication to the user.
+    # component: str = typer.Argument(None, help="Component to add packages to."),
     add_packages: Optional[str] = typer.Option(None, help=ADD_PACKAGES_HELP),
     remove_packages: Optional[str] = typer.Option(None, help=REMOVE_PACKAGES_HELP),
 ) -> None:
@@ -165,8 +166,8 @@ def update_packages(
         data["remove_packages"] = remove_packages.split(LIST_SEPARATOR)
     if release:
         data["release"] = release
-    if component:
-        data["component"] = component
+    # if component:
+    #    data["component"] = component
 
     with get_client(ctx.obj) as client:
         resp = client.patch(f"/repositories/{repo_id}/packages/", json=data)
