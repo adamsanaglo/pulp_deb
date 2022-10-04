@@ -86,6 +86,7 @@ class Config(BaseModel):
     format: Format = Format.json
     debug: bool = False
     base_url: AnyHttpUrl = parse_obj_as(AnyHttpUrl, "http://localhost:8000/api/v4")
+    hide_restricted_commands: bool = True
     msal_client_id: NonEmptyStr
     msal_scope: NonEmptyStr
     msal_cert_path: FilePath

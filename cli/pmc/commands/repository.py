@@ -6,12 +6,12 @@ from pmc.client import get_client, handle_response
 from pmc.commands.release import releases
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoSigningService, RepoType
-from pmc.utils import id_or_name
+from pmc.utils import UserFriendlyTyper, id_or_name
 
-app = typer.Typer()
-packages = typer.Typer(help="Manage a repo's packages.")
-app.add_typer(packages, name="packages")
-app.add_typer(releases, name="releases")
+app = UserFriendlyTyper()
+packages = UserFriendlyTyper(help="Manage a repo's packages.")
+app.add_typer(packages, name="package")
+app.add_typer(releases, name="release")
 
 ADD_PACKAGES_HELP = "Semicolon-separated list of package ids to add."
 REMOVE_PACKAGES_HELP = "Semicolon-separated list of package ids to remove."
@@ -42,7 +42,7 @@ def list(
         handle_response(ctx.obj, resp)
 
 
-@app.command()
+@app.restricted_command()
 def create(
     ctx: typer.Context,
     name: str,
@@ -67,7 +67,7 @@ def show(ctx: typer.Context, id: str = id_or_name("repositories")) -> None:
         handle_response(ctx.obj, resp)
 
 
-@app.command()
+@app.restricted_command()
 def update(
     ctx: typer.Context,
     id: str = id_or_name("repositories"),
@@ -99,7 +99,7 @@ def update(
         handle_response(ctx.obj, resp, task_handler=show_func)
 
 
-@app.command()
+@app.restricted_command()
 def delete(ctx: typer.Context, id: str = id_or_name("repositories")) -> None:
     """Delete a repository."""
     with get_client(ctx.obj) as client:
@@ -107,7 +107,7 @@ def delete(ctx: typer.Context, id: str = id_or_name("repositories")) -> None:
         handle_response(ctx.obj, resp)
 
 
-@app.command()
+@app.restricted_command()
 def sync(
     ctx: typer.Context,
     id: str = id_or_name("repositories"),

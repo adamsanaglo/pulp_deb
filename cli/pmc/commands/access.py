@@ -2,11 +2,11 @@ import typer
 
 from pmc.client import get_client, handle_response
 from pmc.constants import LIST_SEPARATOR
-from pmc.utils import id_or_name
+from pmc.utils import UserFriendlyTyper, id_or_name
 
-app = typer.Typer()
-repo = typer.Typer()
-package = typer.Typer()
+app = UserFriendlyTyper()
+repo = UserFriendlyTyper()
+package = UserFriendlyTyper()
 app.add_typer(repo, name="repo", help="Manage repo access")
 app.add_typer(package, name="package", help="Manage package")
 

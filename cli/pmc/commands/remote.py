@@ -6,9 +6,9 @@ import typer
 from pmc.client import get_client, handle_response
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RemoteType
-from pmc.utils import id_or_name
+from pmc.utils import UserFriendlyTyper, id_or_name
 
-app = typer.Typer()
+app = UserFriendlyTyper()
 
 
 @app.command()
@@ -23,7 +23,7 @@ def list(
         handle_response(ctx.obj, resp)
 
 
-@app.command()
+@app.restricted_command()
 def create(
     ctx: typer.Context,
     name: str,
@@ -70,7 +70,7 @@ def show(ctx: typer.Context, id: str = id_or_name("remotes")) -> None:
         handle_response(ctx.obj, resp)
 
 
-@app.command()
+@app.restricted_command()
 def update(
     ctx: typer.Context,
     id: str = id_or_name("remotes"),
@@ -107,7 +107,7 @@ def update(
         handle_response(ctx.obj, resp, task_handler=show_func)
 
 
-@app.command()
+@app.restricted_command()
 def delete(ctx: typer.Context, id: str = id_or_name("remotes")) -> None:
     """Delete a remote."""
     with get_client(ctx.obj) as client:

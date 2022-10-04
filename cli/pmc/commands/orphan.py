@@ -1,8 +1,9 @@
 import typer
 
 from pmc.client import get_client, handle_response
+from pmc.utils import UserFriendlyTyper
 
-app = typer.Typer(no_args_is_help=True)
+app = UserFriendlyTyper(no_args_is_help=True)
 
 
 @app.command()

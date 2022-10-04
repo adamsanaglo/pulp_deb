@@ -5,10 +5,9 @@ import typer
 from pmc.client import get_client, handle_response
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT
-from pmc.utils import id_or_name
+from pmc.utils import UserFriendlyTyper, id_or_name
 
-app = typer.Typer()
-releases = typer.Typer(help="Manage a repo's releases.")
+releases = UserFriendlyTyper(help="Manage a repo's releases.")
 
 repo_option = id_or_name(
     "repositories", typer.Argument(..., help="Repository id or name for which to manage releases.")
@@ -38,7 +37,7 @@ def list(
         handle_response(ctx.obj, resp)
 
 
-@releases.command()
+@releases.restricted_command()
 def create(
     ctx: typer.Context,
     repo_id: str = repo_option,

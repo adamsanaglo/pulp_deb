@@ -14,31 +14,31 @@ from .commands import config as config_cmd
 from .commands import distribution, orphan, package, remote, repository, task
 from .context import PMCContext
 from .schemas import CONFIG_PATHS, Config, Format, NonEmptyStr
-from .utils import PulpTaskFailure, parse_config, validate_config
+from .utils import (
+    PulpTaskFailure,
+    UserFriendlyTyper,
+    parse_config,
+    resolve_config_path,
+    validate_config,
+)
 
-app = typer.Typer()
+app = UserFriendlyTyper()
 app.add_typer(config_cmd.app, name="config")
 app.add_typer(distribution.app, name="distro")
 app.add_typer(remote.app, name="remote")
 app.add_typer(package.app, name="package")
 app.add_typer(repository.app, name="repo")
 app.add_typer(task.app, name="task")
-app.add_typer(account.app, name="account")
-app.add_typer(access.app, name="access")
-app.add_typer(orphan.app, name="orphan")
+app.add_restricted_typer(account.app, name="account")
+app.add_restricted_typer(access.app, name="access")
+app.add_restricted_typer(orphan.app, name="orphan")
 
 
 def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
     """Callback that attempts to load config."""
     path: Optional[Path] = None
 
-    if value:
-        if not value.is_file():
-            raise ValueError(f"Error: file '{value}' does not exist or is not a file.")
-        else:
-            path = value
-    else:
-        path = next(filter(lambda fp: fp and fp.is_file(), CONFIG_PATHS), None)
+    path = resolve_config_path(value)
 
     if path:
         try:

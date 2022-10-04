@@ -4,9 +4,9 @@ import typer
 
 from pmc.client import get_client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, Role
-from pmc.utils import id_or_name
+from pmc.utils import UserFriendlyTyper, id_or_name
 
-app = typer.Typer()
+app = UserFriendlyTyper()
 
 
 ID_ARG = typer.Argument(..., help="The random UUID for this account.")

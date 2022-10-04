@@ -6,9 +6,9 @@ import tomli_w
 import typer
 
 from pmc.schemas import CONFIG_PATHS, Config
-from pmc.utils import validate_config
+from pmc.utils import UserFriendlyTyper, validate_config
 
-app = typer.Typer()
+app = UserFriendlyTyper()
 
 
 def _edit_config(path: Path) -> None:

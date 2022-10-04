@@ -12,6 +12,14 @@ OS but `pmc --help` will show the default locations.
 The config file location may also be specified by setting an environment variable (`PMC_CLI_CONFIG`)
 or setting `--config` when running pmc (ie `pmc --config ~/settings.toml ...`).
 
+## Show Restricted Commands
+Many commands are restricted and Publishers are not allowed to run them.
+As a result they are hidden by default in the cli.
+To show all commands you must set a variable in your settings config:
+```
+hide_restricted_commands = false
+```
+
 ## Authentication Options
 Repo API calls require Azure Active Directory (AAD) Authentication, which is handled by the Microsoft Authentication Library (MSAL).
 Authentication is a 3 step process.

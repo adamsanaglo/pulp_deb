@@ -4,11 +4,11 @@ import typer
 
 from pmc.client import get_client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, PackageType
-from pmc.utils import raise_if_task_failed
+from pmc.utils import UserFriendlyTyper, raise_if_task_failed
 
-app = typer.Typer()
-deb = typer.Typer()
-rpm = typer.Typer()
+app = UserFriendlyTyper()
+deb = UserFriendlyTyper()
+rpm = UserFriendlyTyper()
 app.add_typer(deb, name="deb", help="Manage deb packages")
 app.add_typer(rpm, name="rpm", help="Manage rpm packages")
 

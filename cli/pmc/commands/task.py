@@ -4,8 +4,9 @@ import typer
 
 from pmc.client import get_client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT
+from pmc.utils import UserFriendlyTyper
 
-app = typer.Typer()
+app = UserFriendlyTyper()
 
 
 @app.command()
@@ -28,7 +29,7 @@ def show(ctx: typer.Context, id: str) -> None:
         handle_response(ctx.obj, resp)
 
 
-@app.command()
+@app.restricted_command()
 def cancel(ctx: typer.Context, id: str) -> None:
     """Cancel a task."""
     with get_client(ctx.obj) as client:
