@@ -125,3 +125,16 @@ async def test_apt_remove_from_all_releases(content_manager):
     assert set(cm.add_content) == set()
     # removing the package and both prcs
     assert set(cm.remove_content) == set([remove_pkg, prc1, prc2])
+
+
+async def test_apt_missing_release_throws_sensible_error(content_manager):
+    cm = content_manager(gen_repo_id(RepoType.apt), release="test", component="main")
+    cm._get_release_ids.return_value = []
+
+    try:
+        await cm.add_and_remove_packages([gen_package_id()], None)
+    except HTTPException as e:
+        assert e.status_code == 422
+        assert "Specified release not found!" in e.detail
+    else:
+        assert False, "Expected exception not thrown!"

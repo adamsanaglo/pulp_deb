@@ -67,6 +67,8 @@ class ContentManager:
             if self.release:
                 # look up and set the ContentId of the specified release
                 release_ids = await self._get_release_ids()
+                if not release_ids:
+                    raise HTTPException(status_code=422, detail="Specified release not found!")
                 self.specified_release_id = release_ids[0]
             if not self.release or self.remove_content:
                 # If removing, we will have to look through all release to see if the packages
@@ -108,7 +110,6 @@ class ContentManager:
     async def _get_release_ids(self, all: bool = False) -> List[ContentId]:
         """
         Get list of relevant release ids, which may only be one if release was specified.
-        If releases is specified set self.specified_release_id for later use.
         """
         params = {"repository": self.id}
         if not all:
