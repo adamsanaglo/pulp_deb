@@ -65,6 +65,7 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
 
         err = resp_json
         err["http_status"] = exception.response.status_code
+        err["command_trackeback"] = str(exception.request.url)
         if "x-correlation-id" in exception.response.headers:
             err["correlation_id"] = exception.response.headers["x-correlation-id"]
     elif isinstance(exception, PulpTaskFailure):
@@ -85,8 +86,7 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
         }
         if isinstance(exception, httpx.RequestError):
             err["url"] = str(exception.request.url)
-
-    err["command_traceback"] = "".join(traceback.format_tb(exception.__traceback__))
+        err["command_traceback"] = "".join(traceback.format_tb(exception.__traceback__))
     return err
 
 
@@ -166,7 +166,8 @@ def run() -> None:
     try:
         command(standalone_mode=False)
     except Exception as exc:
-        traceback.print_exc()
+        if not isinstance(exc, httpx.HTTPStatusError):
+            traceback.print_exc()
         typer.echo("", err=True)
 
         err = format_exception(exc)
