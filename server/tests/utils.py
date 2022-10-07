@@ -64,6 +64,41 @@ def gen_distro_attrs() -> Dict[str, str]:
     )
 
 
+def gen_distro_read_attrs() -> Dict[str, str]:
+    return dict(
+        id=f"distributions-deb-apt-{uuid4()}",
+        pulp_created="2022-10-4 17:23:00",
+        name="",
+        base_path="",
+        base_url="",
+    )
+
+
+def gen_task_attrs() -> Dict[str, str]:
+    return dict(task=f"tasks-{uuid4()}")
+
+
+def gen_task_read_attrs() -> Dict[str, Any]:
+    return dict(
+        id=gen_task_attrs()["task"],
+        pulp_created="2022-10-4 17:23:00",
+        state="denial",
+        name="Horton",
+        logging_cid=uuid4(),
+        created_resources=[],
+        reserved_resources_record=[],
+    )
+
+
+def gen_list_attrs(my_list: List[Any]) -> Dict[str, Any]:
+    return dict(
+        count=len(my_list),
+        limit=100,
+        offset=0,
+        results=my_list,
+    )
+
+
 def assert_expected_response(
     response: Response,
     expected_status_code: int,
@@ -96,6 +131,22 @@ def gen_repo_id(type: RepoType) -> RepoId:
 
 def gen_package_id() -> PackageId:
     return PackageId(f"content-deb-packages-{uuid4()}")
+
+
+def gen_package_attrs() -> PackageId:
+    return dict(
+        id=gen_package_id(),
+        pulp_created="2022-10-4 17:23:00",
+        sha256="",
+        sha384="",
+        sha512="",
+        package="",
+        version="",
+        architecture="",
+        relative_path="",
+        maintainer="",
+        description="",
+    )
 
 
 def gen_release_id() -> ContentId:

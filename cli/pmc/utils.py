@@ -40,7 +40,7 @@ def resolve_config_path(value: Optional[Path]) -> Optional[Path]:
         else:
             path = value
     else:
-        path = next(filter(lambda fp: fp and fp.is_file(), CONFIG_PATHS), None)
+        path = next(filter(lambda fp: fp and fp.is_file(), CONFIG_PATHS), None)  # type: ignore
 
     return path
 

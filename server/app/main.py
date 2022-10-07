@@ -43,7 +43,7 @@ async def log_requests(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     logger.info(
-        f"request from {request.client.host}:{request.client.port} - "
+        f"request from {request.client.host}:{request.client.port} - "  # type: ignore
         f"'{request.method} {request.url.path}'."
     )
     start_time = time.time()

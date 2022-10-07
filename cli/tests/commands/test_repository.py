@@ -61,14 +61,12 @@ def test_update_with_name(repo: Any) -> None:
     assert response["name"] == new_name
 
 
-def _update_list_packages(
-    package_id: str, repo_id: str, release: Optional[str] = None, comp: Optional[str] = None
-) -> None:
+def _update_list_packages(package_id: str, repo_id: str, release: Optional[str] = None) -> None:
     # Note: Not a test. You can't just shove any package in any repo. See callers below.
     become(Role.Repo_Admin)
     cmd = ["repo", "packages", "update", repo_id, "--add-packages", package_id]
-    if release and comp:
-        cmd[4:4] = [release, comp]
+    if release:
+        cmd[4:4] = [release]
 
     result = invoke_command(cmd)
     assert result.exit_code == 0, f"adding package to repo failed: {result.stderr}"
@@ -98,7 +96,6 @@ def test_apt_update_list_packages(deb_package: Any, release: Any) -> None:
         deb_package["id"],
         release["repository_id"],
         release["name"],
-        release["components"][0],
     )
 
 

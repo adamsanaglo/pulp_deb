@@ -14,11 +14,20 @@ from app.api.auth import get_active_account
 from app.core.config import settings
 from app.core.db import async_session, get_session
 from app.core.models import Account, Role
+from app.core.schemas import RepoType
 from app.main import app as fastapi_app
 from app.services.pulp import api as pulp_service_api
 from app.services.pulp import content_manager as content_manager_module
 
-from .utils import gen_account_attrs
+from .utils import (
+    gen_account_attrs,
+    gen_distro_read_attrs,
+    gen_list_attrs,
+    gen_package_attrs,
+    gen_pulp_repo_response,
+    gen_task_attrs,
+    gen_task_read_attrs,
+)
 
 current_user = Account(**gen_account_attrs())
 
@@ -37,6 +46,8 @@ def init_db():
     settings.POSTGRES_DB = "test_db"
     db_str = f"docker exec -i {settings.POSTGRES_SERVER} psql -U {settings.POSTGRES_USER} -c "
     db_cmd = db_str.split()
+    # If you killed the last test run the old db may still exist.
+    subprocess.call(db_cmd + [f"drop database {settings.POSTGRES_DB} with (FORCE)"])
     subprocess.check_call(db_cmd + [f"create database {settings.POSTGRES_DB}"])
     yield
     subprocess.check_call(db_cmd + [f"drop database {settings.POSTGRES_DB} with (FORCE)"])
@@ -138,67 +149,74 @@ def mocked_pulp(monkeypatch):
     monkeypatch.setattr(pulp_service_api.PulpApi, "delete", nope)
 
 
-def get_async_mock() -> AsyncMock:
+def get_async_mock(return_value=None) -> AsyncMock:
     mock = AsyncMock()
-    mock.return_value = None
-    return mock
-
-
-def list_async_mock() -> AsyncMock:
-    """Mock that emulates a list endpoint."""
-    mock = AsyncMock()
-    mock.return_value = {"results": [], "count": 0, "limit": 100, "offset": 0}
+    mock.return_value = return_value
     return mock
 
 
 @pytest.fixture
 def distribution_api(monkeypatch) -> Type[pulp_service_api.DistributionApi]:
-    for method in ("create", "update", "read", "destroy", "list"):
-        monkeypatch.setattr(pulp_service_api.DistributionApi, method, get_async_mock())
+    monkeypatch.setattr(
+        pulp_service_api.DistributionApi, "list", get_async_mock(gen_list_attrs([]))
+    )
+    monkeypatch.setattr(
+        pulp_service_api.DistributionApi, "read", get_async_mock(gen_distro_read_attrs())
+    )
+    for method in ("create", "update", "destroy"):
+        monkeypatch.setattr(
+            pulp_service_api.DistributionApi, method, get_async_mock(gen_task_attrs())
+        )
     return pulp_service_api.DistributionApi
 
 
 @pytest.fixture
 def repository_api(monkeypatch) -> Type[pulp_service_api.RepositoryApi]:
-    for method in ("create", "update", "read", "destroy", "list", "update_content", "publish"):
-        monkeypatch.setattr(pulp_service_api.RepositoryApi, method, get_async_mock())
+    monkeypatch.setattr(pulp_service_api.RepositoryApi, "list", get_async_mock(gen_list_attrs([])))
+    for method in ("create", "read"):
+        monkeypatch.setattr(
+            pulp_service_api.RepositoryApi,
+            method,
+            get_async_mock(gen_pulp_repo_response(RepoType.apt, "test")),
+        )
+    for method in ("update", "destroy", "update_content", "publish"):
+        monkeypatch.setattr(
+            pulp_service_api.RepositoryApi, method, get_async_mock(gen_task_attrs())
+        )
     return pulp_service_api.RepositoryApi
 
 
 @pytest.fixture
 def release_api(monkeypatch) -> Type[pulp_service_api.ReleaseApi]:
-    monkeypatch.setattr(pulp_service_api.ReleaseApi, "list", list_async_mock())
+    monkeypatch.setattr(pulp_service_api.ReleaseApi, "list", get_async_mock(gen_list_attrs([])))
     for method in ("create", "update", "read", "destroy", "add_components", "add_architectures"):
-        monkeypatch.setattr(pulp_service_api.ReleaseApi, method, get_async_mock())
+        monkeypatch.setattr(pulp_service_api.ReleaseApi, method, get_async_mock(gen_task_attrs()))
     return pulp_service_api.ReleaseApi
 
 
 @pytest.fixture
 def orphan_api(monkeypatch) -> Type[pulp_service_api.OrphanApi]:
     for method in ("create", "update", "read", "destroy", "list", "cleanup"):
-        monkeypatch.setattr(pulp_service_api.OrphanApi, method, get_async_mock())
+        monkeypatch.setattr(pulp_service_api.OrphanApi, method, get_async_mock(gen_task_attrs()))
     return pulp_service_api.OrphanApi
 
 
 @pytest.fixture
 def package_api(monkeypatch) -> Type[pulp_service_api.PackageApi]:
-    for method in (
-        "create",
-        "update",
-        "read",
-        "destroy",
-        "list",
-        "repository_packages",
-        "get_package_name",
-    ):
-        monkeypatch.setattr(pulp_service_api.PackageApi, method, get_async_mock())
+    monkeypatch.setattr(pulp_service_api.PackageApi, "create", get_async_mock(gen_task_attrs()))
+    monkeypatch.setattr(pulp_service_api.PackageApi, "list", get_async_mock(gen_list_attrs([])))
+    for method in ("update", "read", "destroy", "repository_packages", "get_package_name"):
+        monkeypatch.setattr(
+            pulp_service_api.PackageApi, method, get_async_mock(gen_package_attrs())
+        )
     return pulp_service_api.PackageApi
 
 
 @pytest.fixture
 def task_api(monkeypatch) -> Type[pulp_service_api.TaskApi]:
-    for method in ("create", "update", "read", "destroy", "list", "cancel"):
-        monkeypatch.setattr(pulp_service_api.TaskApi, method, get_async_mock())
+    monkeypatch.setattr(pulp_service_api.TaskApi, "list", get_async_mock(gen_list_attrs([])))
+    for method in ("create", "update", "read", "destroy", "cancel"):
+        monkeypatch.setattr(pulp_service_api.TaskApi, method, get_async_mock(gen_task_read_attrs()))
     return pulp_service_api.TaskApi
 
 

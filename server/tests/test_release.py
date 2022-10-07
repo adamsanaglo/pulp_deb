@@ -11,14 +11,14 @@ from .utils import assert_expected_response, gen_release_attrs
 pytestmark = pytest.mark.asyncio
 
 
-async def test_roles_repository_list(async_client: AsyncClient, release_api, account):
+async def test_roles_release_list(async_client: AsyncClient, release_api, account):
     response = await async_client.get(
         f"/api/v4/repositories/repositories-deb-apt-{uuid4()}/releases/"
     )
     assert_expected_response(response, 200, release_api.list)
 
 
-async def test_roles_repository_create(async_client: AsyncClient, release_api, account):
+async def test_roles_release_create(async_client: AsyncClient, release_api, account):
     response = await async_client.post(
         f"/api/v4/repositories/repositories-deb-apt-{uuid4()}/releases/", json=gen_release_attrs()
     )

@@ -8,7 +8,7 @@ from tests.conftest import get_async_mock
 
 from app.core.models import Account, OwnedPackage, RepoAccess, Role
 
-from .utils import assert_expected_response, gen_account_attrs, gen_repo_attrs
+from .utils import assert_expected_response, gen_account_attrs, gen_repo_attrs, gen_task_attrs
 
 # This marks all tests in the module as async.
 pytestmark = pytest.mark.asyncio
@@ -103,7 +103,9 @@ async def test_roles_repository_add_package(
     you've been granted repo access (2) * who "owns" the package (nobody, someone else, me) (3).
     """
     # set up db
-    monkeypatch.setattr(content_manager, "add_and_remove_packages", get_async_mock())
+    monkeypatch.setattr(
+        content_manager, "add_and_remove_packages", get_async_mock(gen_task_attrs())
+    )
     repo_id = f"repositories-rpm-rpm-{uuid4()}"
     package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"
@@ -155,7 +157,9 @@ async def test_roles_repository_remove_package(
     someone else, me) (3).
     """
     # set up db
-    monkeypatch.setattr(content_manager, "add_and_remove_packages", get_async_mock())
+    monkeypatch.setattr(
+        content_manager, "add_and_remove_packages", get_async_mock(gen_task_attrs())
+    )
     repo_id = f"repositories-rpm-rpm-{uuid4()}"
     package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"

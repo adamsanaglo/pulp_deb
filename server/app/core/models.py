@@ -60,7 +60,7 @@ class OwnedPackage(ModelBase, table=True):
     __table_args__ = (UniqueConstraint("account_id", "repo_id", "package_name"),)
 
     account_id: uuid.UUID = Field(foreign_key="account.id")
-    # account: Account, implicitly created by "back_populates" directive on Account table.
+    account: Account = Relationship(back_populates="packages")
     repo_id: str
     package_name: str
 
@@ -74,7 +74,7 @@ class RepoAccess(ModelBase, table=True):
     __table_args__ = (UniqueConstraint("account_id", "repo_id"),)
 
     account_id: uuid.UUID = Field(foreign_key="account.id")
-    # account: Account, implicitly created by "back_populates" directive on Account table.
+    account: Account = Relationship(back_populates="repos")
     repo_id: str
     # This allows the account to CRUD all packages in the repo, see "Repo Operator" role in design.
     operator: bool = Field(default=False, nullable=False)
