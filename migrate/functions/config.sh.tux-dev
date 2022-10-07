@@ -1,0 +1,23 @@
+#!/bin/bash -e
+
+export resourceGroup="pmc-tux-migrate"
+export location="westcentralus"
+
+# URLS
+export VNEXT_URL="http://10.169.23.70:80"
+export VCURRENT_SERVER="tux-devrepo.corp.microsoft.com"
+export VCURRENT_PORT="443"
+
+# vnext MSAL vars
+export MSAL_CLIENT_ID="642a4463-1cf9-451b-9deb-d8112f36535c"
+export MSAL_SCOPE="api://55391a9d-3c3b-4e4a-afa6-0e49c2245175/.default"
+export MSAL_CERT="@Microsoft.KeyVault(SecretUri=https://pmc-tux-keyvault-51689.vault.azure.net/secrets/migrationAccount)"
+export MSAL_AUTHORITY="https://login.microsoftonline.com/Microsoft.onmicrosoft.com"
+export MSAL_SNIAUTH="1"
+
+# vcurrent AAD vars
+export AAD_CLIENT_ID="2fa30eec-21aa-49d0-84f4-3468a178081a"
+export AAD_CLIENT_SECRET="@Microsoft.KeyVault(SecretUri=https://pmc-tux-keyvault-51689.vault.azure.net/secrets/legacyAdmin)"
+export AAD_RESOURCE="https://microsoft.onmicrosoft.com/67ea2be9-e077-4a01-a509-4966b87798b6"
+export AAD_TENANT="72f988bf-86f1-41af-91ab-2d7cd011db47"
+export AAD_AUTHORITY_URL="https://login.microsoftonline.com"

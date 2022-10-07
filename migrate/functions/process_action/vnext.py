@@ -2,6 +2,7 @@ import logging
 import os
 from contextlib import contextmanager
 from pathlib import Path
+from time import sleep
 from typing import Generator, Optional
 from uuid import UUID, uuid4
 
@@ -57,6 +58,7 @@ def _get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, Non
         base_url=f"{VNEXT_URL}/api/v4",
         event_hooks={"response": [_raise_for_status]},
         headers={"x-correlation-id": cid.hex, "Authorization": f"Bearer {token}"},
+        timeout=20,
     )
 
     yield client
@@ -79,6 +81,7 @@ def _wait_for_task(client: httpx.Client, task_response: httpx.Response) -> None:
             return
         elif state in ["skipped", "failed", "canceled"]:
             raise Exception(f"Task failed: {response.json()}")
+        sleep(1)
 
 
 def _get_vnext_repo(client, repo_name):

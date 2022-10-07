@@ -2,7 +2,12 @@
 # Creates the resources used by the migration functions, and deploys
 # the Azure Function code to run in Azure.
 
-source config.sh
+if [ $# -eq 0 ]; then
+    echo "Usage: ./deploy.sh config.sh"
+    exit
+fi
+
+source $1
 
 if [[ -z $resourceGroup ]]; then
     resourceGroup="${1:-pmcmigrate}"

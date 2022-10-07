@@ -43,20 +43,21 @@ While the Azure Functions can be run locally, [the Service Bus
 cannot](https://github.com/Azure/azure-service-bus/issues/223). I recommend setting up a service bus
 in Azure (see the Service Bus section) and then running the Functions locally.
 
-To create a service bus in Azure, run:
+To create a service bus using the Azure CLI, run:
 
 ```
-az group create --name pmcmigrate
-az servicebus namespace create --resource-group pmcmigrate --name pmcmigrate
-az servicebus queue create --resource-group pmcmigrate --namespace-name pmcmigrate --name pmcmigrate
-az servicebus namespace authorization-rule keys list --resource-group $resourceGroup --namespace-name $sbns --name RootManageSharedAccessKey --query primaryConnectionString --output tsv
+rg="mypmcmigrate"
+az group create --name $rg --location eastus
+az servicebus namespace create --resource-group $rg --name pmcmigrate
+az servicebus queue create --resource-group $rg --namespace-name pmcmigrate --name pmcmigrate --max-delivery-count 3
+az servicebus namespace authorization-rule keys list --resource-group $rg --namespace-name pmcmigrate --name RootManageSharedAccessKey --query primaryConnectionString --output tsv
 ```
 
 The last command will output the service bus connection string. Copy `local.settings.json.example`
 to `local.settings.json` and fill in `AzureServiceBusConnectionString` with your service bus
 connection string.
 
-Then copy `config.sh.example` to `config.sh`, fill in any variables, and then run:
+Then copy `config.sh.local` to `config.sh`, fill in any variables, and then run:
 
 ```
 source config.sh
@@ -68,13 +69,17 @@ Finally, run the Function App:
 func start
 ```
 
-You can debug by making requests directly via httpie:
+Grab the url for the queue\_action function (should be something like
+`http://localhost:7071/api/queue_action`) and fill it in for `AF_QUEUE_ACTION_URL` in your vnext
+.env file and `afQueueActionUrl` for your vcurrent environment's confg.js file.
+
+You can also debug by making requests directly via httpie:
 
 ```
 http :7071/api/queue_action action_type=remove source=vcurrent repo_name=test repo_type=apt release=nosuite component=asgard "package[name]=thor" "package[version]=1.0" "package[arch]=ppc64"
 ```
 
-If you get a 403 response, make sure the account you're using has the correct role.
+If you get a 403 response from vnext, make sure the account you're using has the Migration role.
 
 ## Publishing
 
