@@ -20,7 +20,7 @@ else
 fi
 
 if [ "$1" == "migrate" ]; then
-  psql_cmd () { PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_SERVER -U $POSTGRES_USER -c "$1"; }
+  psql_cmd () { PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_SERVER -U $POSTGRES_USER -d "postgres" -c "$1"; }
   # Create the pmcserver database if it doesn't already exist. Executes first time per env.
   psql_cmd "SELECT datname FROM pg_catalog.pg_database WHERE datname='$POSTGRES_DB'" | grep -q $POSTGRES_DB
   if [ $? -eq 1 ]; then
