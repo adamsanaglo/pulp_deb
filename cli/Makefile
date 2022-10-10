@@ -1,9 +1,10 @@
 .PHONY: lint tests
-msal_client_id ?= "c93b1ed1-3b3e-408c-9003-10c87975644a"
-msal_scope ?= "api://1ce02e3e-1bf3-4d28-8cdc-e921f824399d/.default"
-msal_cert_path ?= "${HOME}/.config/pmc/auth.pem"
-msal_authority ?= "https://login.microsoftonline.com/Microsoft.onmicrosoft.com"
-config_file ?= "${HOME}/.config/pmc/settings.toml"
+msal_client_id ?= c93b1ed1-3b3e-408c-9003-10c87975644a
+msal_scope ?= api://1ce02e3e-1bf3-4d28-8cdc-e921f824399d/.default
+msal_cert_path ?= ${HOME}/.config/pmc/auth.pem
+msal_authority ?= https://login.microsoftonline.com/Microsoft.onmicrosoft.com
+config_file ?= ${HOME}/.config/pmc/settings.toml
+signing_service ?= legacy
 
 lint:
 	flake8 .
@@ -23,7 +24,9 @@ test: tests/settings.toml
 
 config:
 	pmc config create --no-edit
-	@sed -i 's#msal_client_id = "FILL_ME_IN"#msal_client_id = ${msal_client_id}#' ${config_file}
-	@sed -i 's#msal_scope = "FILL_ME_IN"#msal_scope = ${msal_scope}#' ${config_file}
-	@sed -i 's#msal_cert_path = "FILL_ME_IN"#msal_cert_path = ${msal_cert_path}#' ${config_file}
-	@sed -i 's#msal_authority = "FILL_ME_IN"#msal_authority = ${msal_authority}#' ${config_file}
+	@sed -i 's#msal_client_id = "FILL_ME_IN"#msal_client_id = "${msal_client_id}"#' ${config_file}
+	@sed -i 's#msal_scope = "FILL_ME_IN"#msal_scope = "${msal_scope}"#' ${config_file}
+	@sed -i 's#msal_cert_path = "FILL_ME_IN"#msal_cert_path = "${msal_cert_path}"#' ${config_file}
+	@sed -i 's#msal_authority = "FILL_ME_IN"#msal_authority = "${msal_authority}"#' ${config_file}
+	@sed -i 's#signing_service = "esrp"#signing_service = "${signing_service}"#' ${config_file}
+	@echo "Created ${config_file}"

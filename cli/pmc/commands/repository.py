@@ -25,6 +25,23 @@ RELEASE_HELP = (
 )
 
 
+def _signing_service_default(
+    ctx: typer.Context, value: Optional[RepoSigningService]
+) -> RepoSigningService:
+    # value will be the default if not user specified so check ctx.params instead
+    if service_val := ctx.params.get("signing_service"):
+        # use the user input
+        service = service_val
+    elif service_default := (ctx.find_root().default_map or {}).get("signing_service"):
+        # use the config value
+        service = service_default
+    else:
+        # default to esrp
+        service = RepoSigningService.esrp
+
+    return RepoSigningService(service)
+
+
 @app.command()
 def list(
     ctx: typer.Context,
@@ -47,7 +64,9 @@ def create(
     ctx: typer.Context,
     name: str,
     repo_type: RepoType,
-    signing_service: Optional[RepoSigningService] = typer.Option(RepoSigningService.esrp),
+    signing_service: Optional[RepoSigningService] = typer.Option(
+        RepoSigningService.esrp, callback=_signing_service_default
+    ),
     remote: Optional[str] = id_or_name(
         "remotes", typer.Option(None, help="Remote id or name to use for sync.")
     ),

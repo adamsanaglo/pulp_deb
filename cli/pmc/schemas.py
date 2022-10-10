@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import click
 import typer
@@ -87,6 +87,8 @@ class Config(BaseModel):
     debug: bool = False
     base_url: AnyHttpUrl = parse_obj_as(AnyHttpUrl, "http://localhost:8000/api/v4")
     hide_restricted_commands: bool = True
+    signing_service: Optional[RepoSigningService] = RepoSigningService.esrp
+
     msal_client_id: NonEmptyStr
     msal_scope: NonEmptyStr
     msal_cert_path: FilePath
