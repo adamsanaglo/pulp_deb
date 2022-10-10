@@ -6,7 +6,8 @@ from typing import Any, Dict, Optional
 
 import httpx
 import typer
-from pydantic import AnyHttpUrl
+from click.exceptions import UsageError
+from pydantic import AnyHttpUrl, ValidationError
 from pydantic.tools import parse_obj_as
 
 from .commands import access, account
@@ -15,6 +16,7 @@ from .commands import distribution, orphan, package, remote, repository, task
 from .context import PMCContext
 from .schemas import CONFIG_PATHS, Config, Format, NonEmptyStr
 from .utils import (
+    DecodeError,
     PulpTaskFailure,
     UserFriendlyTyper,
     parse_config,
@@ -32,6 +34,10 @@ app.add_typer(task.app, name="task")
 app.add_restricted_typer(account.app, name="account")
 app.add_restricted_typer(access.app, name="access")
 app.add_restricted_typer(orphan.app, name="orphan")
+
+
+# Exceptions for which a traceback is not helpful/meaningful
+NO_TRACEBACK_EXCEPTIONS = (httpx.HTTPStatusError, UsageError, ValidationError, DecodeError)
 
 
 def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
@@ -86,7 +92,10 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
         }
         if isinstance(exception, httpx.RequestError):
             err["url"] = str(exception.request.url)
-        err["command_traceback"] = "".join(traceback.format_tb(exception.__traceback__))
+
+        if not isinstance(exception, NO_TRACEBACK_EXCEPTIONS):
+            err["command_traceback"] = "".join(traceback.format_tb(exception.__traceback__))
+
     return err
 
 
@@ -166,7 +175,7 @@ def run() -> None:
     try:
         command(standalone_mode=False)
     except Exception as exc:
-        if not isinstance(exc, httpx.HTTPStatusError):
+        if not isinstance(exc, NO_TRACEBACK_EXCEPTIONS):
             traceback.print_exc()
         typer.echo("", err=True)
 

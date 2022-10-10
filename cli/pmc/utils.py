@@ -7,7 +7,6 @@ from typing import Any, Callable, Dict, Optional, Pattern, Union
 
 import tomli
 import typer
-from pydantic import ValidationError
 
 from pmc.client import get_client
 from pmc.schemas import CONFIG_PATHS, Config
@@ -72,7 +71,7 @@ def validate_config(path: Path) -> None:
     """Validate config at path and handle any problems."""
     try:
         parse_config(path)
-    except (json.decoder.JSONDecodeError, tomli.TOMLDecodeError, ValidationError) as e:
+    except (json.decoder.JSONDecodeError, tomli.TOMLDecodeError) as e:
         raise DecodeError(f"Parse error when parsing '{path}': {e}.")
 
 
