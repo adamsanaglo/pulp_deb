@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import typer
 
-from pmc.client import get_client, handle_response
+from pmc.client import get_client, handle_response, poll_task
 from pmc.commands.release import releases
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoSigningService, RepoType
@@ -51,12 +51,28 @@ def create(
     remote: Optional[str] = id_or_name(
         "remotes", typer.Option(None, help="Remote id or name to use for sync.")
     ),
+    paths: Optional[str] = typer.Option(
+        None, help=f"Create distributions with paths separated by {LIST_SEPARATOR}"
+    ),
 ) -> None:
     """Create a repository."""
     data = {"name": name, "type": repo_type, "signing_service": signing_service, "remote": remote}
     with get_client(ctx.obj) as client:
-        resp = client.post("/repositories/", json=data)
-        handle_response(ctx.obj, resp)
+        repo_resp = client.post("/repositories/", json=data)
+        handle_response(ctx.obj, repo_resp)
+        repo_id = repo_resp.json()["id"]
+
+        if paths:
+            for path in paths.split(LIST_SEPARATOR):
+                typer.echo(f"Creating distribution '{path}'.", err=True)
+                distro = {
+                    "repository": repo_id,
+                    "type": repo_type,
+                    "name": path,
+                    "base_path": path,
+                }
+                resp = client.post("/distributions/", json=distro)
+                poll_task(ctx.obj, resp.json().get("task"))
 
 
 @app.command()
