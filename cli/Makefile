@@ -5,6 +5,7 @@ msal_cert_path ?= ${HOME}/.config/pmc/auth.pem
 msal_authority ?= https://login.microsoftonline.com/Microsoft.onmicrosoft.com
 config_file ?= ${HOME}/.config/pmc/settings.toml
 signing_service ?= legacy
+hide_restricted_commands ?= false
 
 lint:
 	flake8 .
@@ -29,4 +30,5 @@ config:
 	@sed -i 's#msal_cert_path = "FILL_ME_IN"#msal_cert_path = "${msal_cert_path}"#' ${config_file}
 	@sed -i 's#msal_authority = "FILL_ME_IN"#msal_authority = "${msal_authority}"#' ${config_file}
 	@sed -i 's#signing_service = "esrp"#signing_service = "${signing_service}"#' ${config_file}
+	@sed -i 's#hide_restricted_commands = true#hide_restricted_commands = ${hide_restricted_commands}#' ${config_file}
 	@echo "Created ${config_file}"
