@@ -12,7 +12,16 @@ We don't bother to add packages that get added to vNext to vCurrent.
 
 There are two functions: a `queue_action` function that queues requests to add/remove packages in a
 Service Bus Queue and a `process_action` function that reads the messages from the Service Bus and
-processes them.
+processes them. The `process_action` will call the vnext or vcurrent API depending on what it needs
+to do.
+
+<pre>
+
+vnext - - -
+           | -> queue_action -> service bus -> process_action -> vnext/vcurrent
+vcurrent  -
+
+</pre>
 
 ## Service Bus
 

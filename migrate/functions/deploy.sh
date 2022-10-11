@@ -41,9 +41,9 @@ function createStorageAccount() {
 
 function createServiceBus() {
     echo "Creating service bus '$sbns'..."
-    az servicebus namespace create --resource-group $resourceGroup --name $sbns --location $location
+    az servicebus namespace create --resource-group $resourceGroup --name $sbns --location $location --sku Premium
 
-    echo "Creating queue '$sbqueue' for '$sbns'..."
+    echo "Creating queue 'pmcmigrate' for '$sbns'..."
     az servicebus queue create --resource-group $resourceGroup --namespace-name $sbns --name pmcmigrate --max-delivery-count 3
 }
 
