@@ -14,19 +14,26 @@ from pmc.schemas import DistroType, RepoType, Role
 
 def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, str]:
     if not type:
-        type = choice([RepoType.apt, RepoType.yum])
-    return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type, signing_service="legacy")
+        type = choice([RepoType.apt, RepoType.yum, RepoType.python, RepoType.file])
+    attrs = dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type)
+    if type in [RepoType.apt, RepoType.yum]:
+        attrs["signing_service"] = "legacy"
+    return attrs
 
 
 def repo_create_cmd(attrs: Dict[str, str]) -> List[str]:
-    return [
+    cmd = [
         "repo",
         "create",
         attrs["name"],
         attrs["type"],
-        "--signing-service",
-        attrs["signing_service"],
     ]
+    if "signing_service" in attrs:
+        cmd += [
+            "--signing-service",
+            attrs["signing_service"],
+        ]
+    return cmd
 
 
 def gen_distro_attrs() -> Dict[str, str]:

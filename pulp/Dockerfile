@@ -95,6 +95,7 @@ RUN pip install pulpcore
 RUN pip install pulp-python
 #RUN pip install pulp-deb
 RUN pip install pulp-rpm
+RUN pip install pulp-file
 
 # Enable use of cloud storage using vendored clone of github.com/jasonzio/django_storages
 COPY container-assets/django_storages /tmp/django_storages

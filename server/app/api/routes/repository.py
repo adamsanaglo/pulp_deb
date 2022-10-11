@@ -49,7 +49,7 @@ async def list_repos(
 )
 async def create_repository(repo: RepositoryCreate) -> Any:
     async with RepositoryApi() as api:
-        return await api.create(repo.dict())
+        return await api.create(repo.dict(exclude_unset=True))
 
 
 @router.get("/repositories/{id}/", response_model=RepositoryResponse)

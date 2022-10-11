@@ -63,7 +63,7 @@ reset_rebuild: teardown rebuild grant_access ## reset and rebuild the containers
 reset_all:	teardown regen_test_key rebuild_env rebuild grant_access  ## reset and rebuild everything
 
 build_pulp:			## build and locally tag the pulp image
-	docker build pulp/ --pull --tag localhost/pulp:stable
+	docker build ../pulp/ --pull --tag localhost/pulp:stable
 
 run: env.storage		## run the containers
 	docker compose up -d

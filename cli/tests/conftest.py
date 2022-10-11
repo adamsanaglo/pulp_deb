@@ -84,6 +84,18 @@ def yum_repo() -> Generator[Any, None, None]:
 
 
 @pytest.fixture()
+def file_repo() -> Generator[Any, None, None]:
+    with _object_manager(repo_create_cmd(gen_repo_attrs(RepoType.file)), Role.Repo_Admin) as r:
+        yield r
+
+
+@pytest.fixture()
+def python_repo() -> Generator[Any, None, None]:
+    with _object_manager(repo_create_cmd(gen_repo_attrs(RepoType.python)), Role.Repo_Admin) as r:
+        yield r
+
+
+@pytest.fixture()
 def distro() -> Generator[Any, None, None]:
     become(Role.Repo_Admin)
     attrs = gen_distro_attrs()
@@ -165,21 +177,26 @@ def package_access(account_one: Dict[str, Any]) -> Generator[Any, None, None]:
         yield o
 
 
-def package_upload_command(package_name: str, unsigned: Optional[bool] = False) -> List[str]:
+def package_upload_command(
+    package_name: str, unsigned: Optional[bool] = False, file_type: Optional[str] = None
+) -> List[str]:
     package = Path.cwd() / "tests" / "assets" / package_name
     cmd = ["package", "upload", str(package)]
 
     if unsigned:
         cmd.append("--ignore-signature")
 
+    if file_type:
+        cmd += ["--type", file_type]
+
     return cmd
 
 
 @contextmanager
 def _package_manager(
-    package_name: str, unsigned: Optional[bool] = False
+    package_name: str, unsigned: Optional[bool] = False, file_type: Optional[str] = None
 ) -> Generator[Any, None, None]:
-    cmd = package_upload_command(package_name, unsigned)
+    cmd = package_upload_command(package_name, unsigned, file_type)
     with _object_manager(cmd, Role.Package_Admin, False) as p:
         yield p
 
@@ -199,6 +216,18 @@ def zst_deb_package(orphan_cleanup: None) -> Generator[Any, None, None]:
 @pytest.fixture()
 def rpm_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("signed-by-us.rpm") as p:
+        yield p
+
+
+@pytest.fixture()
+def file_package(orphan_cleanup: None) -> Generator[Any, None, None]:
+    with _package_manager("hello.txt", file_type="file") as p:
+        yield p
+
+
+@pytest.fixture()
+def python_package(orphan_cleanup: None) -> Generator[Any, None, None]:
+    with _package_manager("helloworld-0.0.1-py3-none-any.whl") as p:
         yield p
 
 

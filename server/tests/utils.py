@@ -24,9 +24,9 @@ def gen_account_attrs(role: Role = Role.Publisher) -> Dict[str, Any]:
     )
 
 
-def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, str]:
+def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, Union[str, None]]:
     if not type:
-        type = choice([RepoType.apt, RepoType.yum])
+        type = choice([RepoType.apt, RepoType.yum, RepoType.python, RepoType.file])
     if type == RepoType.apt:
         return dict(
             name=f"pmc_cli_test_repo_{uuid4()}",
@@ -34,16 +34,14 @@ def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, str]:
             release="jammy",
             signing_service="legacy",
         )
-    else:
+    elif type == RepoType.yum:
         return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type, signing_service="legacy")
+    else:
+        return dict(name=f"pmc_cli_test_repo_{uuid4()}", type=type, signing_service=None)
 
 
 def gen_pulp_repo_response(type: RepoType, name: str) -> Dict[str, Any]:
-    if type == RepoType.apt:
-        id = f"repositories-deb-apt-{uuid4()}"
-    else:
-        id = f"repositories-rpm-rpm-{uuid4()}"
-    return {"id": id, "pulp_created": datetime.now(), "name": name}
+    return {"id": gen_repo_id(type), "pulp_created": datetime.now(), "name": name}
 
 
 def gen_release_attrs() -> Dict[str, Union[str, List[str]]]:
@@ -125,15 +123,17 @@ def assert_expected_response(
 def gen_repo_id(type: RepoType) -> RepoId:
     if type == RepoType.apt:
         return RepoId(f"repositories-deb-apt-{uuid4()}")
-    else:
+    elif type == RepoType.yum:
         return RepoId(f"repositories-rpm-rpm-{uuid4()}")
+    else:
+        return RepoId(f"repositories-{type}-{type}-{uuid4()}")
 
 
 def gen_package_id() -> PackageId:
     return PackageId(f"content-deb-packages-{uuid4()}")
 
 
-def gen_package_attrs() -> PackageId:
+def gen_package_attrs() -> Dict[str, str]:
     return dict(
         id=gen_package_id(),
         pulp_created="2022-10-4 17:23:00",

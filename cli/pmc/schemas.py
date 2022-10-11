@@ -40,6 +40,8 @@ class RepoType(StringEnum):
 
     apt = "apt"
     yum = "yum"  # maps to 'rpm' in Pulp
+    python = "python"
+    file = "file"
 
 
 class RepoSigningService(StringEnum):
@@ -54,6 +56,8 @@ class DistroType(StringEnum):
 
     apt = "apt"
     yum = "yum"  # maps to 'rpm' in Pulp
+    python = "pypi"
+    file = "file"
 
 
 class RemoteType(StringEnum):
@@ -68,6 +72,8 @@ class PackageType(StringEnum):
 
     deb = "deb"
     rpm = "rpm"
+    python = "python"
+    file = "file"
 
 
 class Format(StringEnum):

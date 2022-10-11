@@ -25,23 +25,6 @@ RELEASE_HELP = (
 )
 
 
-def _signing_service_default(
-    ctx: typer.Context, value: Optional[RepoSigningService]
-) -> RepoSigningService:
-    # value will be the default if not user specified so check ctx.params instead
-    if service_val := ctx.params.get("signing_service"):
-        # use the user input
-        service = service_val
-    elif service_default := (ctx.find_root().default_map or {}).get("signing_service"):
-        # use the config value
-        service = service_default
-    else:
-        # default to esrp
-        service = RepoSigningService.esrp
-
-    return RepoSigningService(service)
-
-
 @app.command()
 def list(
     ctx: typer.Context,
@@ -65,7 +48,8 @@ def create(
     name: str,
     repo_type: RepoType,
     signing_service: Optional[RepoSigningService] = typer.Option(
-        RepoSigningService.esrp, callback=_signing_service_default
+        None,
+        help="Signing service to use for the repo. Defaults to 'esrp' for yum and apt repos.",
     ),
     remote: Optional[str] = id_or_name(
         "remotes", typer.Option(None, help="Remote id or name to use for sync.")
@@ -75,7 +59,19 @@ def create(
     ),
 ) -> None:
     """Create a repository."""
-    data = {"name": name, "type": repo_type, "signing_service": signing_service, "remote": remote}
+    data = {"name": name, "type": repo_type, "remote": remote}
+
+    # set signing service
+    if repo_type in [RepoType.yum, RepoType.apt]:
+        if signing_service:
+            service = signing_service
+        elif service_default := (ctx.find_root().default_map or {}).get("signing_service"):
+            service = service_default
+        else:
+            service = RepoSigningService.esrp
+
+        data["signing_service"] = service
+
     with get_client(ctx.obj) as client:
         repo_resp = client.post("/repositories/", json=data)
         handle_response(ctx.obj, repo_resp)

@@ -84,66 +84,42 @@ A default Service Principal is available to simplify your dev environment
   - `./update_role.sh Repo_Admin --create`
   - You can call this script again any time you wish to change roles (`./update_role.sh Account_Admin`)
 
-## Example Workflows
+## Workflows
 
-### apt
+Once you've set up the server and CLI, view the `docs/admin/workflows.md` file for some example
+workflows.
 
-```
-# create a repo. Note: only legacy signing is available in dev environments.
-pmc repo create myrepo-apt apt --signing-service legacy
+## Publishing
 
-# create a repo release
-pmc repo releases create myrepo-apt jammy
+### Server Setup
 
-# create a distro
-pmc distro create mydistro-apt apt "some/path" --repository myrepo-apt
-
-# upload a package
-cp tests/assets/signed-by-us.deb .
-PACKAGE_ID=$(pmc --id-only package upload signed-by-us.deb)
-
-# add our package to the repo release
-pmc repo packages update myrepo-apt jammy --add-packages $PACKAGE_ID
-
-# publish the repo
-pmc repo publish myrepo-apt
-
-# check out our repo
-http :8081/pulp/content/some/path/
-```
-
-### yum
+These steps describe how to prepare the PMC server to distribute the CLI package. They assume that
+your pmc client is setup for the server and that you want to distribute the package at `pypi`.
 
 ```
-# create a repo. Note: only legacy signing is available in dev environments.
-pmc repo create myrepo-yum yum --signing-service legacy
+# create a repo named pypi-python
+pmc repo create pypi-python python
 
-# create a distro
-pmc distro create mydistro-yum yum "awesome/path" --repository myrepo-yum
-
-# upload a package
-cp tests/assets/signed-by-us.rpm .
-PACKAGE_ID=$(pmc --id-only package upload signed-by-us.deb)
-
-# add our package to the repo release
-pmc repo packages update myrepo-yum --add-packages $PACKAGE_ID
-
-# publish the repo
-pmc repo publish myrepo-yum
-
-# check out our repo
-http :8081/pulp/content/awesome/path/
+# create a distro pypi that serves from a folder 'pypi'
+pmc distro create pypi pypi pypi --repository pypi-python
 ```
 
-### syncing
+### Packaging
+
+1. Open up pyproject.toml file and confirm that the version field is correct.
+2. If it's not correct, update it and open a new PR with your change.
+3. In the cli directory, run `poetry build`.
+4. Now proceed to the next section to upload your CLI package.
+
+### Uploading
+
+These steps assume that your pmc client is set up for the server from which you want to distribute
+the pmc cli package.
 
 ```
-# create a remote
-pmc remote create microsoft-ubuntu-focal-prod apt "https://packages.microsoft.com/repos/microsoft-ubuntu-focal-prod/" --distributions nightly
+PACKAGE_ID=$(pmc package upload dist/pmc_cli-0.0.1-py3-none-any.whl)
 
-# create a repo
-pmc repo create microsoft-ubuntu-focal-prod apt --remote microsoft-ubuntu-focal-prod
+pmc repo packages update pypi-python --add-packages $PACKAGE_ID
 
-# sync
-pmc repo sync microsoft-ubuntu-focal-prod
+pmc repo publish pypi-python
 ```

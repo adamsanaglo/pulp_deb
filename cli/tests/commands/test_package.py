@@ -1,5 +1,6 @@
 import json
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional
 
 import pytest
 
@@ -10,7 +11,22 @@ from tests.utils import become, invoke_command
 # Note that "package upload" is exercised by fixture.
 
 
-def _assert_package_list_not_empty(type: str) -> None:
+def test_upload_file_type(orphan_cleanup: None) -> None:
+    become(Role.Package_Admin)
+
+    # file without file type
+    path = Path.cwd() / "tests" / "assets" / "hello.txt"
+    result = invoke_command(["package", "upload", str(path)])
+    assert result.exit_code != 0
+    assert "Unrecognized file extension" in result.stdout
+
+    # python with file type
+    path = Path.cwd() / "tests" / "assets" / "helloworld-0.0.1.tar.gz"
+    result = invoke_command(["package", "upload", "--type", "python", str(path)])
+    assert result.exit_code == 0
+
+
+def _assert_package_list_not_empty(type: str, file_type: Optional[str] = None) -> None:
     result = invoke_command(["package", type, "list"])
     assert result.exit_code == 0
     response = json.loads(result.stdout)
@@ -23,6 +39,14 @@ def test_deb_list(deb_package: Any) -> None:
 
 def test_rpm_list(rpm_package: Any) -> None:
     _assert_package_list_not_empty("rpm")
+
+
+def test_file_list(file_package: Any) -> None:
+    _assert_package_list_not_empty("file", "file")
+
+
+def test_python_list(python_package: Any) -> None:
+    _assert_package_list_not_empty("python")
 
 
 def test_show(deb_package: Any) -> None:

@@ -54,6 +54,8 @@ class DistroType(str, Enum):
 
     apt = "apt"
     yum = "yum"  # maps to 'rpm' in Pulp
+    python = "pypi"
+    file = "file"
 
 
 class RemoteType(str, Enum):
@@ -68,6 +70,8 @@ class RepoType(str, Enum):
 
     apt = "apt"
     yum = "yum"  # maps to 'rpm' in Pulp
+    python = "python"
+    file = "file"
 
 
 class RepoSigningService(str, Enum):
@@ -82,6 +86,8 @@ class PackageType(str, Enum):
 
     deb = "deb"
     rpm = "rpm"
+    python = "python"
+    file = "file"
 
 
 class Identifier(str):
@@ -107,7 +113,7 @@ class Identifier(str):
         if isinstance(val, str):
             match = cls.pattern.fullmatch(val)
             if not match:
-                raise ValueError("invalid id")
+                raise ValueError(f"invalid id: {val}")
             return cls(val)
         elif isinstance(val, UUID):
             return cls.build_from_uuid(val)
@@ -119,7 +125,7 @@ class Identifier(str):
         """Break self into a match group"""
         match = self.pattern.fullmatch(str(self))
         if not match:
-            raise ValueError("invalid id")
+            raise ValueError(f"invalid id: {self}")
         return match
 
     @property
@@ -133,10 +139,14 @@ class Identifier(str):
 
 
 class RepoId(Identifier):
-    pattern = re.compile(rf"^repositories-(?:deb|rpm)-(?P<type>apt|rpm)-({uuid_group})$")
+    pattern = re.compile(
+        rf"^repositories-(?:deb|rpm|python|file)-(?P<type>apt|rpm|python|file)-({uuid_group})$"
+    )
     examples = [
         "repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558",
         "repositories-rpm-rpm-11712ac6-ae6d-43b0-9494-1930337425b4",
+        "repositories-python-python-9cdb587-1c31-4dbc-9002-267f10379f67",
+        "repositories-file-file-5d90abfd-0a58-4ac0-9915-42e201c07155",
     ]
 
     @property
@@ -146,7 +156,8 @@ class RepoId(Identifier):
 
 class RepoVersionId(Identifier):
     pattern = re.compile(
-        rf"^repositories-(?:deb|rpm)-(?P<type>apt|rpm)-({uuid_group})-versions-(\d+)"
+        rf"^repositories-(?:deb|rpm|python|file)-(?P<type>apt|rpm|python|file)-({uuid_group})-"
+        r"versions-(\d+)"
     )
     examples = [
         "repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558-versions-0",
@@ -168,10 +179,14 @@ class DebRepoId(RepoId):
 
 
 class DistroId(Identifier):
-    pattern = re.compile(rf"^distributions-(?:deb|rpm)-(?P<type>apt|rpm)-({uuid_group})$")
+    pattern = re.compile(
+        rf"^distributions-(?:deb|rpm|python|file)-(?P<type>apt|rpm|pypi|file)-({uuid_group})$"
+    )
     examples = [
         "distributions-deb-apt-5ad78d51-1eae-4d5c-bea6-c00da9339315",
         "distributions-rpm-rpm-02ce62a-6cae-4c38-b53f-eb231f6b3e64",
+        "distributions-python-pypi-cfd8825d-1a9d-4935-a475-9d51acc714e4",
+        "distributions-file-file-41c019a5-0272-467e-ac67-be2e0a45bb21",
     ]
 
     @property
@@ -197,7 +212,7 @@ class TaskId(Identifier):
 
 
 class ContentId(Identifier):
-    pattern = re.compile(rf"^content-(deb|rpm)-[a-z_]+-({uuid_group})$")
+    pattern = re.compile(rf"^content-(deb|rpm|python|file)-[a-z_]+-({uuid_group})$")
     examples = [
         "content-deb-packages-39a63a9e-2081-4dfe-80eb-2c27af4b6024",
         "content-deb-releases-1b6e8bba-e9a0-4070-9965-f1840164714e",
@@ -206,10 +221,14 @@ class ContentId(Identifier):
 
 
 class PackageId(ContentId):
-    pattern = re.compile(rf"^content-(?P<type>deb|rpm)-packages-({uuid_group})$")
+    pattern = re.compile(
+        rf"^content-(?P<type>deb|rpm|python|file)-(packages|files)-({uuid_group})$"
+    )
     examples = [
         "content-deb-packages-39a63a9e-2081-4dfe-80eb-2c27af4b6024",
         "content-rpm-packages-21b4d540-76ef-420c-af0a-78c92b67eca0",
+        "content-python-packages-2322cee3-3886-45df-912d-f7afffe929b6",
+        "content-file-file-56050e2b-4f9a-479d-9e12-cf6142eda69b",
     ]
 
     @property
@@ -252,7 +271,7 @@ class DistributionResponse(BaseModel):
     name: str
     base_path: str
     base_url: str
-    repository: Optional[RepoId]
+    repository: Optional[str]
     publication: Optional[str]
 
 
@@ -318,8 +337,17 @@ class RemoteListResponse(ListResponse):
 class RepositoryCreate(BaseModel):
     name: NonEmptyStr
     type: RepoType
-    signing_service: RepoSigningService
+    signing_service: Optional[RepoSigningService]
     remote: Optional[RemoteId]
+
+    @validator("signing_service")
+    def validate_signing_service(
+        cls, val: Optional[RepoSigningService], values: Dict[str, Any]
+    ) -> Optional[RepoSigningService]:
+        if values.get("type") in [RepoType.yum, RepoType.apt]:
+            if not val:
+                raise ValueError("Must specify signing service")
+        return val
 
 
 class RepositoryUpdate(BaseModel):
@@ -360,8 +388,16 @@ class BasePackageResponse(BaseModel):
     id: PackageId
     pulp_created: datetime
     sha256: str
-    sha384: str
-    sha512: str
+    sha384: Optional[str]
+    sha512: Optional[str]
+
+
+class FilePackageResponse(BasePackageResponse):
+    relative_path: str
+
+
+class FilePackageListResponse(ListResponse):
+    results: List[FilePackageResponse]
 
 
 class DebPackageResponse(BasePackageResponse):
@@ -468,8 +504,36 @@ class RpmPackageListResponse(ListResponse):
     results: List[RpmPackageResponse]
 
 
+class PythonPackageResponse(BasePackageResponse):
+    # https://github.com/pulp/pulp_python/blob/938dc67e/pulp_python/app/models.py#L141
+    filename: str
+    packagetype: str
+    name: str
+    version: str
+    python_version: Optional[str]
+    summary: Optional[str]
+    keywords: Optional[str]
+    homepage: Optional[str]
+    download_url: Optional[str]
+    author: Optional[str]
+    author_email: Optional[str]
+    maintainer: Optional[str]
+    maintainer_email: Optional[str]
+    license: Optional[str]
+    requires_python: Optional[str]
+    project_url: Optional[str]
+    platform: Optional[str]
+    supported_platform: Optional[str]
+
+
+class PythonPackageListResponse(ListResponse):
+    results: List[PythonPackageResponse]
+
+
 class PackageResponse(BaseModel):
-    __root__: Union[DebPackageResponse, RpmPackageResponse]
+    __root__: Union[
+        FilePackageResponse, DebPackageResponse, RpmPackageResponse, PythonPackageResponse
+    ]
 
 
 class PackageListResponse(ListResponse):

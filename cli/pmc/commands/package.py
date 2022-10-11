@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import typer
 
@@ -9,15 +9,19 @@ from pmc.utils import UserFriendlyTyper, raise_if_task_failed
 app = UserFriendlyTyper()
 deb = UserFriendlyTyper()
 rpm = UserFriendlyTyper()
+python = UserFriendlyTyper()
+file = UserFriendlyTyper()
+
 app.add_typer(deb, name="deb", help="Manage deb packages")
 app.add_typer(rpm, name="rpm", help="Manage rpm packages")
+app.add_typer(python, name="python", help="Manage python packages")
+app.add_typer(file, name="file", help="Manage files")
 
 
-def _list(type: PackageType, ctx: typer.Context, limit: int, offset: int) -> None:
+def _list(package_type: PackageType, ctx: typer.Context, limit: int, offset: int) -> None:
     params: Dict[str, Any] = dict(limit=limit, offset=offset)
-
     with get_client(ctx.obj) as client:
-        resp = client.get(f"/{type}/packages/", params=params)
+        resp = client.get(f"/{package_type}/packages/", params=params)
         handle_response(ctx.obj, resp)
 
 
@@ -33,6 +37,18 @@ def rpm_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OP
     _list(PackageType.rpm, ctx, limit, offset)
 
 
+@python.command(name="list")
+def python_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
+    """List python packages."""
+    _list(PackageType.python, ctx, limit, offset)
+
+
+@file.command(name="list")
+def file_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
+    """List files."""
+    _list(PackageType.file, ctx, limit, offset)
+
+
 @app.command()
 def upload(
     ctx: typer.Context,
@@ -43,6 +59,15 @@ def upload(
         show_default=False,
         help="Ignore the signature check. Only allowable for legacy packages.",
     ),
+    file_type: Optional[PackageType] = typer.Option(
+        None,
+        "--type",
+        "-t",
+        help=(
+            "Manually specify the type of file being uploaded. Otherwise the file's extension "
+            "is used to guess the file type."
+        ),
+    ),
 ) -> None:
     """Upload a package."""
 
@@ -52,7 +77,9 @@ def upload(
         with get_client(ctx.obj) as client:
             return client.get(f"/packages/{package_id}/")
 
-    data = {"ignore_signature": ignore_signature}
+    data: Dict[str, Any] = {"ignore_signature": ignore_signature}
+    if file_type:
+        data["file_type"] = file_type
     files = {"file": file}
     with get_client(ctx.obj) as client:
         resp = client.post("/packages/", params=data, files=files)

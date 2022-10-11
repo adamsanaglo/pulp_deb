@@ -1,6 +1,5 @@
 import logging
 from functools import partialmethod
-from pathlib import Path
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
@@ -66,7 +65,7 @@ class PulpApi:
 
         resp = await self.client.request(*args, **kwargs)
 
-        logger.debug(f"Pulp Response ({resp.status_code}): {resp.json()}")
+        logger.debug(f"Pulp Response ({resp.status_code}): {resp.text}")
 
         resp.raise_for_status()
         return resp
@@ -139,7 +138,7 @@ class SigningService(PulpApi):
         suffix = "_" + repo_type
         for service in resp["results"]:
             if service["name"].endswith(suffix):
-                ret[service["name"].removesuffix(suffix)] = service["pulp_href"]
+                ret[service["name"][: -len(suffix)]] = service["pulp_href"]
         return ret
 
 
@@ -166,7 +165,8 @@ class RepositoryApi(PulpApi):
     async def create(self, data: Dict[str, Any]) -> Any:
         """Call the create endpoint."""
         type = data.pop("type")
-        await self._set_gpg_fields(data, type)
+        if type in [RepoType.yum, RepoType.apt]:
+            await self._set_gpg_fields(data, type)
         if remote := data.get("remote", None):
             data["remote"] = id_to_pulp_href(remote)
         resp = await self.post(self.endpoint("create", type=type), json=data)
@@ -211,7 +211,11 @@ class RepositoryApi(PulpApi):
     async def publish(self, id: RepoId) -> Any:
         """Call the publication create endpoint."""
         data: Dict[str, Any] = dict(repository=id_to_pulp_href(id))
-        path = self._detail_uri(id.type, "publications")
+
+        if id.type == RepoType.python:
+            path = "/publications/python/pypi/"
+        else:
+            path = self._detail_uri(id.type, "publications")
 
         if id.type == RepoType.apt:
             data["structured"] = True
@@ -219,6 +223,9 @@ class RepositoryApi(PulpApi):
             # so we must look up the href we stored in pulp_labels and add it here.
             details = await self.read(id)
             data[RepositoryApi.SS] = details[RepositoryApi.PL][RepositoryApi.SS]
+
+        if id.type == RepoType.file:
+            data["manifest"] = "FILE_MANIFEST"
 
         resp = await self.post(path, json=data)
         return translate_response(resp.json())
@@ -236,6 +243,8 @@ class RepositoryApi(PulpApi):
             return f"/{resource}/deb/apt/"
         elif type == RepoType.yum:
             return f"/{resource}/rpm/rpm/"
+        elif type in [RepoType.python, RepoType.file]:
+            return f"/{resource}/{type}/{type}/"
         else:
             raise TypeError(f"Received invalid type: {type}")
 
@@ -323,8 +332,10 @@ class DistributionApi(PulpApi):
 
         if type == DistroType.apt:
             return "/distributions/deb/apt/"
-        elif type == DistroType.yum:
-            return "/distributions/rpm/rpm/"
+        elif type in [DistroType.yum, DistroType.file]:
+            return f"/distributions/{type}/{type}/"
+        elif type == DistroType.python:
+            return "/distributions/python/pypi/"
         else:
             raise TypeError(f"Received invalid type: {type}")
 
@@ -352,6 +363,10 @@ class PackageApi(PulpApi):
             type = PackageType.deb
         elif repo_id.type == "yum":
             type = PackageType.rpm
+        elif repo_id.type == "python":
+            type = PackageType.python
+        elif repo_id.type == "file":
+            type = PackageType.file
         else:
             raise TypeError(f"Unsupported repository type: {repo_id.type.value}")
 
@@ -367,9 +382,11 @@ class PackageApi(PulpApi):
     async def create(self, data: Dict[str, Any]) -> Any:
         """Call the package create endpoint."""
         file = data.pop("file")
-        extension = Path(file.filename).suffix.lstrip(".")
-        type = PackageType(extension)
-        path = self.endpoint("create", type=type)
+        file_type = data.pop("file_type")
+        path = self.endpoint("create", type=file_type)
+
+        if file_type in [PackageType.python, PackageType.file]:
+            data["relative_path"] = file.filename
 
         resp = await self.post(path, files={"file": file.file}, data=data)
         return translate_response(resp.json())
@@ -377,16 +394,24 @@ class PackageApi(PulpApi):
     async def get_package_name(self, package_id: PackageId) -> Any:
         """Call PackageApi.read and parse the response to return the name of the package."""
         response = await self.read(package_id)
-        # rpms have a "name" field, debs have a "package" field.
-        if "name" in response:
+        if package_id.type == PackageType.rpm:
             return response["name"]
-        return response["package"]
+        elif package_id.type == PackageType.deb:
+            return response["package"]
+        elif package_id.type == PackageType.file:
+            return response["relative_path"]
+        elif package_id.type == PackageType.python:
+            return response["filename"]
+        else:
+            raise ValueError(f"Unsupported package type: {package_id.type}")
 
     @staticmethod
     def endpoint(action: str, **kwargs: Any) -> str:
         uris = {
             PackageType.rpm: "/content/rpm/packages/",
             PackageType.deb: "/content/deb/packages/",
+            PackageType.python: "/content/python/packages/",
+            PackageType.file: "/content/file/files/",
         }
 
         if action in ["list", "create"]:
