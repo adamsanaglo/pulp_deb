@@ -18,12 +18,14 @@ function set_initial_vars() {
     vnet="${prefix}-vnet"
     aks_subnet="${prefix}-aks-subnet"
     pg_subnet="${prefix}-pg-subnet"
+    export kv="${prefix}-keyvault"
     aks="${prefix}-kube-cluster"
     acr="$(echo $prefix | tr -cd '[:alnum:]')acr"  # alphanumeric only
     pg="${prefix}-pg"
     storageprefix=$(echo $prefix | tr -d [:punct:]) # Storage account names can't include punctuation
     bstg="${storageprefix}blobstorage"
     lstg="${storageprefix}logstorage"
+    env_overrides
 }
 
 function get_az_cli_vars() {

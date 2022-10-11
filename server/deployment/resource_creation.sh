@@ -54,6 +54,7 @@ unset bstgkey
 
 # ... create container registry
 az acr create -g $rg --name $acr --sku Standard --location $region --admin-enabled  # --zone-redundancy is in preview, should we use it?
+# Push images into the ACR via the pipeline job
 
 # ... create postgres server
 az postgres flexible-server create -g $rg -n $pg --version 13 --high-availability Enabled --vnet $vnet --subnet $pg_subnet --admin-user pmcserver --admin-password $PMC_POSTGRES_PASSWORD
@@ -72,11 +73,6 @@ az keyvault set-policy -n $kv --certificate-permissions get --spn $CLIENT_ID
 
 az aks install-cli
 get_aks_creds
-
-# Push our pmcserver_api container into the registry
-az acr login --name $acr
-docker tag pmcserver_api $loginserver/pmcserver_api
-docker push $loginserver/pmcserver_api
 
 # Run deployment
 apply_kube_config config.yml  # substitutes the environment variables in the file and sets up prerequisits
