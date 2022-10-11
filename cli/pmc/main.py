@@ -14,7 +14,7 @@ from .commands import access, account
 from .commands import config as config_cmd
 from .commands import distribution, orphan, package, remote, repository, task
 from .context import PMCContext
-from .schemas import CONFIG_PATHS, Config, Format, NonEmptyStr
+from .schemas import CONFIG_PATHS, Config, Format
 from .utils import (
     DecodeError,
     PulpTaskFailure,
@@ -81,6 +81,13 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
             "command_traceback": exception.original_traceback,
         }
         return err
+    elif isinstance(exception, ValidationError):
+        # config validation error
+        err = {
+            "http_status": -1,
+            "message": "Missing or invalid option(s). See details for more info.",
+            "details": {err["loc"][0]: err["msg"] for err in exception.errors()},
+        }
     else:
         exc_message = type(exception).__name__
         if message := str(exception):
@@ -145,7 +152,12 @@ def main(
         # don't bother to validate the config or set up the context for config commands
         return
 
-    validate_config(config_path)
+    if config_path:
+        validate_config(config_path)
+    else:
+        typer.echo(
+            "Warning: no config file. One can be generated with 'pmc config create'.", err=True
+        )
 
     # New config options MUST be specified above and below in order to take effect!
     config = Config(
@@ -154,11 +166,11 @@ def main(
         id_only=id_only,
         debug=debug,
         format=resp_format,
-        msal_client_id=parse_obj_as(NonEmptyStr, msal_client_id),
-        msal_scope=parse_obj_as(NonEmptyStr, msal_scope),
+        msal_client_id=msal_client_id,  # pyright: ignore
+        msal_scope=msal_scope,  # pyright: ignore
         msal_cert_path=msal_cert_path,
         msal_SNIAuth=msal_SNIAuth,
-        msal_authority=parse_obj_as(NonEmptyStr, msal_authority),
+        msal_authority=msal_authority,  # pyright: ignore
     )
     if base_url:
         config.base_url = parse_obj_as(AnyHttpUrl, base_url)
