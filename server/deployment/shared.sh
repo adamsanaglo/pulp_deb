@@ -25,6 +25,7 @@ function set_initial_vars() {
     storageprefix=$(echo $prefix | tr -d [:punct:]) # Storage account names can't include punctuation
     bstg="${storageprefix}blobstorage"
     lstg="${storageprefix}logstorage"
+    esrpAuthCertPath="/mnt/secrets/${esrpAuthCert}"
     env_overrides
 }
 

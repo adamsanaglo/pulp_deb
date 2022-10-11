@@ -32,7 +32,7 @@ data:
   SIGNER_HOST: "localhost"
   PULP_AZURE_ACCOUNT_NAME: $bstg
   PULP_AZURE_CONTAINER: "pulp"
-  PULP_AZURE_URL_EXPIRATION_SECS: 3600
+  PULP_AZURE_URL_EXPIRATION_SECS: "3600"
   # PULP_AZURE_API_VERSION="2021-08-06"
   PULP_DEFAULT_FILE_STORAGE: "storages.backends.azure_storage.AzureStorage"
   PULP_MEDIA_ROOT: ""
@@ -46,42 +46,13 @@ metadata:
   name: signer-settings
 data:
   KEYVAULT: $kv
-  SIGN_CERT: "esrp-sign-test"
-  AUTH_CERT_PATH: "/mnt/secrets/esrp-auth-test"
+  SIGN_CERT: $esrpSignCert
+  AUTH_CERT_PATH: $esrpAuthCertPath
   LEGACY_KEY_PATH: "/mnt/secrets/legacy-sign"
   LEGACY_KEY_THUMBPRINT: $legacyKeyThumprint
   APP_ID: $esrp_app_id
   TENANT_ID: $AZURE_TENANT_ID
   KEY_CODES: $esrpKeyCode
----
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: pulp-many-files
-  labels:
-    app: pulp-many-files
-spec:
-  capacity:
-    storage: 10Gi
-  storageClassName: default
-  accessModes:
-    - ReadWriteMany
-  hostPath:
-    path: "/mnt/pulp-many-files"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: pulp-files-claim
-  labels:
-    app: pulp
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 10Gi
-  volumeName: pulp-many-files
 ---
 apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
@@ -154,7 +125,7 @@ spec:
     objects: |
       array:
         - |
-          objectName: "esrp-auth-test"
+          objectName: $esrpAuthCert
           objectType: secret
         - |
           objectName: "legacy-sign"

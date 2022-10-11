@@ -10,7 +10,7 @@ spec:
       initContainers:
       - name: pmc-migrate
         image: $loginserver/pmcserver_api
-        command: ['migrate']
+        command: ['./entrypoint.sh', 'migrate']
         volumeMounts:
         - name: pmc-secrets-volume
           mountPath: "/mnt/secrets"
@@ -21,7 +21,7 @@ spec:
       containers:
       - name: pulp-migrate
         image: $loginserver/pulp:latest
-        command: ['pulp-migrate']
+        command: ['/pulp-common-entrypoint.sh', 'pulp-migrate']
         volumeMounts:
           - name: pulp-secrets-volume
             mountPath: "/mnt/secrets"

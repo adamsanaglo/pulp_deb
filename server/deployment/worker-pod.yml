@@ -26,8 +26,6 @@ spec:
             cpu: 250m
             memory: 3Gi
         volumeMounts:
-          - name: files-storage
-            mountPath: "/var/lib/pulp"
           - name: pulp-secrets-volume
             mountPath: "/mnt/secrets"
             readOnly: true
@@ -61,9 +59,6 @@ spec:
           - configMapRef:
               name: signer-settings
       volumes:
-        - name: files-storage
-          persistentVolumeClaim:
-            claimName: pulp-files-claim
         - name: pulp-secrets-volume
           csi:
             driver: secrets-store.csi.k8s.io
@@ -115,8 +110,6 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         volumeMounts:
-          - name: files-storage
-            mountPath: "/var/lib/pulp"
           - name: secrets-volume
             mountPath: "/mnt/secrets"
             readOnly: true
@@ -124,9 +117,6 @@ spec:
           - configMapRef:
               name: pulp-settings
       volumes:
-        - name: files-storage
-          persistentVolumeClaim:
-            claimName: pulp-files-claim
         - name: secrets-volume
           csi:
             driver: secrets-store.csi.k8s.io

@@ -9,9 +9,11 @@ export pmcAppId="b6eedb70-8c44-4683-afd3-0d6c9b299803"
 export legacyKeyThumprint="B02C46DF417A0893"
 export esrpKeyCode="CP-450779-Pgp"
 export bstg="pmcprodblobstorage"
+export esrpAuthCert="esrp-auth-prod"
+export esrpSignCert="esrp-sign-prod"
 
 function env_overrides() {
     export rg="pmcprod"
-    export aks="pmcprod"
+    export kv="pmcprod"
     export acr="pmcprod"
 }

@@ -1,6 +1,7 @@
 #!/bin/bash -x
 
 /usr/bin/wait_on_postgres.py
+/usr/bin/wait_on_database_migrations.sh
 
 # Generating /var/lib/pulp/static at runtime rather than at container build time
 # facilitates all of /var/lib/pulp being a separate volume.
