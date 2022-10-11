@@ -3,8 +3,7 @@ from collections import defaultdict
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.api.auth import (
     get_active_account,
@@ -13,7 +12,7 @@ from app.api.auth import (
     requires_repo_permission,
 )
 from app.core.config import settings
-from app.core.db import get_session
+from app.core.db import AsyncSession, get_session
 from app.core.models import Account, OwnedPackage, RepoAccess, Role
 from app.core.schemas import (
     PackageListResponse,
@@ -128,10 +127,7 @@ async def update_packages(
     statement = select(RepoAccess).where(
         RepoAccess.account_id == account.id, RepoAccess.repo_id == id
     )
-    repo_perm = (await session.execute(statement)).one_or_none()
-    # sqlalchemy returns things from `session.execute` wrapped in tuples, for legacy reasons
-    if repo_perm:
-        repo_perm = repo_perm[0]
+    repo_perm = (await session.exec(statement)).one_or_none()
 
     if account.role == Role.Publisher and not repo_perm:
         raise HTTPException(
@@ -142,10 +138,8 @@ async def update_packages(
     # Create a mapping of package names to accounts that are allowed to modify them in this repo.
     package_name_to_account_id = defaultdict(set)
     statement = select(OwnedPackage).where(OwnedPackage.repo_id == id)
-    for owned_package_tuple in await session.execute(statement):
-        # sqlalchemy returns things from `session.execute` wrapped in tuples, for legacy reasons
-        op = owned_package_tuple[0]
-        package_name_to_account_id[op.package_name].add(op.account_id)
+    for owned_package in await session.exec(statement):
+        package_name_to_account_id[owned_package.package_name].add(owned_package.account_id)
 
     # Next enforce package adding permissions
     if add_names and account.role not in (Role.Repo_Admin, Role.Publisher):

@@ -3,11 +3,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql.selectable import Select
 
-from app.core.db import get_session
+from app.core.db import AsyncSession, get_session
 from app.core.models import Account
 from app.core.schemas import (
     AccountCreate,
@@ -25,10 +24,10 @@ async def _get_list(
 ) -> Tuple[List[Any], int]:
     """Takes a query and returns a page of results and count of total results."""
     count_query = select(func.count()).select_from(query.subquery())
-    count = (await session.execute(count_query)).scalar_one()
+    count = (await session.exec(count_query)).scalar_one()
 
     query = query.limit(limit).offset(offset)
-    results = (await session.execute(query)).scalars().all()
+    results = (await session.exec(query)).scalars().all()
 
     return results, count
 

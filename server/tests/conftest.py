@@ -7,12 +7,12 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
 
 from app.api.auth import get_active_account
 from app.core.config import settings
-from app.core.db import async_session, get_session
+from app.core.db import AsyncSession, async_session, get_session
 from app.core.models import Account, Role
 from app.core.schemas import RepoType
 from app.main import app as fastapi_app

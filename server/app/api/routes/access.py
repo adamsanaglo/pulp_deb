@@ -2,10 +2,9 @@ import re
 from typing import Any, List
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from sqlmodel import select
 
-from app.core.db import get_session
+from app.core.db import AsyncSession, get_session
 from app.core.models import Account, OwnedPackage, RepoAccess
 from app.core.schemas import (
     AccountRepoPackagePermissionUpdate,
@@ -41,7 +40,8 @@ async def _get_named_accounts(session: AsyncSession, account_names: List[str]) -
     ret = []
     for name in account_names:
         statement = select(Account).where(Account.name == name)
-        account = (await session.execute(statement)).one()[0]
+        results = await session.exec(statement)
+        account = results.one()
         ret.append(account)
     return ret
 
@@ -52,8 +52,8 @@ async def list_repo_access(
     session: AsyncSession = Depends(get_session),
 ) -> List[RepoAccessResponse]:
     statement = select(RepoAccess)
-    results = (await session.execute(statement)).all()
-    return [x[0] for x in results]
+    results = await session.exec(statement)
+    return list(results.all())
 
 
 @router.post("/access/repo/{id}/clone_from/{original_id}/", response_model=List[RepoAccessResponse])
@@ -64,15 +64,14 @@ async def clone_repo_access_from(
 ) -> Any:
     """Additively clone the repo permissions from another repo."""
     statement = select(RepoAccess).where(RepoAccess.repo_id == id)
-    current_perms = (await session.execute(statement)).all()
-    current_perms_accounts = [x[0].account_id for x in current_perms]
+    current_perms = (await session.exec(statement)).all()
+    current_perms_accounts = [x.account_id for x in current_perms]
 
     statement = select(RepoAccess).where(RepoAccess.repo_id == original_id)
-    original_perms = (await session.execute(statement)).all()
+    original_perms = (await session.exec(statement)).all()
 
     new_perms = []
     for perm in original_perms:
-        perm = perm[0]  # unwrap the row tuple
         if perm.account_id not in current_perms_accounts:
             new_perm = RepoAccess(account_id=perm.account_id, repo_id=id, operator=perm.operator)
             new_perms.append(new_perm)

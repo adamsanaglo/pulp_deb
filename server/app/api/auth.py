@@ -2,11 +2,10 @@ from typing import Optional
 
 import fastapi_microsoft_identity
 from fastapi import Depends, HTTPException, Request, Response
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import NoResultFound
+from sqlmodel import select
 
-from app.core.db import get_session
+from app.core.db import AsyncSession, get_session
 from app.core.models import Account, RepoAccess, Role
 from app.core.schemas import RepoId
 
@@ -39,7 +38,8 @@ async def get_active_account(
 
     statement = select(Account).where(Account.oid == oid)
     try:
-        account = (await session.execute(statement)).one()[0]
+        results = await session.exec(statement)
+        account = results.one()
     except NoResultFound:
         raise HTTPException(
             status_code=403, detail=f"Domain UUID {id} is not provisioned in PMC. {SUPPORT}"
@@ -109,7 +109,7 @@ async def requires_repo_permission(
         statement = select(RepoAccess).where(
             RepoAccess.account_id == account.id, RepoAccess.repo_id == id
         )
-        if (await session.execute(statement)).one_or_none():
+        if (await session.exec(statement)).one_or_none():
             return
 
     raise HTTPException(
