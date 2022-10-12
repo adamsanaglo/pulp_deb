@@ -1,0 +1,12 @@
+[cli]
+no_wait = false
+no_color = false
+id_only = false
+format = "json"
+debug = false
+base_url = "https://tux-ingest.corp.microsoft.com/api/v4"
+msal_client_id = "YOUR_CLIENT_ID"
+msal_scope = "api://55391a9d-3c3b-4e4a-afa6-0e49c2245175/.default"
+msal_cert_path = "/PATH/TO/YOUR/CERT"
+msal_SNIAuth = true
+msal_authority = "https://login.microsoftonline.com/Microsoft.onmicrosoft.com"

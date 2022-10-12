@@ -1,0 +1,12 @@
+[cli]
+no_wait = false
+no_color = false
+id_only = false
+format = "json"
+debug = false
+base_url = "https://pmc-ingest.trafficmanager.net/api/v4"
+msal_client_id = "YOUR_CLIENT_ID"
+msal_scope = "api://b6eedb70-8c44-4683-afd3-0d6c9b299803/.default"
+msal_cert_path = "/PATH/TO/YOUR/CERT"
+msal_SNIAuth = true
+msal_authority = "https://login.microsoftonline.com/MSAzureCloud.onmicrosoft.com"
