@@ -1,0 +1,120 @@
+version: "3"
+
+services:
+
+    api-migrate:
+      container_name: pmcserver-migrate
+      image: pmctuxacr.azurecr.io/pmcserver_api
+      command: migrate
+      volumes:
+        - /var/lib/pmc/pmcserver_api:/mnt/secrets
+      env_file:
+        - .env-api
+
+    api:
+      container_name: pmcserver
+      image: pmctuxacr.azurecr.io/pmcserver_api
+      depends_on:
+        pulp-api:
+          condition: service_healthy
+        api-migrate:
+          condition: service_completed_successfully
+      volumes:
+        - /var/lib/pmc/pmcserver_api:/mnt/secrets
+      ports:
+        - "8000:8000"
+      env_file:
+        - .env-api
+
+    signer:
+      image: pmctuxacr.azurecr.io/signer
+      container_name: signer
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8888/status"]
+        interval: 5s
+        timeout: 1s
+        retries: 5
+      ports:
+        - "8888:8888"
+      volumes:
+        - /var/lib/pmc/signer:/mnt/secrets
+      env_file:
+        - .env-signer
+
+    pulp-migrate:
+      image: pmctuxacr.azurecr.io/pulp
+      container_name: pulp-migrate
+      command: pulp-migrate
+      depends_on:
+        api-migrate:
+          condition: service_completed_successfully
+      volumes:
+        - /var/lib/pmc/pulp:/mnt/secrets
+      env_file:
+        - .env-pulp
+
+    pulp-api:
+      image: pmctuxacr.azurecr.io/pulp
+      container_name: pulp-api
+      command: pulp-api
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:24817/pulp/api/v3/status/"]
+        interval: 5s
+        timeout: 1s
+        retries: 30
+      depends_on:
+        pulp-migrate:
+          condition: service_completed_successfully
+      ports:
+        - "8080:24817"
+      volumes:
+        - /var/lib/pmc/pulp:/mnt/secrets
+      devices:
+        - /dev/fuse
+      env_file:
+        - .env-pulp
+
+    pulp-worker:
+      image: pmctuxacr.azurecr.io/pulp
+      container_name: pulp-worker
+      command: pulp-worker
+      depends_on:
+        signer:
+          condition: service_healthy
+      volumes:
+        - /var/lib/pmc/pulp:/mnt/secrets
+      devices:
+        - /dev/fuse
+      env_file:
+        - .env-pulp
+
+    pulp-content:
+      image: pmctuxacr.azurecr.io/pulp
+      container_name: pulp-content
+      command: pulp-content
+      ports: 
+        - "8081:24816"
+      volumes:
+        - /var/lib/pmc/pulp:/mnt/secrets
+      devices:
+        - /dev/fuse
+      env_file:
+        - .env-pulp
+
+    nginx:
+      image: mcr.microsoft.com/cbl-mariner/base/nginx:1
+      container_name: nginx
+      ports:
+        - "443:8443"
+      volumes:
+        - /var/lib/pmc/nginx:/mnt/secrets
+        - /var/lib/pmc/nginx-conf/ssl.conf:/etc/nginx/nginx.conf.default
+      devices:
+        - /dev/fuse
+      depends_on:
+        - api
+
+volumes:
+  pulp_storage:
+  containers:
+  postgres-data:

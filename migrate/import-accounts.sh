@@ -32,7 +32,7 @@ cat ${inputCsvPath} | while read -r line; do
     email=$(echo ${line} | cut -d ',' -f 5)    # email address
     icmSvc=$(echo ${line} | cut -d ',' -f 6)   # IcM Team
     icmTeam=$(echo ${line} | cut -d ',' -f 7)  # IcM Service
-    if [[ "${isAME}" == "true" ]] || [[ ${#oid} != 36 ]] || ! newOid=$(az ad sp show --id ${oid} --query id --out tsv); then
+    if [[ "${isAME}" == "true" ]] || [[ ${#oid} != 36 ]] || ! newOid=$(az ad sp show --id ${oid} --query objectId --out tsv); then
         newOid=$(newRandomOid)
         enableOption="--disabled"
     else
@@ -46,7 +46,7 @@ cat ${inputCsvPath} | while read -r line; do
         roleOption=("" "")
     fi
     echo "pmc account create ${enableOption} ${roleOption[@]} ${newOid} ${username} ${email} ${icmSvc} ${icmTeam}"
-    if ! poetry run pmc account create ${enableOption} ${roleOption[@]} ${newOid} ${username} "${email}" ${icmSvc} "${icmTeam}"; then
+    if ! poetry run pmc -c ~/.config/pmc/accountadmin.toml account create ${enableOption} ${roleOption[@]} ${newOid} ${username} "${email}" ${icmSvc} "${icmTeam}"; then
         echo "FAILED to add ${username}:${oid}"
         failed+=("${username}:${oid}")
     else

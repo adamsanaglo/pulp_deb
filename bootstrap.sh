@@ -34,12 +34,13 @@ function installDockerDesktop() {
 
 function installDebs() {
     sudo apt-get update -qq
-    sudo apt-get install -y ca-certificates curl gnupg lsb-release make httpie python3-venv python3-pip
+    sudo apt-get install -y ca-certificates curl gnupg lsb-release make httpie python3-venv python3-pip python-is-python3
 }
 
 function setupPoetry() {
     pip install pipx
     python -m pipx ensurepath
+    export PATH=$PATH:/$HOME/.local/bin
 
     pipx install poetry
     poetry config virtualenvs.in-project true
