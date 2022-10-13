@@ -2,6 +2,9 @@
 from keyvault_util import keyvault_util
 from pathlib import Path
 
+import requests
+import time
+import sys
 import util
 
 kv_util = None
@@ -61,8 +64,8 @@ def create_directories():
     """
     Ensure directories exist so secrets can be written there
     """
-    cmd="sudo install -o 1000 -g 1000 -m 700 -d"
-    util.run_cmd(f"{cmd} {root_folder}"}
+    cmd="sudo install -o root -g root -m 700 -d"
+    util.run_cmd(f"{cmd} {root_folder}")
 
     for path in secret_paths:
         new_folder = Path(root_folder) / path
@@ -115,8 +118,24 @@ def update_function_url():
 
 def restart_containers():
     docker_compose_cmd = "sudo docker compose"
-    util.run_cmd(f"{docker_compose_cmd} down")
-    util.run_cmd(f"{docker_compose_cmd} up -d")
+    for param in ["down", "up -d"]:
+        print(f"Running {docker_compose_cmd} {param}")
+        util.run_cmd(f"{docker_compose_cmd} {param}")
+
+def smoke_test():
+    print("Waiting for containers to come online...")
+    time.sleep(3)
+    try:
+        res = requests.get("http://127.0.0.1:8000/api/")
+        status = f"[{res.status_code}]: {res.text}"
+        ok = res.ok
+    except Exception as e:
+        status = str(e)
+        ok = False
+    if not ok:
+        print(f"FAILURE: {status}")
+        sys.exit(1)
+    print(f"SUCCESS: {status}")
 
 
 # Make Directories (if not present)
@@ -136,3 +155,6 @@ update_function_url()
 
 # Restart containers
 restart_containers()
+
+# Test API Container
+smoke_test()

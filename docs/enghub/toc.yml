@@ -1,4 +1,6 @@
 - name: Preview
   href: preview/
-- name: pmc CLI
+- name: PMC CLI
   href: pmctool/
+- name: Index
+  href: index.md
