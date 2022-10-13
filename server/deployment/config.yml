@@ -24,9 +24,9 @@ metadata:
 data:
   SECRETS_MOUNTPOINT: "/mnt/secrets"
   PULP_DB_ENCRYPTION_KEY: "/mnt/secrets/pulpSymmetricKey"
-  PULP_TOKEN_AUTH_DISABLED: "True"
-  PULP_TELEMETRY: "False"
-  PULP_REDIRECT_TO_OBJECT_STORAGE: "False"
+  PULP_TOKEN_AUTH_DISABLED: "true"
+  PULP_TELEMETRY: "false"
+  PULP_REDIRECT_TO_OBJECT_STORAGE: "false"
   PULP_CONTENT_ORIGIN: "http://${destination_env}:80"
   POSTGRES_SERVICE_HOST: $pg_server
   PULP_DATABASES__default__HOST: $pg_server
@@ -38,7 +38,7 @@ data:
   PULP_DEFAULT_FILE_STORAGE: "storages.backends.azure_storage.AzureStorage"
   PULP_MEDIA_ROOT: ""
   PULP_AZURE_LOCATION: ""
-  PULP_AZURE_OVERWRITE_FILES: "True"
+  PULP_AZURE_OVERWRITE_FILES: "true"
 
 ---
 apiVersion: v1
