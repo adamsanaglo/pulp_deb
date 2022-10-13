@@ -26,6 +26,7 @@ data:
   PULP_DB_ENCRYPTION_KEY: "/mnt/secrets/pulpSymmetricKey"
   PULP_TOKEN_AUTH_DISABLED: "True"
   PULP_TELEMETRY: "False"
+  PULP_REDIRECT_TO_OBJECT_STORAGE: "False"
   PULP_CONTENT_ORIGIN: "http://${destination_env}:80"
   POSTGRES_SERVICE_HOST: $pg_server
   PULP_DATABASES__default__HOST: $pg_server
