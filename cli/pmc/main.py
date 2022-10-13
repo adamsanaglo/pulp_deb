@@ -13,6 +13,19 @@ from pydantic.tools import parse_obj_as
 from .commands import access, account
 from .commands import config as config_cmd
 from .commands import distribution, orphan, package, remote, repository, task
+from .commands.config import (
+    BASE_URL_OPT,
+    DEBUG_OPT,
+    ID_ONLY_OPT,
+    MSAL_AUTHORITY_OPT,
+    MSAL_CERT_PATH_OPT,
+    MSAL_CLIENT_ID_OPT,
+    MSAL_SCOPE_OPT,
+    MSAL_SNI_AUTH_OPT,
+    NO_COLOR_OPT,
+    NO_WAIT_OPT,
+    RESP_FORMAT_OPT,
+)
 from .context import PMCContext
 from .schemas import CONFIG_PATHS, Config, Format
 from .utils import (
@@ -117,36 +130,17 @@ def main(
         help="Config file location. Defaults: \n" + ("\n").join(map(str, CONFIG_PATHS)),
         envvar="PMC_CLI_CONFIG",
     ),
-    no_wait: bool = typer.Option(False, "--no-wait", help="Don't wait for any background tasks."),
-    no_color: bool = typer.Option(False, "--no-color", help="Suppress color output if enabled."),
-    id_only: bool = typer.Option(False, "--id-only", help="Show ids instead of full responses."),
-    debug: bool = typer.Option(False, "--debug", "-d", help="Show debug output."),
-    resp_format: Format = typer.Option(Format.json, "--format", hidden=True),  # TODO: more formats
-    base_url: str = typer.Option(""),
-    msal_client_id: str = typer.Option(
-        None,
-        "--msal-client-id",
-        help="Client ID for the account's Service Principal",
-    ),
-    msal_scope: str = typer.Option(
-        None,
-        "--msal-scope",
-        help="Scope for authentication (i.e. api://1ce02e3e...)",
-    ),
-    msal_cert_path: Path = typer.Option(
-        None,
-        "--msal-cert-path",
-        help="Path to authentication cert for account's Service Principal",
-    ),
-    msal_SNIAuth: bool = typer.Option(
-        True,
-        help="Use SNI Authentication, which enables certificate auto-rotation.",
-    ),
-    msal_authority: str = typer.Option(
-        None,
-        "--msal-authority",
-        help="Authority URL for authentication (i.e. https://login.microsoftonline.com/...)",
-    ),
+    no_wait: bool = NO_WAIT_OPT,
+    no_color: bool = NO_COLOR_OPT,
+    id_only: bool = ID_ONLY_OPT,
+    debug: bool = DEBUG_OPT,
+    resp_format: Format = RESP_FORMAT_OPT,
+    base_url: str = BASE_URL_OPT,
+    msal_client_id: str = MSAL_CLIENT_ID_OPT,
+    msal_scope: str = MSAL_SCOPE_OPT,
+    msal_cert_path: Path = MSAL_CERT_PATH_OPT,
+    msal_SNIAuth: bool = MSAL_SNI_AUTH_OPT,
+    msal_authority: str = MSAL_AUTHORITY_OPT,
 ) -> None:
     if ctx.invoked_subcommand == "config":
         # don't bother to validate the config or set up the context for config commands
@@ -165,7 +159,7 @@ def main(
         no_color=no_color,
         id_only=id_only,
         debug=debug,
-        format=resp_format,
+        resp_format=resp_format,
         msal_client_id=msal_client_id,  # pyright: ignore
         msal_scope=msal_scope,  # pyright: ignore
         msal_cert_path=msal_cert_path,
