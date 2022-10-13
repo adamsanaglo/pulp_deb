@@ -56,7 +56,7 @@ Once you have a workable Dockerfile build, tag, and test the image.
 1. `cd ../cli`
 1. `./tests/simple_pulp_test.sh`
 1. Ensure that the test repo was created and published with a package and repodata at
-   [http://localhost:8081/pulp/content/test-repo/](http://localhost:8081/pulp/content/test-repo/)
+   [http://localhost:8081/test-repo/](http://localhost:8081/test-repo/)
 
 ## Signing Repodata
 At a "10,000 ft view" the way repodata signing is supposed to work in Pulp is that you have some

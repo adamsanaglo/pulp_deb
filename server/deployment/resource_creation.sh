@@ -95,4 +95,4 @@ kubectl autoscale deployment pulp-content --min=2 --max=10
 
 # Get the ip address of the api and content service
 echo "PMC Server is listening at http://$(get_service_ip pmc-service)/api/"
-echo "Pulp content will be served at http://$(get_service_ip pulp-content)/pulp/content/"
+echo "Pulp content will be served at http://$(get_service_ip pulp-content)/"

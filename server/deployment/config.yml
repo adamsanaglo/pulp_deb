@@ -39,6 +39,7 @@ data:
   PULP_MEDIA_ROOT: ""
   PULP_AZURE_LOCATION: ""
   PULP_AZURE_OVERWRITE_FILES: "true"
+  PULP_CONTENT_PATH_PREFIX: "/"
 
 ---
 apiVersion: v1

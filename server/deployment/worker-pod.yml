@@ -105,7 +105,7 @@ spec:
         readinessProbe:
           httpGet:
             scheme: HTTP
-            path: /pulp/content/
+            path: /
             port: pulp-con-port
           initialDelaySeconds: 5
           periodSeconds: 10

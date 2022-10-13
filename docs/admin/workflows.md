@@ -25,7 +25,7 @@ pmc repo packages update myrepo-apt jammy --add-packages $PACKAGE_ID
 pmc repo publish myrepo-apt
 
 # check out our repo
-http :8081/pulp/content/some/path/
+http :8081/some/path/
 ```
 
 ## yum
@@ -48,7 +48,7 @@ pmc repo packages update myrepo-yum --add-packages $PACKAGE_ID
 pmc repo publish myrepo-yum
 
 # check out our repo
-http :8081/pulp/content/awesome/path/
+http :8081/awesome/path/
 ```
 
 ## python
@@ -70,7 +70,7 @@ pmc repo packages update mypyrepo --add-packages $PACKAGE_ID
 pmc repo publish mypyrepo
 
 # check out our repo
-pip install --extra-index-url http://localhost:8081/pulp/content/mypypi/simple/ helloworld==0.0.1
+pip install --extra-index-url http://localhost:8081/mypypi/simple/ helloworld==0.0.1
 ```
 
 ## file
@@ -92,7 +92,7 @@ pmc repo packages update myfile --add-packages $PACKAGE_ID
 pmc repo publish myfile
 
 # check out our repo
-http :8081/pulp/content/myfile/path/
+http :8081/myfile/path/
 ```
 
 
