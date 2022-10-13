@@ -332,8 +332,10 @@ class DistributionApi(PulpApi):
 
         if type == DistroType.apt:
             return "/distributions/deb/apt/"
-        elif type in [DistroType.yum, DistroType.file]:
-            return f"/distributions/{type}/{type}/"
+        elif type == DistroType.yum:
+            return "/distributions/rpm/rpm/"
+        elif type == DistroType.file:
+            return "/distributions/file/file/"
         elif type == DistroType.python:
             return "/distributions/python/pypi/"
         else:
