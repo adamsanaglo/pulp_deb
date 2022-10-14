@@ -27,8 +27,8 @@ for the DB and Pulp.
 
 ## Developing
 
-The [Client](cli/README.md) and [Server](server/README.md) pieces currently have their own docs
-and setup, so see them for more info.
+The [Client](docs/admin/cli/dev.md) and [Server](server/README.md) pieces currently have their own
+docs and setup, so see them for more info.
 
 ## IDE Setup
 

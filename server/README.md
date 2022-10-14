@@ -65,7 +65,7 @@ That's it! Clients will request a token from AAD, scoped to this `APP_CLIENT_ID`
 ### Repodata Signing
 Your dev environment will automatically create and register "legacy" signing services with
 locally-constructed test keys, which you can and should use to test repodata signing locally.
-See the example workflows in [the cli README](../cli/README.md#example-workflows) for examples.
+See the example workflows in [docs/admin/workflows.md](../docs/admin/workflows.md) for examples.
 However we cannot (easily) test ESRP signing in dev, so if you're doing anything that touches ESRP
 signing you **must** test those changes in the PPE before pushing things to tux-dev / prod.
 
