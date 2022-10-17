@@ -559,6 +559,8 @@ class ReleaseCreate(BaseModel):
 
 class ReleaseResponse(ReleaseCreate):
     id: ReleaseId
+    origin: str
+    label: str
 
 
 class ReleaseListResponse(ListResponse):

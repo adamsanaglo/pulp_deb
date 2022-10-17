@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -12,7 +12,7 @@ from app.core.schemas import (
     ReleaseListResponse,
     TaskResponse,
 )
-from app.services.pulp.api import ReleaseApi
+from app.services.pulp.api import ReleaseApi, RepositoryApi
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ async def list_releases(
     package: Optional[PackageId] = None,
 ) -> Any:
     async with ReleaseApi() as api:
-        params = {"repository": repo_id}
+        params: Dict[str, Any] = {"repository": repo_id}
         if name:
             params["distribution"] = name
         if package:
@@ -42,6 +42,15 @@ async def list_releases(
 async def create_release(repo_id: DebRepoId, release: ReleaseCreate) -> Any:
     params = release.dict()
     params["repository"] = repo_id
+
+    # populate origin and label
+    async with RepositoryApi() as api:
+        repo = await api.read(repo_id)
+        repo_name = repo["name"]
+    if repo_name.endswith("-apt"):
+        repo_name = repo_name[:-4]
+    params["origin"] = params["label"] = f"{repo_name} {release.distribution}"
+
     async with ReleaseApi() as api:
         # check first if the release already exists
         search = {k: v for k, v in params.items() if k not in ["components", "architectures"]}
