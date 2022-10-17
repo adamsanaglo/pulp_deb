@@ -1,0 +1,187 @@
+# A Word About AKS/Kubernetes Ingress Controllers
+#
+# Kubernetes really wants you to terminate TLS by defining an "Ingress Controller", which is a
+# container running one of many possible services (nginx is one), and adding an "Ingress" yml entry
+# that defines in a service-agnostic way how it should be configured. There is a community-
+# maintained "ingress-nginx" Ingress Controller, which all the docs tell you to just pull and use.
+# It is just an nginx service with a bunch of other scripts built in for translating the Ingress
+# yaml into an actual nginx config file, and allowing for easy control (smart shutdown, etc) of the
+# service. However pulling that would violate Microsoft's supply-chain security policy.
+#
+# There is a Mariner-based nginx container image available. For now at least let's just use that,
+# write its config the old fashioned way, and point the external IPs at it. This is apparently what
+# the Serial Console team does as well.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-settings
+data:
+  ssl.conf: |
+    upstream pmcserver {
+        server pmc-service-internal:80; # The pmc-service LoadBalancer
+    }    
+    upstream pulpcontent {
+        server pulp-content-internal:80; # The pulp-content LoadBalancer
+    }
+
+    server { # Server to handle incoming requests for the api
+        listen              443 ssl; # 'ssl' parameter tells NGINX to decrypt the traffic
+        server_name         $api_hostname;
+        ssl_certificate     /mnt/secrets/$api_cert_name;
+        ssl_certificate_key /mnt/secrets/$api_cert_name;
+
+        # Use strong ssl security config from: https://sslscanner/Implementation.aspx
+        ssl_protocols TLSv1.2;
+        ssl_prefer_server_ciphers on;
+        ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA;
+        ssl_ecdh_curve secp384r1; # Requires nginx >= 1.1.0
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_tickets off; # Requires nginx >= 1.5.9
+        ssl_stapling on; # Requires nginx >= 1.3.7
+        ssl_stapling_verify on; # Requires nginx => 1.3.7
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Content-Type-Options nosniff;
+
+        location / {
+            proxy_pass http://pmcserver;
+        }
+    }
+
+    server { # Server to handle incoming requests for the content
+        listen              80;
+        listen              443 ssl; # 'ssl' parameter tells NGINX to decrypt the traffic
+        server_name         $destination_env;
+        ssl_certificate     /mnt/secrets/$content_cert_name;
+        ssl_certificate_key /mnt/secrets/$content_cert_name;
+
+        # Use strong ssl security config from: https://sslscanner/Implementation.aspx
+        ssl_protocols TLSv1.2;
+        ssl_prefer_server_ciphers on;
+        ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA;
+        ssl_ecdh_curve secp384r1; # Requires nginx >= 1.1.0
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_tickets off; # Requires nginx >= 1.5.9
+        ssl_stapling on; # Requires nginx >= 1.3.7
+        ssl_stapling_verify on; # Requires nginx => 1.3.7
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Content-Type-Options nosniff;
+
+        location /nginx_status {
+            stub_status on;
+            allow 127.0.0.1;
+            deny all;
+        }
+  
+        location / {
+            proxy_pass http://pulpcontent;
+        }
+    }
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: tls-secret-provider
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"
+    userAssignedIdentityID: $CLIENT_ID
+    keyvaultName: $kv
+    # objectType must be "secret" so that we can fetch the private key.
+    objects: |
+      array:
+        - |
+          objectName: $api_cert_name
+          objectType: secret
+        - |
+          objectName: $content_cert_name
+          objectType: secret
+    tenantId: $AZURE_TENANT_ID
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: nginx
+        image: mcr.microsoft.com/cbl-mariner/base/nginx:1
+        resources:
+          requests:
+            cpu: 100m
+            memory: 90Mi
+        ports:
+          - containerPort: 80
+            name: http
+          - containerPort: 443
+            name: https
+        readinessProbe:
+          exec:
+            command:
+              - "curl"
+              - "localhost/nginx_status"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        volumeMounts:
+        - name: tls-secrets-volume
+          mountPath: "/mnt/secrets"
+          readOnly: true
+        - name: ssl-conf-volume
+          mountPath: "/etc/nginx/nginx.conf.default"
+          subPath: nginx.conf.default
+          readOnly: true
+        envFrom:
+          - configMapRef:
+              name: pmc-settings
+      volumes:
+        - name: tls-secrets-volume
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "tls-secret-provider"
+        - name: ssl-conf-volume
+          configMap:
+            name: nginx-settings
+            items:
+              - key: ssl.conf
+                path: nginx.conf.default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pmc-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    app: nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulp-content
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    name: http
+  - port: 443
+    name: https
+  selector:
+    app: nginx

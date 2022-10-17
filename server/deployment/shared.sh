@@ -23,9 +23,11 @@ function set_initial_vars() {
     acr="$(echo $prefix | tr -cd '[:alnum:]')acr"  # alphanumeric only
     pg="${prefix}-pg"
     storageprefix=$(echo $prefix | tr -d [:punct:]) # Storage account names can't include punctuation
-    bstg="${storageprefix}blobstorage"
-    lstg="${storageprefix}logstorage"
-    esrpAuthCertPath="/mnt/secrets/${esrpAuthCert}"
+    export bstg="${storageprefix}blobstorage"
+    export lstg="${storageprefix}logstorage"
+    export esrpAuthCertPath="/mnt/secrets/${esrpAuthCert}"
+    export api_cert_name="api-cert"  # name of the tls certificate in the keyvault
+    export content_cert_name="content-cert"
     env_overrides
 }
 

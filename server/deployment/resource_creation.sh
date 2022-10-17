@@ -83,6 +83,7 @@ apply_migrations
 # Start the api-pod
 apply_kube_config api-pod.yml  # the only env variable substition here is the ACR loginserver. Is there a way to do that automatically?
 apply_kube_config worker-pod.yml
+apply_kube_config ingress.yml
 
 # Create initial Account_Admin and and register the signing services.
 create_initial_account
