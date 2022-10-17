@@ -10,16 +10,23 @@ from pmc.utils import UserFriendlyTyper, id_or_name
 app = UserFriendlyTyper()
 
 repo_option = id_or_name(
-    "repositories", typer.Option(None, help="Repository id or name to distribute.")
+    "repositories",
+    typer.Option(None, "--repository", "--repo", help="Repository id or name to distribute."),
 )
 
 
 @app.command()
 def list(
-    ctx: typer.Context, limit: Optional[int] = LIMIT_OPT, offset: Optional[int] = OFFSET_OPT
+    ctx: typer.Context,
+    base_path: str = typer.Option(None, help="Filter by base_path"),
+    limit: Optional[int] = LIMIT_OPT,
+    offset: Optional[int] = OFFSET_OPT,
 ) -> None:
     """List distributions."""
     params: Dict[str, Any] = dict(limit=limit, offset=offset)
+
+    if base_path:
+        params["base_path"] = base_path
 
     with get_client(ctx.obj) as client:
         resp = client.get("/distributions/", params=params)

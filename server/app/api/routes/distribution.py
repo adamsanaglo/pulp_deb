@@ -19,10 +19,12 @@ router = APIRouter()
 
 @router.get("/distributions/", response_model=DistributionListResponse)
 async def list_distros(
-    pagination: Pagination = Depends(Pagination), name: Optional[str] = None
+    pagination: Pagination = Depends(Pagination),
+    name: Optional[str] = None,
+    base_path: Optional[str] = None,
 ) -> Any:
     async with DistributionApi() as api:
-        return await api.list(pagination, params={"name": name})
+        return await api.list(pagination, params={"name": name, "base_path": base_path})
 
 
 @router.post(
