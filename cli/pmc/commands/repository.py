@@ -54,12 +54,18 @@ def create(
     remote: Optional[str] = id_or_name(
         "remotes", typer.Option(None, help="Remote id or name to use for sync.")
     ),
+    releases: Optional[str] = typer.Option(
+        None, help=f"Create releases with names separated by {LIST_SEPARATOR}"
+    ),
     paths: Optional[str] = typer.Option(
         None, help=f"Create distributions with paths separated by {LIST_SEPARATOR}"
     ),
 ) -> None:
     """Create a repository."""
     data = {"name": name, "type": repo_type, "remote": remote}
+
+    if releases and repo_type != RepoType.apt:
+        raise Exception(f"Cannot create releases for {repo_type} repos.")
 
     # set signing service
     if repo_type in [RepoType.yum, RepoType.apt]:
@@ -76,6 +82,12 @@ def create(
         repo_resp = client.post("/repositories/", json=data)
         handle_response(ctx.obj, repo_resp)
         repo_id = repo_resp.json()["id"]
+
+        if releases:
+            for release in releases.split(LIST_SEPARATOR):
+                typer.echo(f"Creating release '{release}'.", err=True)
+                resp = client.post(f"/repositories/{repo_id}/releases/", json={"name": release})
+                poll_task(ctx.obj, resp.json().get("task"))
 
         if paths:
             for path in paths.split(LIST_SEPARATOR):
