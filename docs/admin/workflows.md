@@ -5,8 +5,8 @@ Note: these workflows assume you are in the `cli` folder of the Compute-PMC proj
 ## apt
 
 ```
-# create a repo. Note: only legacy signing is available in dev environments.
-pmc repo create myrepo-apt apt --signing-service legacy
+# create a repo
+pmc repo create myrepo-apt apt
 
 # create a repo release
 pmc repo releases create myrepo-apt jammy
@@ -31,8 +31,8 @@ http :8081/some/path/
 ## yum
 
 ```
-# create a repo. Note: only legacy signing is available in dev environments.
-pmc repo create myrepo-yum yum --signing-service legacy
+# create a repo
+pmc repo create myrepo-yum yum
 
 # create a distro
 pmc distro create mydistro-yum yum "awesome/path" --repository myrepo-yum
