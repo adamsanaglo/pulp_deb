@@ -57,7 +57,7 @@ def get_client(ctx: PMCContext) -> Generator[httpx.Client, None, None]:
         base_url=ctx.config.base_url,
         event_hooks={"request": request_hooks, "response": response_hooks},
         headers={"x-correlation-id": ctx.cid.hex, "Authorization": f"Bearer {token}"},
-        timeout=10,
+        timeout=None,
     )
     try:
         yield client

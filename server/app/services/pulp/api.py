@@ -180,7 +180,7 @@ class RepositoryApi(PulpApi):
         return await super().update(id, data)
 
     async def sync(self, id: RepoId, remote: Optional[RemoteId] = None) -> Any:
-        """Call the create endpoint."""
+        """Call the sync endpoint."""
         if remote:
             data = {"remote": remote}
         else:

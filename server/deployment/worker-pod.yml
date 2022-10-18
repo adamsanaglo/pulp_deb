@@ -20,10 +20,7 @@ spec:
         command: ['/pulp-common-entrypoint.sh', 'pulp-worker']
         resources:
           requests:
-            cpu: 100m
-            memory: 3Gi
-          limits:
-            cpu: 250m
+            cpu: 500m
             memory: 3Gi
         volumeMounts:
           - name: pulp-secrets-volume
@@ -37,10 +34,10 @@ spec:
         resources:
           requests:
             cpu: 100m
-            memory: 1Gi
+            memory: 250Mi
           limits:
             cpu: 250m
-            memory: 1Gi
+            memory: 350Mi
         ports:
           - containerPort: 8888
             name: signer-port
@@ -94,11 +91,8 @@ spec:
         command: ['/pulp-common-entrypoint.sh', 'pulp-content']
         resources:
           requests:
-            cpu: 100m
-            memory: 3Gi
-          limits:
-            cpu: 250m
-            memory: 3Gi
+            cpu: 500m
+            memory: 100Mi
         ports:
         - containerPort: 24816
           name: pulp-con-port

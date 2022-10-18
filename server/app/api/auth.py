@@ -42,11 +42,11 @@ async def get_active_account(
         account = results.one()
     except NoResultFound:
         raise HTTPException(
-            status_code=403, detail=f"Domain UUID {id} is not provisioned in PMC. {SUPPORT}"
+            status_code=403, detail=f"Domain UUID {oid} is not provisioned in PMC. {SUPPORT}"
         )
 
     if not account.is_enabled:
-        raise HTTPException(status_code=403, detail=f"PMC access for {id} is disabled. {SUPPORT}")
+        raise HTTPException(status_code=403, detail=f"PMC access for {oid} is disabled. {SUPPORT}")
 
     return account
 
