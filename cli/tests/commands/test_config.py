@@ -19,7 +19,7 @@ def test_config_with_invalid_value() -> None:
     config.flush()
     result = invoke_command(["--config", config.name, "repo", "list"])
     assert result.exit_code == 1
-    assert "ValidationError" in result.stdout
+    assert "Missing or invalid option(s)" in result.stdout
 
 
 @pytest.mark.skip(reason="Authentication is required for all commands")
