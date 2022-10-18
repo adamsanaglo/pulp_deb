@@ -1,0 +1,23 @@
+#!/bin/bash -e
+
+export resourceGroup="pmcprod"
+export location="eastus"
+
+# URLS
+export VNEXT_URL="https://pmc-ingest.trafficmanager.net"
+export VCURRENT_SERVER="azure-apt-cat.cloudapp.net"
+export VCURRENT_PORT="443"
+
+# vnext MSAL vars
+export MSAL_CLIENT_ID="d017e1a1-438e-469a-acd7-a6877fd2d27f"
+export MSAL_SCOPE="api://d48bb382-20ec-41b9-a0ea-07758a21ccd0/.default"
+export MSAL_CERT="@Microsoft.KeyVault(SecretUri=https://pmcprod.vault.azure.net/secrets/migrationAccount)"
+export MSAL_AUTHORITY="https://login.microsoftonline.com/MSAzureCloud.onmicrosoft.com"
+export MSAL_SNIAUTH="1"
+
+# vcurrent AAD vars
+export AAD_CLIENT_ID="027af92d-beff-434c-9baf-1a3a297c0cf7"
+export AAD_CLIENT_SECRET="@Microsoft.KeyVault(SecretUri=https://pmcprod.vault.azure.net/secrets/legacyAdmin)"
+export AAD_RESOURCE="https://microsoft.onmicrosoft.com/945999e9-da09-4b5b-878f-b66c414602c0"
+export AAD_TENANT="72f988bf-86f1-41af-91ab-2d7cd011db47"
+export AAD_AUTHORITY_URL="https://login.microsoftonline.com"
