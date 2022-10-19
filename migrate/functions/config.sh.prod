@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-export resourceGroup="pmcprod"
-export location="eastus"
+export resourceGroup="pmc-prod-migrate"
+export location="centralus"
 
 # URLS
 export VNEXT_URL="https://pmc-ingest.trafficmanager.net"
