@@ -134,10 +134,8 @@ messages.
 In order to publish, you'll need to install the Azure CLI and the Azure Functions CLI. See the
 section of this document about how to install these.
 
-Next copy `config.sh.example` to `config.sh` and fill in the latter if you haven't already.
-
-Then run the deploy script:
+Then run the deploy script with your desired config.sh file:
 
 ```
-./deploy.sh
+./deploy.sh config.sh.ppe
 ```
