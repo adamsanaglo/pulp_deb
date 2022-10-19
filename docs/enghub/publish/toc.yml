@@ -1,0 +1,4 @@
+- name: Adding a package
+  href: index.md
+- name: Removing a package
+  href: removing.md

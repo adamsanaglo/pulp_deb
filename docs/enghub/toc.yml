@@ -1,6 +1,14 @@
-- name: Preview
-  href: preview/
-- name: PMC CLI
-  href: pmctool/
-- name: Index
+- name: Home
   href: index.md
+- name: v4 Preview
+  href: preview.md
+- name: Onboarding
+  href: onboard
+- name: Publishing
+  href: publish
+- name: pmc CLI
+  href: pmctool
+- name: Logging and Analytics
+  href: logs
+- name: Frequenty Asked Questions (FAQ)
+  href: faq.md
