@@ -90,6 +90,45 @@ http :7071/api/queue_action action_type=remove source=vcurrent repo_name=test re
 
 If you get a 403 response from vnext, make sure the account you're using has the Migration role.
 
+### Testing
+
+If you want to test out the Azure functions, you'll need to set up two repos--one in vNext and one
+in vCurrent.
+
+First though, you must serve the packages from vcurrent. Set up a python http server:
+
+```
+cd /var/lib/azure-aptcatalog
+python3 -m http.server 8888
+```
+
+Now on vcurrent, set up a repo:
+
+```
+repoclient repo add -l debtest apt admin
+```
+
+You should be able to curl the repo dir with `curl http://localhost:8888/repos/debtest/`.
+
+On vNext set up your debtest repo:
+
+```
+vcurrent="http://vcurrent:8888/"
+pmc remote create debtest-apt apt "${vcurrent}repos/debtest" --distributions bionic
+pmc repo create debtest-apt apt --remote debtest-apt
+```
+
+Now back on vcurrent, try adding a package. You'll need the repo id (see `repoclient repo list`):
+
+```
+curl -O https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/a/aadlogin-selinux/aadlogin-selinux_1.0.004850001_amd64.deb
+repoclient package add -r 634edfb182695c71fa630531 aadlogin-selinux_1.0.004850001_amd64.deb
+```
+
+The package should now show up in `debtest-apt` on vnext. Check the function app output for any
+messages.
+
+
 ## Publishing
 
 In order to publish, you'll need to install the Azure CLI and the Azure Functions CLI. See the
