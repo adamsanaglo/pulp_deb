@@ -24,14 +24,7 @@ created=0
 # Capture absolute path, since we have to change folders
 inputCsvPath=$(realpath ${inputCsv})
 pushd ../cli > /dev/null
-cat ${inputCsvPath} | while read -r line; do
-    username=$(echo ${line} | cut -d ',' -f 1) # Username
-    oid=$(echo ${line} | cut -d ',' -f 2)      # Oid
-    isAdmin=$(echo ${line} | cut -d ',' -f 3)  # isAdmin
-    isProd=$(echo ${line} | cut -d ',' -f 4)   # isProd
-    email=$(echo ${line} | cut -d ',' -f 5)    # email address
-    icmSvc=$(echo ${line} | cut -d ',' -f 6)   # IcM Team
-    icmTeam=$(echo ${line} | cut -d ',' -f 7)  # IcM Service
+while IFS=, read -r username oid isAdmin isProd email icmSvc icmTeam; do
     if [[ "${isAME}" == "true" ]] || [[ ${#oid} != 36 ]] || ! newOid=$(az ad sp show --id ${oid} --query objectId --out tsv); then
         newOid=$(newRandomOid)
         enableOption="--disabled"
@@ -46,14 +39,14 @@ cat ${inputCsvPath} | while read -r line; do
         roleOption=("" "")
     fi
     echo "pmc account create ${enableOption} ${roleOption[@]} ${newOid} ${username} ${email} ${icmSvc} ${icmTeam}"
-    if ! poetry run pmc -c ~/.config/pmc/accountadmin.toml account create ${enableOption} ${roleOption[@]} ${newOid} ${username} "${email}" ${icmSvc} "${icmTeam}"; then
+    if ! poetry run pmc -c ~/.config/pmc/accountadmin.toml account create ${enableOption} ${roleOption[@]} ${newOid} ${username} "${email}" "${icmSvc}" "${icmTeam}"; then
         echo "FAILED to add ${username}:${oid}"
         failed+=("${username}:${oid}")
     else
         echo "Created account ${username}"
         created=$((created+1))
     fi
-done
+done < ${inputCsvPath}
 popd > /dev/null
 echo "Created ${created} accounts with ${#failed[@]} failures"
 for name in ${failed[@]}; do

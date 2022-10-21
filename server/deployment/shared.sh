@@ -9,7 +9,9 @@ function set_initial_vars() {
     environment="${1}"
     if [[ -z "${environment}" ]]; then
         bail "Must specify environment (ppe|tux|prod)"
-    elif [[ "${environment}" == "ppe" ]] || [[ "${environment}" == "tux" ]] || [[ "${environment}" == "prod" ]]; then
+    elif [[ "${environment}" == "tux" ]]; then
+        bail "Environment '${environment}' uses ExpressRoute, which is incompatible with AKS."
+    elif [[ "${environment}" == "ppe" ]] || [[ "${environment}" == "prod" ]]; then
         . ./${environment}.sh
     else
         bail "Environment '${environment}' not supported"

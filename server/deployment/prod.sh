@@ -6,16 +6,20 @@ export account_id="aa4bbdc3-cf46-4358-bd02-3d16763de2e9"  # the account of the c
 export destination_env="packages.microsoft.com"  # Pulp uses this to construct distribution base_url.
 export api_hostname="pmc-ingest.trafficmanager.net"  # hostname of the pmc api
 export prefix="pmc-prod"
-export esrp_app_id="34bd9bc3-d07f-4f29-81db-64e98f469905"
-export pmcAppId="b6eedb70-8c44-4683-afd3-0d6c9b299803"
+export esrp_app_id="5af33d37-5ce6-40ea-b8c8-9129cb5f8726"
+export pmcAppId="d48bb382-20ec-41b9-a0ea-07758a21ccd0"
 export legacyKeyThumprint="B02C46DF417A0893"
 export esrpKeyCode="CP-450779-Pgp"
 export bstg="pmcprodblobstorage"
 export esrpAuthCert="esrp-auth-prod"
+export esrpAuthCertPath="/mnt/secrets/${esrpAuthCert}"
 export esrpSignCert="esrp-sign-prod"
 
 function env_overrides() {
     export rg="pmcprod"
     export kv="pmcprod"
     export acr="pmcprod"
+    export api_cert_name="pmcIngestTLS"  # name of the tls certificate in the keyvault
+    export content_cert_name="pmcDistroTLS"
+
 }

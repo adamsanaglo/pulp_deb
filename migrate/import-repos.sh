@@ -35,10 +35,9 @@ permissionCount=0
 inputCsvPath=$(realpath ${inputCsv})
 pushd ../cli > /dev/null
 # Get a list of unique repo IDs; parse releases/dists separately
-cat ${inputCsvPath} | cut -d ',' -f 1,2,4 | sort -u | while read -r line; do
-    type=$(echo ${line} | cut -d ',' -f 1)     # Type (apt|yum)
-    url=$(echo ${line} | cut -d ',' -f 2)      # Url
-    prss=$(echo ${line} | cut -d ',' -f 3)     # Prss
+tmpFile=$(mktemp)
+cat ${inputCsvPath} | cut -d ',' -f 1,2,4 | sort -u > ${tmpFile}
+while IFS=, read -r type url prss; do
     remote_url="${urlPrefix}/${repos[${type}]}/${url}"
     accounts=$(grep "^${type},${url}," ${inputCsvPath} | head -n 1 | cut -d ',' -f 5)
     repo_name="${url}-${type}"
@@ -72,7 +71,7 @@ cat ${inputCsvPath} | cut -d ',' -f 1,2,4 | sort -u | while read -r line; do
 
     # 3. Assign Permissions
     # Parse accounts one-at-a-time, so that missing accounts do not block progress
-    for account in $(echo "azlinux;dotnet;dotnet-release" | tr ';' ' '); do
+    for account in $(echo "${accounts}" | tr ';' ' '); do
         ! poetry run pmc -c /home/mbearup/.config/pmc/accountadmin.toml access repo grant ${account} "^${repo_name}\$" &> /dev/null
     done
     echo "Granted permission to ${repo_name}"
@@ -95,7 +94,12 @@ cat ${inputCsvPath} | cut -d ',' -f 1,2,4 | sort -u | while read -r line; do
     fi
     distroCount=$((distroCount+1))
     echo "Created distro ${repo_name} [${distroCount}]"
-done
+
+    # Sync repo and publish it
+    ! poetry run pmc repo sync ${repo_name}
+    ! poetry run pmc repo publish ${repo_name}
+done < ${tmpFile}
+rm -f ${tmpFile}
 
 echo "Created ${remoteCount} remotes with ${#failedRemotes[@]} failures"
 echo "Created ${repoCount} repos with ${#failedRepos[@]} failures"
