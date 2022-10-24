@@ -26,7 +26,6 @@ data:
   PULP_DB_ENCRYPTION_KEY: "/mnt/secrets/pulpSymmetricKey"
   PULP_TOKEN_AUTH_DISABLED: "true"
   PULP_TELEMETRY: "false"
-  PULP_REDIRECT_TO_OBJECT_STORAGE: "false"
   PULP_CONTENT_ORIGIN: "http://${destination_env}:80"
   POSTGRES_SERVICE_HOST: $pg_server
   PULP_DATABASES__default__HOST: $pg_server
@@ -41,7 +40,7 @@ data:
   PULP_AZURE_OVERWRITE_FILES: "true"
   PULP_CONTENT_PATH_PREFIX: "/"
   PULP_PUBLISH_RELEASE_FILE_LABEL: "true"
-
+  PULP_CONTENT_WORKERS: "8"
 ---
 apiVersion: v1
 kind: ConfigMap

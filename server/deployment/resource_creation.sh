@@ -92,7 +92,8 @@ configureSigningServices
 # Scale everything up
 kubectl autoscale deployment api-pod --min=2 --max=3
 kubectl autoscale deployment worker-pod --min=2 --max=10
-kubectl autoscale deployment pulp-content --min=2 --max=10
+kubectl autoscale deployment pulp-content --cpu-percent 40 --min=2 --max=10
+kubectl autoscale deployment nginx --cpu-percent 40 --min 2 --max 10
 
 # Get the ip address of the api and content service
 echo "PMC Server is listening at http://$(get_service_ip pmc-service)/api/"

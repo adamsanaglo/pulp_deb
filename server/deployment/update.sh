@@ -16,6 +16,9 @@ if [ -z "$2" ]; then
   apply_kube_config api-pod.yml
   apply_kube_config worker-pod.yml
   apply_kube_config ingress.yml
+  kubectl rollout restart deployment api-pod
+  kubectl rollout restart deployment worker-pod
+  kubectl rollout restart deployment pulp-content
 else
   apply_kube_config $2
 fi
