@@ -5,6 +5,12 @@ from msal import ConfidentialClientApplication
 from OpenSSL.crypto import FILETYPE_PEM, X509, dump_certificate, load_certificate
 
 
+class AuthenticationError(Exception):
+    def __init__(self, message: str, details: str = "") -> None:
+        super().__init__(message)
+        self.details = details
+
+
 class pmcauth:
     def __init__(
         self,
@@ -23,7 +29,7 @@ class pmcauth:
         elif msal_cert:
             self.client_certificate_contents = msal_cert
         else:
-            raise Exception("No MSAL cert path or cert set for authentication.")
+            raise AuthenticationError("No MSAL cert path or cert set for authentication.")
 
         self.scope = msal_scope
         # Find the leaf cert and thumbprint
@@ -56,7 +62,10 @@ class pmcauth:
         if "access_token" in result:
             return str(result["access_token"])
 
-        raise Exception(result.get("error"))
+        raise AuthenticationError(
+            result.get("error") or "failed to acquire token",
+            details=result.get("error_description"),
+        )
 
     def _get_cert_thumbprint(self) -> str:
         """
@@ -74,7 +83,7 @@ class pmcauth:
         certs = self._parse_certs_from_text()
         if len(certs) == 0:
             # No certs present - must only be private key
-            raise Exception("Found no leaf certificates in specified cert!")
+            raise AuthenticationError("Found no leaf certificates in specified cert!")
         if len(certs) > 1:
             # Cert chain is present - remove root/intermediary CA's.
             certs = pmcauth._remove_cas_from_chain(certs)

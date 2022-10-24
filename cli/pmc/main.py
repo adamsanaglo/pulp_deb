@@ -109,6 +109,7 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
         err = {
             "http_status": -1,
             "message": exc_message,
+            "details": getattr(exception, "details", None),
         }
         if isinstance(exception, httpx.RequestError):
             err["url"] = str(exception.request.url)
