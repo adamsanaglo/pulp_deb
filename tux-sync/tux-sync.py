@@ -23,7 +23,7 @@ acr_images = [
 ]
 
 # Azure Function
-af_secret_name = "afQueueUrl"
+af_secret_name = "afQueueActionUrl"
 
 # Cotnainer Secrets
 secret_paths = {
