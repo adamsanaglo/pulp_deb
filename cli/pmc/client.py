@@ -115,12 +115,8 @@ def handle_response(
     if ctx.config.id_only and (id := _extract_ids(resp.json())):
         typer.echo(id, nl=ctx.isatty)
     else:
-        if not ctx.isatty:
-            # do not format output if it's not going to a terminal
-            typer.echo(json.dumps(resp.json()))
-        else:
-            output = json.dumps(resp.json(), indent=3)
-            if PYGMENTS and not ctx.config.no_color:
-                formatter = Terminal256Formatter(style=PYGMENTS_STYLE)
-                output = highlight(output, JsonLexer(), formatter)
-            typer.echo(output)
+        output = json.dumps(resp.json(), indent=3)
+        if PYGMENTS and not ctx.config.no_color:
+            formatter = Terminal256Formatter(style=PYGMENTS_STYLE)
+            output = highlight(output, JsonLexer(), formatter)
+        typer.echo(output)
