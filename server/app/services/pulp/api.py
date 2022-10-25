@@ -575,6 +575,23 @@ class ReleaseApi(PulpApi):
 
 
 class TaskApi(PulpApi):
+    async def list(
+        self,
+        pagination: Optional[Pagination] = None,
+        params: Optional[Dict[str, Any]] = None,
+        **endpoint_args: Any,
+    ) -> Any:
+        """Call the list endpoint."""
+        if params:
+            params = params.copy()
+            if "reserved_resources_record" in params:
+                params["reserved_resources_record"] = map(
+                    id_to_pulp_href, params["reserved_resources_record"]
+                )
+            if "created_resources" in params:
+                params["created_resources"] = id_to_pulp_href(params["created_resources"])
+        return await super().list(pagination, params, **endpoint_args)
+
     async def cancel(self, id: TaskId) -> Any:
         """Call the task cancel endpoint."""
         path = self.endpoint("cancel", id=id)

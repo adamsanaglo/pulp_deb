@@ -82,6 +82,18 @@ class Format(StringEnum):
     json = "json"
 
 
+class TaskState(StringEnum):
+    """Options for task state."""
+
+    completed = "completed"
+    failed = "failed"
+    running = "running"
+    waiting = "waiting"
+    canceled = "canceled"
+    canceling = "canceling"
+    skipped = "skipped"
+
+
 # Codebase uses typer to define command-line parameters which doesn't support Pydantic (yet)
 # Any new options here MUST be added to main.py as well until
 # https://github.com/tiangolo/typer/issues/111 is supported

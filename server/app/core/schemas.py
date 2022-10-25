@@ -90,6 +90,22 @@ class PackageType(str, Enum):
     file = "file"
 
 
+class TaskState(str, Enum):
+    """Options for task state."""
+
+    completed = "completed"
+    failed = "failed"
+    running = "running"
+    waiting = "waiting"
+    canceled = "canceled"
+    canceling = "canceling"
+    skipped = "skipped"
+
+    def __str__(self) -> str:
+        """Return value as the string representation."""
+        return str(self.value)
+
+
 class Identifier(str):
     """Represents an id in PMC."""
 
@@ -565,6 +581,14 @@ class ReleaseResponse(ReleaseCreate):
 
 class ReleaseListResponse(ListResponse):
     results: List[ReleaseResponse]
+
+
+class TaskQuery(BaseModel):
+    reserved_resources_record: Optional[List[Identifier]]
+    created_resources: Optional[Identifier]
+    state: Optional[TaskState]
+    name: Optional[str]
+    name__contains: Optional[str]
 
 
 class TaskResponse(BaseModel):
