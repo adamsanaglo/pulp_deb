@@ -14,6 +14,7 @@ def get_client() -> httpx.AsyncClient:
         headers={"Correlation-ID": str(correlation_id.get())},
         base_url=f"{settings.PULP_HOST}{settings.PULP_API_PATH}",
         auth=(settings.PULP_ADMIN_USERNAME, settings.PULP_ADMIN_PASSWORD),
+        timeout=settings.PULP_TIMEOUT,
     )
 
 
