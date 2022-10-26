@@ -417,12 +417,15 @@ class FilePackageListResponse(ListResponse):
 
 
 class DebPackageResponse(BasePackageResponse):
-    # https://github.com/pulp/pulp_deb/blob/6ce60082/pulp_deb/app/models/content.py#L139
     package: str
     source: Optional[str]
     version: str
     architecture: str
     relative_path: str
+
+
+class FullDebPackageResponse(DebPackageResponse):
+    # https://github.com/pulp/pulp_deb/blob/6ce60082/pulp_deb/app/models/content.py#L139
     section: Optional[str]
     priority: Optional[str]
     origin: Optional[str]
@@ -463,12 +466,16 @@ class DebPackageListResponse(ListResponse):
 
 
 class RpmPackageResponse(BasePackageResponse):
-    # https://github.com/pulp/pulp_rpm/blob/4f4aa4f1/pulp_rpm/app/models/package.py#L58
     name: str
     epoch: str
     version: str
     release: str
     arch: str
+    location_href: str
+
+
+class FullRpmPackageResponse(RpmPackageResponse):
+    # https://github.com/pulp/pulp_rpm/blob/4f4aa4f1/pulp_rpm/app/models/package.py#L58
     pkgId: str
     checksum_type: str
     summary: str
@@ -521,11 +528,14 @@ class RpmPackageListResponse(ListResponse):
 
 
 class PythonPackageResponse(BasePackageResponse):
-    # https://github.com/pulp/pulp_python/blob/938dc67e/pulp_python/app/models.py#L141
     filename: str
     packagetype: str
     name: str
     version: str
+
+
+class FullPythonPackageResponse(PythonPackageResponse):
+    # https://github.com/pulp/pulp_python/blob/938dc67e/pulp_python/app/models.py#L141
     python_version: Optional[str]
     summary: Optional[str]
     keywords: Optional[str]

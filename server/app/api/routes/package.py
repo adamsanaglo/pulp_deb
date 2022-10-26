@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
@@ -8,6 +8,10 @@ from app.core.schemas import (
     DebPackageListResponse,
     DebPackageQuery,
     FilePackageListResponse,
+    FilePackageResponse,
+    FullDebPackageResponse,
+    FullPythonPackageResponse,
+    FullRpmPackageResponse,
     PackageId,
     PackageType,
     Pagination,
@@ -80,7 +84,15 @@ async def create_package(
         return await api.create({"file": file, "file_type": file_type})
 
 
-@router.get("/packages/{id}/")
+@router.get(
+    "/packages/{id}/",
+    response_model=Union[
+        FullDebPackageResponse,
+        FullRpmPackageResponse,
+        FullPythonPackageResponse,
+        FilePackageResponse,
+    ],
+)
 async def read_package(id: PackageId) -> Any:
     async with PackageApi() as api:
         return await api.read(id)
