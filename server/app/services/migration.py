@@ -72,4 +72,5 @@ async def remove_vcurrent_packages(
                     data["package"]["release"] = package["release"]
                     data["package"]["epoch"] = package["epoch"]
 
-            await client.post("", json=data)
+            resp = await client.post("", json=data)
+            logger.info(f"[MIGRATION] Received {resp.status_code} response: {resp}.")
