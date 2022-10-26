@@ -18,15 +18,26 @@ repo_option = id_or_name(
 @app.command()
 def list(
     ctx: typer.Context,
+    name: str = typer.Option(None, help="Filter by name"),
+    name_contains: str = typer.Option(None, help="Filter distros whose names contain string"),
     base_path: str = typer.Option(None, help="Filter by base_path"),
+    base_path_contains: str = typer.Option(
+        None, help="Filter distros whose base path contain string"
+    ),
     limit: Optional[int] = LIMIT_OPT,
     offset: Optional[int] = OFFSET_OPT,
 ) -> None:
     """List distributions."""
     params: Dict[str, Any] = dict(limit=limit, offset=offset)
 
+    if name:
+        params["name"] = name
+    if name_contains:
+        params["name__contains"] = name_contains
     if base_path:
         params["base_path"] = base_path
+    if base_path_contains:
+        params["base_path__contains"] = base_path_contains
 
     with get_client(ctx.obj) as client:
         resp = client.get("/distributions/", params=params)

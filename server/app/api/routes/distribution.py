@@ -21,10 +21,20 @@ router = APIRouter()
 async def list_distros(
     pagination: Pagination = Depends(Pagination),
     name: Optional[str] = None,
+    name__contains: Optional[str] = None,
     base_path: Optional[str] = None,
+    base_path__contains: Optional[str] = None,
 ) -> Any:
     async with DistributionApi() as api:
-        return await api.list(pagination, params={"name": name, "base_path": base_path})
+        return await api.list(
+            pagination,
+            params={
+                "name": name,
+                "name__contains": name__contains,
+                "base_path": base_path,
+                "base_path__contains": base_path__contains,
+            },
+        )
 
 
 @router.post(
