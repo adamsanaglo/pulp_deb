@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+# Disable SSL verification for vcurrent
+export DISABLE_SSL_VERIFY=1
+
 # URLS
 export VNEXT_URL="http://localhost:8000"
 export VCURRENT_SERVER="<vcurrent>"

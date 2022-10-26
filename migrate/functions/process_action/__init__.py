@@ -27,10 +27,10 @@ def main(msg: func.ServiceBusMessage):
             remove_vnext_package(action)
     elif action.source == SourceType.vnext:
         # remove repo type from name
-        if action.repo_type == RepoType.apt:
-            action.repo_name = action.repo_name.rstrip("-apt")
-        if action.repo_type == RepoType.yum:
-            action.repo_name = action.repo_name.rstrip("-yum")
+        if action.repo_type == RepoType.apt and action.repo_name.endswith("-apt"):
+            action.repo_name = action.repo_name[:-4]
+        if action.repo_type == RepoType.yum and action.repo_name.endswith("-yum"):
+            action.repo_name = action.repo_name[:-4]
 
         if action.action_type == ActionType.remove:
             remove_vcurrent_package(action)

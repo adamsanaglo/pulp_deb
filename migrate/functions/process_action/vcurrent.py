@@ -31,7 +31,10 @@ def _get_repo(name):
     resp = api.list_repositories(name)
     repos = resp.json()
 
-    if len(repos) != 1:
+    if len(repos) == 0:
+        return None
+
+    if len(repos) > 1:
         raise Exception(f"Found {len(repos)} repos matching '{name}'.")
 
     return repos[0]
@@ -42,7 +45,7 @@ def _compare_epochs(e1, e2):
     return (e1 or "0") == (e2 or "0")
 
 
-def _get_package(repo_id, package):
+def _get_packages(repo_id, package):
     resp = api.list_packages(
         repositoryId=repo_id,
         name=package.name,
@@ -60,23 +63,38 @@ def _get_package(repo_id, package):
             and pkg["release"] == package.release
         ]
 
-    if len(packages) != 1:
-        raise Exception(
-            f"Found {len(packages)} packages for {repo_id} matching {package}."
-        )
+    if len(packages) == 0:
+        return None
 
-    return packages[0]
+    return packages
 
 
 def remove_vcurrent_package(action):
     logging.info(
         f"Removing package from vcurent {action.repo_name} repo: {action.package}."
     )
-    repo = _get_repo(action.repo_name)
-    package = _get_package(repo["id"], action.package)
-    response = api.delete_package_by_id(package["id"])
-    if response.status_code != 204:
-        raise Exception(
-            f"Failed to delete package {package['id']} ({response.status_code}): {response.text}"
-        )
-    logging.info(f"Deleted package {package['id']} from repo {action.repo_name}.")
+
+    if not (repo := _get_repo(action.repo_name)):
+        logging.warn(f"Skipping removal action. Repo '{action.repo_name}' not found.")
+        return
+
+    if not (packages := _get_packages(repo["id"], action.package)):
+        logging.warn(f"Skipping removal action. Package not found: {action.package}.")
+        return
+
+    errors = []
+    for package in packages:
+        logging.info(f"Removing package with id {package['id']} from vcurrent.")
+        response = api.delete_package_by_id(package["id"])
+
+        if response.status_code != 204:
+            errors.append(
+                f"Failed to delete package {package['id']} ({response.status_code}): "
+                "{response.text}."
+            )
+
+    if errors:
+        [logging.error(err) for err in errors]
+        raise Exception("Failed to delete packages.")
+
+    logging.info(f"Deleted {len(packages)} package(s) from repo {action.repo_name}.")
