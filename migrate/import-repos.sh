@@ -76,14 +76,18 @@ while IFS=, read -r type url prss; do
     done
     echo "Granted permission to ${repo_name}"
 
+    
+    # Do not manually create releases here. The sync will create them for you, and it'll break with
+    # duplicate releases if you also do it yourself. I'm leaving this code here in case we want to
+    # adapt this for creating new repos that will not sync from vCurrent in the future. 
     # 4. Create Releases
-    if [[ "${type}" == "apt" ]]; then
-        for release in $(grep "^apt,${url}," ${inputCsvPath}  | cut -d ',' -f 3); do
-            # This seems to get timeouts but succeeds anyway
-            ! poetry run pmc repo releases create ${repo_id} ${release} ${release} ${release} 2> /dev/null
-            echo "Created release ${repo_name} ${release}"
-        done
-    fi
+    #if [[ "${type}" == "apt" ]]; then
+    #    for release in $(grep "^apt,${url}," ${inputCsvPath}  | cut -d ',' -f 3); do
+    #        # This seems to get timeouts but succeeds anyway
+    #        ! poetry run pmc repo releases create ${repo_id} ${release} ${release} ${release} 2> /dev/null
+    #        echo "Created release ${repo_name} ${release}"
+    #    done
+    #fi
 
     # 5. Create Distribution
     basePath="${paths[${type}]}/${url}"
@@ -97,7 +101,7 @@ while IFS=, read -r type url prss; do
 
     # Sync repo and publish it
     ! poetry run pmc repo sync ${repo_name}
-    ! poetry run pmc repo publish ${repo_name}
+    ! poetry run pmc --no-wait repo publish ${repo_name}
 done < ${tmpFile}
 rm -f ${tmpFile}
 

@@ -81,11 +81,11 @@ def _extract_ids(resp_json: Any) -> Union[str, List[str], None]:
 def poll_task(ctx: PMCContext, task_id: str, task_handler: TaskHandler = None) -> Any:
     with get_client(ctx) as client:
         resp = client.get(f"/tasks/{task_id}/")
-        task = resp.json()
 
         if ctx.config.no_wait:
-            return task
+            return resp
 
+        task = resp.json()
         typer.echo(f"Waiting for {task['id']}...", nl=False, err=True)
 
         while task["state"] not in FINISHED_TASK_STATES:
