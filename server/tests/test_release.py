@@ -18,7 +18,10 @@ async def test_roles_release_list(async_client: AsyncClient, release_api, accoun
     assert_expected_response(response, 200, release_api.list)
 
 
-async def test_roles_release_create(async_client: AsyncClient, release_api, account):
+async def test_roles_release_create(
+    async_client: AsyncClient, release_api, repository_api, account
+):
+    repository_api.list.read.return_value = {"name": "testing-apt"}
     response = await async_client.post(
         f"/api/v4/repositories/repositories-deb-apt-{uuid4()}/releases/", json=gen_release_attrs()
     )
