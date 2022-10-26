@@ -22,15 +22,16 @@ KEYS = ["remotes", "distros", "repos"]
 def unpaginate_and_filter_list(type: str):
     ret: List[str] = []
     offset = 0
+    batch = 50
     more = True
     while more:
         results = subprocess.run(
-            ["poetry", "run", "pmc", type, "list", "--offset", str(offset)],
+            ["poetry", "run", "pmc", type, "list", "--limit", str(batch), "--offset", str(offset)],
             capture_output=True,
         )
         obj = json.loads(results.stdout)
-        ret.extend([x["id"] for x in obj["results"] if FILTER in x["id"]])
-        offset += 100
+        ret.extend([x["id"] for x in obj["results"] if f"-{FILTER}-" in x["id"]])
+        offset += batch
         more = offset < obj["count"]
 
     return ret
@@ -38,7 +39,7 @@ def unpaginate_and_filter_list(type: str):
 
 for key in KEYS:
     items = unpaginate_and_filter_list(key)
-    print(f"Deleting {key}:")
+    print(f"Deleting {len(items)} {key}:")
     for item in items:
         print(f"  Deleting {item}")
         if not DRY_RUN:
