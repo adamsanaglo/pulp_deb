@@ -79,10 +79,15 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
             "command_traceback": str(exception.request.url),
         }
     elif isinstance(exception, httpx.HTTPStatusError):
-        resp_json = exception.response.json()
-        assert isinstance(resp_json, Dict)
+        err: Dict[str, Any] = {"message": str(exception)}
 
-        err = resp_json
+        try:
+            resp_json = exception.response.json()
+            err["details"] = resp_json.get("detail")
+        except (json.decoder.JSONDecodeError, AttributeError):
+            if exception.response.text:
+                err["details"] = exception.response.text
+
         err["http_status"] = exception.response.status_code
         err["command_trackeback"] = str(exception.request.url)
         if "x-correlation-id" in exception.response.headers:
