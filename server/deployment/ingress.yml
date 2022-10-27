@@ -24,6 +24,10 @@ data:
         server pulp-content-internal:80; # The pulp-content LoadBalancer
     }
 
+    # Instruct nginx to publish logs to stderr / stdout so kubernetes can capture them.
+    error_log  stderr warn;
+    access_log  /dev/stdout main;
+
     # Define the pulp-content server first so that requests with no HOST header hit that and not
     # the api.
     server { # Server to handle incoming requests for the content
