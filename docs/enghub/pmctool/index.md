@@ -18,15 +18,27 @@ While the `pmc` command has command-line options which let you specify all infor
 
 The `pmc` command uses `~/.config/pmc/settings.toml` as the default location of the configuration file. You can be override that with the `--config` option.
 
-The command `pmc config create --edit` will create a default configuration file (in the default location) and bring it up in your editor for you to customize.
-You will need to update some information within that file; see the sample (below) for more information.
+You can generate a config file using `pmc config create`. We have some commands below for tuxdev and prod for your convenience.
+Alternatively, you can create the config file by hand; see the sample configs (below) for more information.
 
-### Sample config file for tuxdev
-
-In this sample configuration file, you must update these values:
-
+Whether you use the commands or sample config files, you'll need to populate two fields when creating your config:
 - Set `msal_client_id` to be the Client ID associated with the security principal you setup for publishing activities.
-- Set `msal_cert_path` to be the absolute path to the file containing the cert (with public and private key) associated with the security principal.
+- Set `msal_cert_path` to be the path to the file containing the cert (with public and private key) associated with the security principal.
+
+### tuxdev
+
+#### Command
+
+```
+pmc config create --no-edit \
+    --base-url "https://tux-ingest.corp.microsoft.com/api/v4" \
+    --msal-scope "api://55391a9d-3c3b-4e4a-afa6-0e49c2245175/.default" \
+    --msal-authority "https://login.microsoftonline.com/Microsoft.onmicrosoft.com" \
+    --msal-client-id "YOUR_CLIENT_ID" \
+    --msal-cert-path "/PATH/TO/YOUR/CERT"
+```
+
+#### Sample config
 
 ```
 [cli]
@@ -43,12 +55,20 @@ msal_SNIAuth = true
 msal_authority = "https://login.microsoftonline.com/Microsoft.onmicrosoft.com"
 ```
 
-### Sample config file for Prod
+### Prod (packages.microsoft.com)
 
-In this sample configuration file, you must update these values:
+#### Command
 
-- Set `msal_client_id` to be the Client ID associated with the security principal you setup for publishing activities.
-- Set `msal_cert_path` to be the absolute path to the file containing the cert (with public and private key) associated with the security principal.
+```
+pmc config create --no-edit \
+    --base-url "https://pmc-ingest.corp.microsoft.com/api/v4" \
+    --msal-scope "api://d48bb382-20ec-41b9-a0ea-07758a21ccd0/.default" \
+    --msal-authority "https://login.microsoftonline.com/MSAzureCloud.onmicrosoft.com" \
+    --msal-client-id "YOUR_CLIENT_ID" \
+    --msal-cert-path "/PATH/TO/YOUR/CERT"
+```
+
+#### Sample config
 
 ```
 [cli]
@@ -64,6 +84,23 @@ msal_cert_path = "/PATH/TO/YOUR/CERT"
 msal_SNIAuth = true
 msal_authority = "https://login.microsoftonline.com/MSAzureCloud.onmicrosoft.com"
 ```
+
+### Multiple configs
+
+It is possible to have multiple configs (e.g. one for each environment). Here's an example:
+
+```
+pmc config create --no-edit \
+    --location "~/.config/pmc/tuxdev.toml" \
+    --base-url "https://tux-ingest.corp.microsoft.com/api/v4" \
+    --msal-scope "api://55391a9d-3c3b-4e4a-afa6-0e49c2245175/.default" \
+    --msal-authority "https://login.microsoftonline.com/Microsoft.onmicrosoft.com" \
+    --msal-client-id "YOUR_CLIENT_ID" \
+    --msal-cert-path "/PATH/TO/YOUR/CERT"
+
+pmc -c ~/.config/pmc/tuxdev.toml repo list
+```
+
 
 ## Usage
 

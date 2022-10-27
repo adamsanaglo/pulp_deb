@@ -72,6 +72,7 @@ def create(
 ) -> None:
     """Create a basic config and open it for editing."""
     config = {}
+    location = location.expanduser()
     for key, field in Config.schema()["properties"].items():
         if locals().get(key):
             config[key] = locals()[key]
