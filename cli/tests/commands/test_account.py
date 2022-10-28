@@ -20,8 +20,8 @@ def test_duplicate_name(account_one: Any) -> None:
     response = json.loads(result.stdout)
     assert result.exit_code != 0
     assert response["http_status"] == 409
-    assert list(response["details"].keys()) == ["name"]
-    assert response["details"]["name"] == ["This field must be unique."]
+    assert list(response["detail"].keys()) == ["name"]
+    assert response["detail"]["name"] == ["This field must be unique."]
 
 
 def test_duplicate_oid(account_one: Any) -> None:
@@ -29,8 +29,8 @@ def test_duplicate_oid(account_one: Any) -> None:
     response = json.loads(result.stdout)
     assert result.exit_code != 0
     assert response["http_status"] == 409
-    assert list(response["details"].keys()) == ["oid"]
-    assert response["details"]["oid"] == ["This field must be unique."]
+    assert list(response["detail"].keys()) == ["oid"]
+    assert response["detail"]["oid"] == ["This field must be unique."]
 
 
 def test_show(account_one: Any) -> None:

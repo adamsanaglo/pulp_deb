@@ -83,10 +83,10 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
 
         try:
             resp_json = exception.response.json()
-            err["details"] = resp_json.get("details")
+            err["detail"] = resp_json.get("detail")
         except (json.decoder.JSONDecodeError, AttributeError):
             if exception.response.text:
-                err["details"] = exception.response.text
+                err["detail"] = exception.response.text
 
         err["http_status"] = exception.response.status_code
         err["command_trackeback"] = str(exception.request.url)
@@ -104,7 +104,7 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
         err = {
             "http_status": -1,
             "message": "Missing or invalid option(s). See details for more info.",
-            "details": {err["loc"][0]: err["msg"] for err in exception.errors()},
+            "detail": {err["loc"][0]: err["msg"] for err in exception.errors()},
         }
     else:
         exc_message = type(exception).__name__
@@ -114,7 +114,7 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
         err = {
             "http_status": -1,
             "message": exc_message,
-            "details": getattr(exception, "details", None),
+            "detail": getattr(exception, "detail", None),
         }
         if isinstance(exception, httpx.RequestError):
             err["url"] = str(exception.request.url)

@@ -113,7 +113,7 @@ def test_apt_update_packages_without_release(deb_package: Any, release: Any) -> 
     assert result.exit_code == 1
     error = json.loads(result.stdout)
     assert error["http_status"] == 422
-    assert error["details"] == "You must specify a release to add packages to an apt repo."
+    assert error["detail"] == "You must specify a release to add packages to an apt repo."
 
 
 def test_yum_update_packages_with_release(rpm_package: Any, yum_repo: Any) -> None:
@@ -131,7 +131,7 @@ def test_yum_update_packages_with_release(rpm_package: Any, yum_repo: Any) -> No
     assert result.exit_code == 1
     error = json.loads(result.stdout)
     assert error["http_status"] == 422
-    assert error["details"] == "Release field is not permitted for yum repositories."
+    assert error["detail"] == "Release field is not permitted for yum repositories."
 
 
 def test_publish(repo: Any) -> None:

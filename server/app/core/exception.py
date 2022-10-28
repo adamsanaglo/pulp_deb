@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def _exception_response(
     request: Request,
     message: str,
-    details: Any = None,
+    detail: Any = None,
     status_code: int = 500,
     source: str = "pmc api",
 ) -> JSONResponse:
@@ -29,8 +29,8 @@ def _exception_response(
         "url": str(request.url),
         "source": source,
     }
-    if details:
-        content["details"] = details
+    if detail:
+        content["detail"] = detail
     return JSONResponse(content=content, status_code=status_code)
 
 
@@ -42,7 +42,7 @@ async def validation_exception_handler(request: Request, exc: ValidationError) -
     return _exception_response(
         request,
         VALIDATION_ERROR_MESSAGE,
-        details=errors,
+        detail=errors,
         status_code=422,  # fastapi uses 422 for validation errors
     )
 
@@ -55,7 +55,7 @@ async def pulp_exception_handler(request: Request, exc: HTTPStatusError) -> JSON
         return _exception_response(
             request,
             VALIDATION_ERROR_MESSAGE,
-            details=json.loads(exc.response.content.decode()),
+            detail=json.loads(exc.response.content.decode()),
             source="pulp",
             status_code=400,
         )
@@ -90,15 +90,15 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
     if match := re.search(uniq_const, exc.orig.args[0]):
         field = match.group(1)
 
-        # format message/details be consistent with Pulp
+        # format message/detail be consistent with Pulp
         message = VALIDATION_ERROR_MESSAGE
-        details: Union[Dict[str, List[str]], str] = {field: ["This field must be unique."]}
+        detail: Union[Dict[str, List[str]], str] = {field: ["This field must be unique."]}
     else:
         # fall back to just showing the exception message
         message = f"Unexpected exception {type(exc).__name__}."
-        details = str(exc)
+        detail = str(exc)
 
-    return _exception_response(request, message, details=details, status_code=409)
+    return _exception_response(request, message, detail=detail, status_code=409)
 
 
 async def exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -106,7 +106,7 @@ async def exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.exception(exc)
 
     response = _exception_response(
-        request, f"Unexpected exception {type(exc).__name__}.", details=str(exc)
+        request, f"Unexpected exception {type(exc).__name__}.", detail=str(exc)
     )
 
     # for generic exceptions, middleware is bypassed so manually add correlation id headers

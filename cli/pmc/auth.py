@@ -6,9 +6,9 @@ from OpenSSL.crypto import FILETYPE_PEM, X509, dump_certificate, load_certificat
 
 
 class AuthenticationError(Exception):
-    def __init__(self, message: str, details: str = "") -> None:
+    def __init__(self, message: str, detail: str = "") -> None:
         super().__init__(message)
-        self.details = details
+        self.detail = detail
 
 
 class pmcauth:
@@ -64,7 +64,7 @@ class pmcauth:
 
         raise AuthenticationError(
             result.get("error") or "failed to acquire token",
-            details=result.get("error_description"),
+            detail=result.get("error_description"),
         )
 
     def _get_cert_thumbprint(self) -> str:
