@@ -20,7 +20,7 @@ from app.core.schemas import (
     RpmPackageQuery,
     TaskResponse,
 )
-from app.services.package.verify import verify_signature
+from app.services.package.verify import UnsignedPackage, verify_signature
 from app.services.pulp.api import PackageApi
 
 router = APIRouter()
@@ -79,7 +79,10 @@ async def create_package(
             )
 
     if not ignore_signature and file_type in [PackageType.deb, PackageType.rpm]:
-        await verify_signature(file)
+        try:
+            await verify_signature(file)
+        except UnsignedPackage as exc:
+            raise HTTPException(status_code=422, detail=f"{exc.__class__.__name__}: {exc}")
     async with PackageApi() as api:
         return await api.create({"file": file, "file_type": file_type})
 

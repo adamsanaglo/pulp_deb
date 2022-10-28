@@ -83,7 +83,7 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
 
         try:
             resp_json = exception.response.json()
-            err["details"] = resp_json.get("detail")
+            err["details"] = resp_json.get("details")
         except (json.decoder.JSONDecodeError, AttributeError):
             if exception.response.text:
                 err["details"] = exception.response.text

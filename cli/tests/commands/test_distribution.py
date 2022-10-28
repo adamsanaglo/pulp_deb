@@ -51,7 +51,7 @@ def test_duplicate_path(distro: Any) -> None:
 
     assert result.exit_code != 0
     error = json.loads(result.stdout)
-    assert "Invalid request" in error["message"]
+    assert "Bad Request" in error["message"]
     assert "This field must be unique." in error["details"]["base_path"]
 
 
