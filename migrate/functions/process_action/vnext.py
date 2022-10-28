@@ -35,13 +35,7 @@ def _raise_for_status(response: httpx.Response) -> None:
         raise e
 
 
-@contextmanager
-def _get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, None]:
-    if not cid:
-        cid = uuid4()
-
-    logging.info(f"Using PMC API correlation ID: {cid.hex}.")
-
+def _set_auth_header(request: httpx.Request) -> None:
     try:
         auth = pmcauth(
             msal_client_id=MSAL_CLIENT_ID,
@@ -53,11 +47,20 @@ def _get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, Non
         token = auth.acquire_token()
     except Exception as e:
         raise Exception(f"Failed to retrieve AAD token: {e}")
+    request.headers["Authorization"] = f"Bearer {token}"
+
+
+@contextmanager
+def _get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, None]:
+    if not cid:
+        cid = uuid4()
+
+    logging.info(f"Using PMC API correlation ID: {cid.hex}.")
 
     client = httpx.Client(
         base_url=f"{VNEXT_URL}/api/v4",
-        event_hooks={"response": [_raise_for_status]},
-        headers={"x-correlation-id": cid.hex, "Authorization": f"Bearer {token}"},
+        event_hooks={"request": [_set_auth_header], "response": [_raise_for_status]},
+        headers={"x-correlation-id": cid.hex},
         timeout=20,
     )
 

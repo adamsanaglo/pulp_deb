@@ -23,6 +23,15 @@ else:
 TaskHandler = Optional[Callable[[str], Any]]
 
 
+def _set_auth_header(ctx: PMCContext, request: httpx.Request) -> None:
+    try:
+        token = ctx.auth.acquire_token()
+    except Exception:
+        typer.echo("Failed to retrieve AAD token", err=True)
+        raise
+    request.headers["Authorization"] = f"Bearer {token}"
+
+
 def _log_request(request: httpx.Request) -> None:
     typer.echo(f"Request: {request.method} {request.url}")
 
@@ -42,21 +51,20 @@ def _raise_for_status(response: httpx.Response) -> None:
 
 @contextmanager
 def get_client(ctx: PMCContext) -> Generator[httpx.Client, None, None]:
-    request_hooks = []
+    def _call_set_auth_header(request: httpx.Request) -> None:
+        _set_auth_header(ctx, request)
+
+    request_hooks = [_call_set_auth_header]
     response_hooks = [_raise_for_status]
 
     if ctx.config.debug:
         request_hooks.append(_log_request)
         response_hooks.insert(0, _log_response)
-    try:
-        token = ctx.auth.acquire_token()
-    except Exception:
-        typer.echo("Failed to retrieve AAD token", err=True)
-        raise
+
     client = httpx.Client(
         base_url=ctx.config.base_url,
         event_hooks={"request": request_hooks, "response": response_hooks},
-        headers={"x-correlation-id": ctx.cid.hex, "Authorization": f"Bearer {token}"},
+        headers={"x-correlation-id": ctx.cid.hex},
         timeout=None,
     )
     try:
