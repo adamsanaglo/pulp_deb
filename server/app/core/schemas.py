@@ -426,6 +426,7 @@ class DebPackageResponse(BasePackageResponse):
 
 class FullDebPackageResponse(DebPackageResponse):
     # https://github.com/pulp/pulp_deb/blob/6ce60082/pulp_deb/app/models/content.py#L139
+    relative_path: str
     section: Optional[str]
     priority: Optional[str]
     origin: Optional[str]
