@@ -139,3 +139,10 @@ Then run the deploy script with your desired config.sh file:
 ```
 ./deploy.sh config.sh.ppe
 ```
+
+If you need to re-publish the function code after you have deployed the app, you can run:
+
+```
+source config.sh.ppe
+func azure functionapp publish ${resourceGroup}app --python --build remote
+```
