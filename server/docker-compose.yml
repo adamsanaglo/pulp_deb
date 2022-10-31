@@ -48,7 +48,7 @@ services:
         - .env
 
     db:
-      image: postgres
+      image: postgres:13
       container_name: db
       healthcheck:
         test: ["CMD-SHELL", "pg_isready"]
