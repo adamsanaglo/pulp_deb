@@ -35,7 +35,7 @@ if [ "$1" == "migrate" ]; then
   psql_cmd "SELECT datname FROM pg_catalog.pg_database WHERE datname='pulp'" | grep -q pulp
   if [ $? -eq 1 ]; then
     psql_cmd "create user pulp with encrypted password '$PULP_DATABASES__default__PASSWORD'"
-    psql_cmd 'create database pulp'
+    psql_cmd 'create database pulp owner pulp'
     psql_cmd 'grant all privileges on database pulp to pulp'
   fi
 else
