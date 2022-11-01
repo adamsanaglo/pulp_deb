@@ -12,7 +12,7 @@ Access to the PMC publishing service is secured via client-side certificate asso
 Generate a certificate that will be used by this Service Principal for login. There are many ways to generate a certificate.
 One of the simplest is via OpenSSL:
 
-```
+```bash
 $ openssl req -x509 -nodes -days 730 -newkey rsa:2048 -keyout private.pem -out public.crt
 Generating a 2048 bit RSA private key
 ............................................................................+++
@@ -37,13 +37,15 @@ Email Address []:
 
 Append the public key cert to the private key file you just generated (`private.pem`). This extended private key file will be used by the publishing tool, and you'll need to supply it in any scripts that use that tool.
 
-```
-$ cat public.crt >> private.pem
+```bash
+cat public.crt >> private.pem
 ```
 
 ### Creating the security principal
 
-All PMC actions must be performed by an authenticated security principal. The API uses Azure AD / OAuth to perform authentication, and the PMC service permits a principal ("account") to perform only the actions authorized for it. New accounts will only be configured with Azure AD; any existing accounts which used previously-supported authentication models will be migrated to this new authentication model. The onboarding/migration process requires you to setup a Service Principal in Azure Active Directory and provide the Application ID associated with that Service Principal.
+All PMC actions must be performed by an authenticated security principal. The API uses Azure AD / OAuth to perform authentication, and the PMC service permits a principal ("account") to perform only the actions authorized for it.
+New accounts will only be configured with Azure AD; any existing accounts which used previously-supported authentication models will be migrated to this new authentication model.
+The onboarding/migration process requires you to setup a Service Principal in Azure Active Directory and provide the Application ID associated with that Service Principal.
 
 Follow [these instructions](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#register-an-application-with-azure-ad-and-create-a-service-principal) to create a Service Principal (AKA Application Registration). You must create the Service Principal in the environment which matches the one where you intend to publish content (Corp/MSIT for tuxdev, AME for Prod).
 
@@ -68,20 +70,27 @@ That should create a basic set of IcM queues for your service. You can further m
 
 ### Requesting access to ESRP signing
 
-1.	Open the [ESRP](https://portal.esrp.microsoft.com/Onboarding/WelcomeCustomer) page.
-1.	Click Add New Client.
-1.	Enter the Application ID for the security principal you created for publishing your content.
-1.	Enter a sensible client name.
-1.	Select "Sign".
-1.	Enter one or more Account Owners to be associated with the ESRP account you're creating.
-1.	Click Save.
-1.	Click the CodeSign tab.
-1.	Under Available KeyCodes, select CP-450779-Pgp (note: ESRP keycodes are case sensitive).
-1.	Click the > button to add it.
-1.	Click "Request Approval." ESRP will handle it from there.
+1. Open the [ESRP](https://portal.esrp.microsoft.com/Onboarding/WelcomeCustomer) page.
+1. Click Add New Client.
+1. Enter the Application ID for the security principal you created for publishing your content.
+1. Enter a sensible client name.
+1. Select "Sign".
+1. Enter one or more Account Owners to be associated with the ESRP account you're creating.
+1. Click Save.
+1. Click the CodeSign tab.
+1. Under Available KeyCodes, select CP-450779-Pgp (note: ESRP keycodes are case sensitive).
+1. Click the > button to add it.
+1. Click "Request Approval." ESRP will handle it from there.
 
 ### Selecting existing repositories
 
+The full list of existing repositories can be viewed by directly examining the packages.microsoft.com website.
+
+- apt (Debian-style) repos: http://packages.microsoft.com/repos/
+- yum (RHEL-style "rpm") repos: http://packages.microsoft.com/yumrepos/
+
+The PMC team creates repos for the major Linux distros; the repo for a new release of a distro is generally created during the final beta testing phase of the release.
+Should you need to publish for an upcoming distro release for which PMC has not yet created a repo, please submit a request via [this form](https://forms.office.com/pages/responsepage.aspx?id=v4j5cvGGr0GRqy180BHbR0Y-CJ76f3hPsEnpT23ehPxUQjNMN0tJNU9STDI0MlcwOFBSVVU5NlBDNy4u).
 
 ## Requesting Publishing Access
 
@@ -95,7 +104,10 @@ To request publishing access, please fill out [this form](https://msazure.visual
 
 ### Requesting new dedicated repositories
 
-A dedicated repository is one to which only one publisher is granted access. The creation of a dedicated repository is an exception to our recommended practice and requires an elevated bar of approval. Please submit your request via [this form](https://forms.office.com/pages/responsepage.aspx?id=v4j5cvGGr0GRqy180BHbR0Y-CJ76f3hPsEnpT23ehPxUQjNMN0tJNU9STDI0MlcwOFBSVVU5NlBDNy4u). Please include this information in your request:
+A dedicated repository is one to which only one publisher is expected to publish content.
+The creation of a dedicated repository is an exception to our recommended practice and requires an elevated bar of approval.
+Please submit your request via [this form](https://forms.office.com/pages/responsepage.aspx?id=v4j5cvGGr0GRqy180BHbR0Y-CJ76f3hPsEnpT23ehPxUQjNMN0tJNU9STDI0MlcwOFBSVVU5NlBDNy4u).
+Please include this information in your request:
 
 - Business Case for New Repository Exception. Provide an explanation for why access to the existing production repos is insufficient for your team's scenario.
 - Desired Name of the New Repository.

@@ -9,7 +9,7 @@ For payloads intended to be published to Windows clients, please visit the [http
 The PMC service enables first party teams within Microsoft to publish Linux software packages to rpm (yum-compatible) and deb (apt-compatible) package repositories hosted under http://packages.microsoft.com.
 The PMC team is also responsible for operating and maintaining the infrastructure which replicates and serves published packages, creating repositories, and managing publishing access to specific repositories.
 
-## PMC v4 preview is live!
+## PMC v4 preview is live
 
 See [this page](preview.md) for information specific to the preview.
 

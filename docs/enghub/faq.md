@@ -5,6 +5,7 @@
 ### The "owners" of our team's security principal have left the company - now what?
 
 You must create a new security principal to be swapped in place of the old.
+
 - Create a new security principal in the correct domain (Corp/MSIT for tuxdev, AME for Prod).
 - Open a service request with PMC providing the old GUID you no longer control and the new GUID you'd like to replace it with.
 - Open a service request with ESRP to request signing permissions for the new GUID. (Packages signed by the previous GUID remain valid, so there's no need to revoke anything related to it.)

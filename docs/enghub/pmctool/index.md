@@ -6,7 +6,7 @@ Publishers operate on PMC repos via the `pmc` client CLI.
 
 The pmc client is a python package. This package is not published externally; it can only be installed from within corpnet.
 
-```
+```bash
 pip install –extra-index-url http://tux-devrepo.corp.microsoft.com/pypi/pmc/simple/ pmc-cli
 ```
 
@@ -22,6 +22,7 @@ You can generate a config file using `pmc config create`. We have some commands 
 Alternatively, you can create the config file by hand; see the sample configs (below) for more information.
 
 Whether you use the commands or sample config files, you'll need to populate two fields when creating your config:
+
 - Set `msal_client_id` to be the Client ID associated with the security principal you setup for publishing activities.
 - Set `msal_cert_path` to be the path to the file containing the cert (with public and private key) associated with the security principal.
 
@@ -29,7 +30,7 @@ Whether you use the commands or sample config files, you'll need to populate two
 
 #### Command
 
-```
+```bash
 pmc config create --no-edit \
     --base-url "https://tux-ingest.corp.microsoft.com/api/v4" \
     --msal-scope "api://55391a9d-3c3b-4e4a-afa6-0e49c2245175/.default" \
@@ -40,7 +41,7 @@ pmc config create --no-edit \
 
 #### Sample config
 
-```
+```ini
 [cli]
 no_wait = false
 no_color = false
@@ -59,7 +60,7 @@ msal_authority = "https://login.microsoftonline.com/Microsoft.onmicrosoft.com"
 
 #### Command
 
-```
+```bash
 pmc config create --no-edit \
     --base-url "https://pmc-ingest.corp.microsoft.com/api/v4" \
     --msal-scope "api://d48bb382-20ec-41b9-a0ea-07758a21ccd0/.default" \
@@ -70,7 +71,7 @@ pmc config create --no-edit \
 
 #### Sample config
 
-```
+```ini
 [cli]
 no_wait = false
 no_color = false
@@ -89,7 +90,7 @@ msal_authority = "https://login.microsoftonline.com/MSAzureCloud.onmicrosoft.com
 
 It is possible to have multiple configs (e.g. one for each environment). Here's an example:
 
-```
+```bash
 pmc config create --no-edit \
     --location "~/.config/pmc/tuxdev.toml" \
     --base-url "https://tux-ingest.corp.microsoft.com/api/v4" \
@@ -101,7 +102,6 @@ pmc config create --no-edit \
 pmc -c ~/.config/pmc/tuxdev.toml repo list
 ```
 
-
 ## Usage
 
 The `pmc` command looks somewhat like the old `pmctool` but is richer and better organized.
@@ -110,7 +110,8 @@ The `pmc --help` command will provide a brief but complete summary of the comman
 Some sample commands are shown below.
 
 ### List Resources
-```
+
+```bash
 # List Repositories:
 pmc repo list
 
@@ -132,7 +133,8 @@ pmc repo list --limit 50
 ```
 
 ### Add/Remove Packages
-```
+
+```bash
 # Upload a package
 pmc package upload [FILE]
 
