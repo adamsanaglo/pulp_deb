@@ -10,6 +10,10 @@ from pmc.utils import UserFriendlyTyper, id_or_name
 
 app = UserFriendlyTyper()
 
+DISTRIBUTIONS_HELP = "Semicolon-separated list of releases/dists."
+COMPONENTS_HELP = "Semicolon separated list of comps."
+ARCHITECTURES_HELP = "Semicolon-separated list of architectures."
+
 
 @app.command()
 def list(
@@ -29,13 +33,9 @@ def create(
     name: str,
     remote_type: RemoteType,
     url: str,
-    distributions: Optional[str] = typer.Option(
-        None, help="Semicolon-separated list of releases/dists."
-    ),
-    components: Optional[str] = typer.Option(None, help="Semicolon separated list of comps."),
-    architectures: Optional[str] = typer.Option(
-        None, help="Semicolon-separated list of architectures."
-    ),
+    distributions: Optional[str] = typer.Option(None, help=DISTRIBUTIONS_HELP),
+    components: Optional[str] = typer.Option(None, help=COMPONENTS_HELP),
+    architectures: Optional[str] = typer.Option(None, help=ARCHITECTURES_HELP),
 ) -> None:
     """Create a remote."""
 
@@ -76,13 +76,9 @@ def update(
     id: str = id_or_name("remotes"),
     name: Optional[str] = typer.Option(None),
     url: Optional[str] = typer.Option(None),
-    distributions: Optional[str] = typer.Option(
-        None, help="Whitespace separated list of releases/dists."
-    ),
-    components: Optional[str] = typer.Option(None, help="Whitespace separated list of comps."),
-    architectures: Optional[str] = typer.Option(
-        None, help="Whitespace separated list of architectures."
-    ),
+    distributions: Optional[str] = typer.Option(None, help=DISTRIBUTIONS_HELP),
+    components: Optional[str] = typer.Option(None, help=COMPONENTS_HELP),
+    architectures: Optional[str] = typer.Option(None, help=ARCHITECTURES_HELP),
 ) -> None:
     """Update a remote."""
 
@@ -98,9 +94,9 @@ def update(
     if distributions:
         data["distributions"] = distributions.split(LIST_SEPARATOR)
     if components:
-        data["components"] = components
+        data["components"] = components.split(LIST_SEPARATOR)
     if architectures:
-        data["architectures"] = architectures
+        data["architectures"] = architectures.split(LIST_SEPARATOR)
 
     with get_client(ctx.obj) as client:
         resp = client.patch(f"/remotes/{id}/", json=data)
