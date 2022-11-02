@@ -67,6 +67,7 @@ async def create_package(
     file: UploadFile,
     ignore_signature: Optional[bool] = False,
     file_type: Optional[PackageType] = None,
+    relative_path: Optional[str] = None,
 ) -> Any:
     if not file_type:
         # attempt to resolve the file type using ext
@@ -82,13 +83,23 @@ async def create_package(
                 status_code=422, detail=f"Unrecognized file extension: {extension}."
             )
 
+    data = {"file": file, "file_type": file_type}
+
+    if relative_path:
+        if file_type != PackageType.file:
+            raise HTTPException(
+                status_code=422, detail=f"Cannot set relative path for {file_type} packages."
+            )
+        else:
+            data["relative_path"] = relative_path
+
     if not ignore_signature and file_type in [PackageType.deb, PackageType.rpm]:
         try:
             await verify_signature(file)
         except UnsignedPackage as exc:
             raise HTTPException(status_code=422, detail=f"{exc.__class__.__name__}: {exc}")
     async with PackageApi() as api:
-        return await api.create({"file": file, "file_type": file_type})
+        return await api.create(data)
 
 
 @router.get(

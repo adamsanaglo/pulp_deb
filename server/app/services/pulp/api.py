@@ -387,7 +387,9 @@ class PackageApi(PulpApi):
         file_type = data.pop("file_type")
         path = self.endpoint("create", type=file_type)
 
-        if file_type in [PackageType.python, PackageType.file]:
+        if file_type == PackageType.python or (
+            file_type == PackageType.file and "relative_path" not in data
+        ):
             data["relative_path"] = file.filename
 
         resp = await self.post(path, files={"file": file.file}, data=data)

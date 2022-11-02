@@ -412,7 +412,7 @@ class FilePackageResponse(BasePackageResponse):
     relative_path: str
 
 
-class FullFilePackageResponse(BasePackageResponse):
+class FullFilePackageResponse(FilePackageResponse):
     pass
 
 

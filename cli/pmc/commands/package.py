@@ -68,6 +68,9 @@ def upload(
             "is used to guess the file type."
         ),
     ),
+    relative_path: Optional[str] = typer.Option(
+        None, help="Manually specify the relative path of the package (files packages only)."
+    ),
 ) -> None:
     """Upload a package."""
 
@@ -80,7 +83,10 @@ def upload(
     data: Dict[str, Any] = {"ignore_signature": ignore_signature}
     if file_type:
         data["file_type"] = file_type
+    if relative_path:
+        data["relative_path"] = relative_path
     files = {"file": file}
+
     with get_client(ctx.obj) as client:
         resp = client.post("/packages/", params=data, files=files)
         handle_response(ctx.obj, resp, task_handler=show_func)
