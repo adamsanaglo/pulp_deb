@@ -8,9 +8,34 @@ There are some prerequisite tasks that must be performed before your team can be
 
 ### Generate a certificate for authentication
 
-Access to the PMC publishing service is secured via client-side certificate associated with aa security principal
-Generate a certificate that will be used by this Service Principal for login. There are many ways to generate a certificate.
-One of the simplest is via OpenSSL:
+Access to the PMC publishing service is secured via client-side certificate associated with an AD Service Principal.
+You must generate a certificate to be used by your publishing workflow when it uses the PMC CLI.
+There are many ways to generate a certificate.
+
+- We recommend using OneCert to create certificates and manage their lifecycle in KeyVault.
+- A simpler solution, useful only for certs with short lifespans, is using OpenSSL.
+
+#### Creating a certificate with OneCert
+
+OneCert handles creating client authentication certificates in KeyVault which it will automatically rotate.
+A publishing pipeline or tool would retrieve the current certificate, including the private key, from KeyVault to be used with the pmcclient CLI.
+
+Documentation for OneCert can be found on [eng.ms](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/onecert-customer-guide/docs).
+
+- Register a domain for the client authentication certificate.
+  - The domain name will not be exported and should not end in .net, .com, etc.
+  - Select AME as the Private Issuer (V2).
+  - Set your Service Tree ID to the one associated with your [IcM incident queue](#creating-an-icm-incident-queue).
+- Associate the OneCert issuer with your KeyVault [(example)](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/onecert-customer-guide/docs/requesting-a-onecert-certificate-with-keyvault). Tied to that association is a policy governing rotation for certificates imported from that issuer.
+- Enroll the desired cert in KeyVault against that policy. KeyVault uses OneCert to (re)generate the cert . Repeat this step to create multiple certificates from the same issuer (and thus in the same domain).
+
+The domain name should be chosen to collect authentication certificates in buckets tied to their purpose.
+For example, a team might have multiple pipelines to build and publish packages.
+That team might choose `*.pmcclient.prod.ourteam` as the domain for certs that authenticate Service Principals which publish packages to the Prod environment of packages.microsoft.com, and `*.pmcclient.internal.ourteam` for publishing to the Tux-Dev environment.
+
+#### Creating a certficate with OpenSSL
+
+Start by generating self-signed certificates holding public and private keys.
 
 ```bash
 $ openssl req -x509 -nodes -days 730 -newkey rsa:2048 -keyout private.pem -out public.crt
@@ -86,8 +111,8 @@ That should create a basic set of IcM queues for your service. You can further m
 
 The full list of existing repositories can be viewed by directly examining the packages.microsoft.com website.
 
-- apt (Debian-style) repos: http://packages.microsoft.com/repos/
-- yum (RHEL-style "rpm") repos: http://packages.microsoft.com/yumrepos/
+- apt (Debian-style) repos: <http://packages.microsoft.com/repos/>
+- yum (RHEL-style "rpm") repos: <http://packages.microsoft.com/yumrepos/>
 
 The PMC team creates repos for the major Linux distros; the repo for a new release of a distro is generally created during the final beta testing phase of the release.
 Should you need to publish for an upcoming distro release for which PMC has not yet created a repo, please submit a request via [this form](https://forms.office.com/pages/responsepage.aspx?id=v4j5cvGGr0GRqy180BHbR0Y-CJ76f3hPsEnpT23ehPxUQjNMN0tJNU9STDI0MlcwOFBSVVU5NlBDNy4u).
