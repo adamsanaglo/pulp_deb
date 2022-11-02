@@ -109,6 +109,9 @@ format: run			## format code using formatters black and isort
 dbconsole:			## open a psql console and connect to the database
 	docker exec -it db psql -U ${POSTGRES_USER}
 
+pulpconsole:           ## open a console for debugging pulp
+	docker exec -it pulp-api bash -c "pip install -q django-extensions && pulpcore-manager shell_plus"
+
 help:
 	@echo 'usage: make [target] ...'
 	@echo
