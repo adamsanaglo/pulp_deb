@@ -87,8 +87,12 @@ def upload(
 
 
 @app.command()
-def show(ctx: typer.Context, id: str) -> None:
+def show(
+    ctx: typer.Context,
+    id: str,
+    details: bool = typer.Option(False, help="Show extra package details"),
+) -> None:
     """Show details for a particular package."""
     with get_client(ctx.obj) as client:
-        resp = client.get(f"/packages/{id}/")
+        resp = client.get(f"/packages/{id}/", params={"details": details})
         handle_response(ctx.obj, resp)

@@ -7,17 +7,21 @@ from app.api.auth import requires_package_admin_or_publisher
 from app.core.schemas import (
     DebPackageListResponse,
     DebPackageQuery,
+    DebPackageResponse,
     FilePackageListResponse,
     FilePackageResponse,
     FullDebPackageResponse,
+    FullFilePackageResponse,
     FullPythonPackageResponse,
     FullRpmPackageResponse,
     PackageId,
     PackageType,
     Pagination,
     PythonPackageListResponse,
+    PythonPackageResponse,
     RpmPackageListResponse,
     RpmPackageQuery,
+    RpmPackageResponse,
     TaskResponse,
 )
 from app.services.package.verify import UnsignedPackage, verify_signature
@@ -93,9 +97,15 @@ async def create_package(
         FullDebPackageResponse,
         FullRpmPackageResponse,
         FullPythonPackageResponse,
+        DebPackageResponse,
+        RpmPackageResponse,
+        PythonPackageResponse,
+        FullFilePackageResponse,
         FilePackageResponse,
     ],
 )
-async def read_package(id: PackageId) -> Any:
+async def read_package(id: PackageId, details: bool = False) -> Any:
+    resp_model = ("Full" if details else "") + id.type.title() + "PackageResponse"
     async with PackageApi() as api:
-        return await api.read(id)
+        data = await api.read(id)
+        return globals()[resp_model](**data)

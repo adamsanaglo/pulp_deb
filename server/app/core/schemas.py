@@ -412,13 +412,16 @@ class FilePackageResponse(BasePackageResponse):
     relative_path: str
 
 
+class FullFilePackageResponse(BasePackageResponse):
+    pass
+
+
 class FilePackageListResponse(ListResponse):
     results: List[FilePackageResponse]
 
 
 class DebPackageResponse(BasePackageResponse):
     package: str
-    source: Optional[str]
     version: str
     architecture: str
     relative_path: str
@@ -426,6 +429,7 @@ class DebPackageResponse(BasePackageResponse):
 
 class FullDebPackageResponse(DebPackageResponse):
     # https://github.com/pulp/pulp_deb/blob/6ce60082/pulp_deb/app/models/content.py#L139
+    source: Optional[str]
     relative_path: str
     section: Optional[str]
     priority: Optional[str]
