@@ -148,6 +148,12 @@ def main(
     msal_SNIAuth: bool = MSAL_SNI_AUTH_OPT,
     msal_authority: str = MSAL_AUTHORITY_OPT,
 ) -> None:
+    """
+    The pmc cli is a tool for managing packages for packages.microsoft.com.
+
+    Many of the commands and options have help text but you can also get more info at
+    https://aka.ms/pmctool.
+    """
     if ctx.invoked_subcommand == "config":
         # don't bother to validate the config or set up the context for config commands
         return
