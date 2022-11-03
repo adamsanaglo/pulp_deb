@@ -16,6 +16,11 @@ if [[ -z $location ]]; then
     location=eastus
 fi
 
+if [ $(az group exists --name $resourceGroup) = true ]; then
+    echo "Resource group $resourceGroup exists. Exiting."
+    exit
+fi
+
 keyvault="${resourceGroup}vault"
 storage=$(echo "${resourceGroup}storage" | tr -d "-")
 plan="${resourceGroup}plan"
