@@ -13,6 +13,9 @@ app = UserFriendlyTyper()
 
 NO_WAIT_OPT = typer.Option(False, "--no-wait", help="Don't wait for any background tasks.")
 NO_COLOR_OPT = typer.Option(False, "--no-color", help="Suppress color output if enabled.")
+NO_PAGER_OPT = typer.Option(
+    False, "--no-pager", help="Disable pager which is used to display long text."
+)
 ID_ONLY_OPT = typer.Option(False, "--id-only", help="Show ids instead of full responses.")
 DEBUG_OPT = typer.Option(False, "--debug", "-d", help="Show debug output.")
 RESP_FORMAT_OPT = typer.Option(Format.json, "--format", hidden=True)  # TODO: add more formats
@@ -52,6 +55,7 @@ def create(
     overwrite: bool = typer.Option(False, help="Overwrite the existing config."),
     no_wait: bool = NO_WAIT_OPT,
     no_color: bool = NO_COLOR_OPT,
+    no_pager: bool = NO_PAGER_OPT,
     id_only: bool = ID_ONLY_OPT,
     debug: bool = DEBUG_OPT,
     resp_format: Format = RESP_FORMAT_OPT,

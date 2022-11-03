@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from time import sleep
 from typing import Any, Callable, Generator, List, Optional, Union
 
+import click
 import httpx
 import typer
 
@@ -127,4 +128,7 @@ def handle_response(
         if PYGMENTS and not ctx.config.no_color:
             formatter = Terminal256Formatter(style=PYGMENTS_STYLE)
             output = highlight(output, JsonLexer(), formatter)
-        typer.echo(output)
+        if output.count("\n") > 25 and not ctx.config.no_pager:
+            click.echo_via_pager(output)
+        else:
+            typer.echo(output)
