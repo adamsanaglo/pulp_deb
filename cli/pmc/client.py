@@ -11,14 +11,18 @@ from .context import PMCContext
 from .schemas import FINISHED_TASK_STATES
 
 try:
-    from pygments import highlight
+    from pygments import highlight, styles
     from pygments.formatters import Terminal256Formatter
     from pygments.lexers import JsonLexer
 except ImportError:
     PYGMENTS = False
 else:
     PYGMENTS = True
-    PYGMENTS_STYLE = "solarized-light"
+    if "solarized-light" in styles.STYLE_MAP.keys():
+        PYGMENTS_STYLE = "solarized-light"
+    else:
+        # old versions of pygments (< 2.4.0) don't have solarized
+        PYGMENTS_STYLE = "native"
 
 
 TaskHandler = Optional[Callable[[str], Any]]
