@@ -1,0 +1,4 @@
+Some packages on packages.microsoft.com may incorporate material from third parties.
+Notice of license information for third party material may be found in the packages themselves or associated documentation.
+Source code for certain third party material may be available in an associated source directory. 
+Alternatively, you may obtain the complete Corresponding Source code for certain packages or material by sending an email to Opensource@microsoft.com, including the package name and version information.
