@@ -111,6 +111,8 @@ def poll_task(ctx: PMCContext, task_id: str, task_handler: TaskHandler = None) -
 
     if task_handler:
         resp = task_handler(task)
+    else:
+        typer.echo("Done.", err=True)
 
     return resp
 
