@@ -562,8 +562,9 @@ class PythonPackageListResponse(ListResponse):
 
 
 class PackageResponse(BaseModel):
+    # ensure that FilePackageResponse is last so other responses don't match it
     __root__: Union[
-        FilePackageResponse, DebPackageResponse, RpmPackageResponse, PythonPackageResponse
+        RpmPackageResponse, DebPackageResponse, PythonPackageResponse, FilePackageResponse
     ]
 
 
