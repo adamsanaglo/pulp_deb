@@ -23,8 +23,8 @@ from .commands.config import (
     MSAL_SCOPE_OPT,
     MSAL_SNI_AUTH_OPT,
     NO_COLOR_OPT,
-    NO_PAGER_OPT,
     NO_WAIT_OPT,
+    PAGER_OPT,
     RESP_FORMAT_OPT,
 )
 from .context import PMCContext
@@ -139,7 +139,7 @@ def main(
     ),
     no_wait: bool = NO_WAIT_OPT,
     no_color: bool = NO_COLOR_OPT,
-    no_pager: bool = NO_PAGER_OPT,
+    pager: bool = PAGER_OPT,
     id_only: bool = ID_ONLY_OPT,
     debug: bool = DEBUG_OPT,
     resp_format: Format = RESP_FORMAT_OPT,
@@ -171,7 +171,7 @@ def main(
     config = Config(
         no_wait=no_wait,
         no_color=no_color,
-        no_pager=no_pager,
+        pager=pager,
         id_only=id_only,
         debug=debug,
         resp_format=resp_format,

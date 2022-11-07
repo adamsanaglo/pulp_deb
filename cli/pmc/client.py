@@ -1,4 +1,5 @@
 import json
+import shutil
 from contextlib import contextmanager
 from time import sleep
 from typing import Any, Callable, Generator, List, Optional, Union
@@ -134,7 +135,11 @@ def handle_response(
         if PYGMENTS and not ctx.config.no_color:
             formatter = Terminal256Formatter(style=PYGMENTS_STYLE)
             output = highlight(output, JsonLexer(), formatter)
-        if output.count("\n") > 25 and not ctx.config.no_pager:
+        if (
+            ctx.config.pager
+            and not task_id  # don't show pager for polled task
+            and output.count("\n") > shutil.get_terminal_size().lines - 3
+        ):
             click.echo_via_pager(output)
         else:
             typer.echo(output)

@@ -100,7 +100,7 @@ class TaskState(StringEnum):
 class Config(BaseModel):
     no_wait: bool = False
     no_color: bool = False
-    no_pager: bool = False
+    pager: bool = False
     id_only: bool = False
     resp_format: Format = Format.json
     debug: bool = False
