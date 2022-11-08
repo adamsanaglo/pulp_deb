@@ -107,15 +107,16 @@ def trigger_vnext_sync(repo_name):
 
         logging.info(f"Triggering publish in vnext for repo '{repo_name}'.")
         response = client.post(f"/repositories/{repo['id']}/publish/")
-        _wait_for_task(client, response)
+        try:
+            response.json()["task"]
+        except Exception as e:
+            raise Exception(f"Got unexpected response: {e}")
 
     logging.info(f"Successfully synced '{repo_name}'.")
 
 
 def remove_vnext_package(action):
-    logging.info(
-        f"Removing package from vnext {action.repo_name} repo: {action.package}."
-    )
+    logging.info(f"Removing package from vnext {action.repo_name} repo: {action.package}.")
 
     with _get_client() as client:
         repo = _get_vnext_repo(client, action.repo_name)
@@ -139,9 +140,7 @@ def remove_vnext_package(action):
 
         resp_json = response.json()
         if resp_json["count"] != 1:
-            raise Exception(
-                f"Found {resp_json['count']} packages for {action.package}."
-            )
+            raise Exception(f"Found {resp_json['count']} packages for {action.package}.")
         package_id = resp_json["results"][0]["id"]
 
         # remove the package id from the repo
