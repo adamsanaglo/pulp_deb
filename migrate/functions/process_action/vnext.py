@@ -107,9 +107,9 @@ def trigger_vnext_sync(repo_name):
 
         logging.info(f"Triggering publish in vnext for repo '{repo_name}'.")
         try:
-            response = client.post(f"/repositories/{repo['id']}/publish/")
+            response = client.post(f"/repositories/{repo['id']}/publish/", json={})
             response.json()["task"]
-        except HTTPStatusError as e:
+        except httpx.HTTPStatusError as e:
             if e.response.status_code != 422:
                 raise
         except Exception as e:
@@ -154,5 +154,5 @@ def remove_vnext_package(action):
         _wait_for_task(client, response)
 
         logging.info(f"Triggering publish in vnext for repo '{repo['name']}'.")
-        response = client.post(f"/repositories/{repo['id']}/publish/")
+        response = client.post(f"/repositories/{repo['id']}/publish/", json={})
         _wait_for_task(client, response)

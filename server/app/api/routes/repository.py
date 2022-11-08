@@ -202,9 +202,12 @@ async def update_packages(
     response_model=TaskResponse,
     dependencies=[Depends(requires_repo_permission)],
 )
-async def publish_repository(id: RepoId, publish: PublishRequest) -> Any:
+async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = None) -> Any:
+    if not publish:
+        publish = PublishRequest()
+
     async with RepositoryApi() as api:
-        if not publish.force:
+        if not publish or not publish.force:
             # make sure there's not already a publication
             repo = await api.read(id)
             async with PublicationApi() as pub_api:
