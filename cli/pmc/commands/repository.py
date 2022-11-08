@@ -163,10 +163,16 @@ def sync(
 
 
 @app.command()
-def publish(ctx: typer.Context, id: str = id_or_name("repositories")) -> None:
+def publish(
+    ctx: typer.Context,
+    id: str = id_or_name("repositories"),
+    force: bool = typer.Option(
+        False, "--force", help="Force publish even if there are no changes."
+    ),
+) -> None:
     """Publish a repository making its packages available and updating its metadata."""
     with get_client(ctx.obj) as client:
-        resp = client.post(f"/repositories/{id}/publish/")
+        resp = client.post(f"/repositories/{id}/publish/", json={"force": force})
         handle_response(ctx.obj, resp)
 
 

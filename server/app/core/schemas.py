@@ -400,6 +400,10 @@ class RepositoryPackageUpdate(BaseModel):
         return values
 
 
+class PublishRequest(BaseModel):
+    force: Optional[bool] = False
+
+
 class BasePackageResponse(BaseModel):
     id: PackageId
     pulp_created: datetime

@@ -106,9 +106,12 @@ def trigger_vnext_sync(repo_name):
         _wait_for_task(client, response)
 
         logging.info(f"Triggering publish in vnext for repo '{repo_name}'.")
-        response = client.post(f"/repositories/{repo['id']}/publish/")
         try:
+            response = client.post(f"/repositories/{repo['id']}/publish/")
             response.json()["task"]
+        except HTTPStatusError as e:
+            if e.response.status_code != 422:
+                raise
         except Exception as e:
             raise Exception(f"Got unexpected response: {e}")
 

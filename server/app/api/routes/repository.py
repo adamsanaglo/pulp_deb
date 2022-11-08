@@ -17,6 +17,7 @@ from app.core.models import Account, OwnedPackage, RepoAccess, Role
 from app.core.schemas import (
     PackageListResponse,
     Pagination,
+    PublishRequest,
     ReleaseId,
     RemoteId,
     RepoId,
@@ -28,7 +29,7 @@ from app.core.schemas import (
     RepoType,
     TaskResponse,
 )
-from app.services.pulp.api import PackageApi, RepositoryApi
+from app.services.pulp.api import PackageApi, PublicationApi, RepositoryApi
 from app.services.pulp.content_manager import ContentManager
 
 router = APIRouter()
@@ -201,6 +202,17 @@ async def update_packages(
     response_model=TaskResponse,
     dependencies=[Depends(requires_repo_permission)],
 )
-async def publish_repository(id: RepoId) -> Any:
+async def publish_repository(id: RepoId, publish: PublishRequest) -> Any:
     async with RepositoryApi() as api:
+        if not publish.force:
+            # make sure there's not already a publication
+            repo = await api.read(id)
+            async with PublicationApi() as pub_api:
+                pub_resp = await pub_api.list(params={"repository_version": repo["latest_version"]})
+                if pub_resp["count"] > 0:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"{repo['name']} has already published. Use 'force' to it anyway.",
+                    )
+
         return await api.publish(id)

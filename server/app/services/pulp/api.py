@@ -266,6 +266,30 @@ class RepositoryApi(PulpApi):
             raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
 
 
+class PublicationApi(PulpApi):
+    async def list(
+        self,
+        pagination: Optional[Pagination] = None,
+        params: Optional[Dict[str, Any]] = None,
+        **endpoint_args: Any,
+    ) -> Any:
+        if params and "repository_version" in params:
+            # translate the id to a pulp href
+            params["repository_version"] = id_to_pulp_href(
+                RepoVersionId(params["repository_version"])
+            )
+        return await super().list(pagination, params, **endpoint_args)
+
+    @staticmethod
+    def endpoint(action: str, **kwargs: Any) -> str:
+        """Construct a pulp repo uri from action and id."""
+
+        if action == "list":
+            return "/publications/"
+        else:
+            raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
+
+
 class RemoteApi(PulpApi):
     @staticmethod
     def _translate_apt_fields(data: Dict[str, Any]) -> Dict[str, Any]:
