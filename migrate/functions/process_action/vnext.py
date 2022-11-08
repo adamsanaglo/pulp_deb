@@ -61,7 +61,7 @@ def _get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, Non
         base_url=f"{VNEXT_URL}/api/v4",
         event_hooks={"request": [_set_auth_header], "response": [_raise_for_status]},
         headers={"x-correlation-id": cid.hex},
-        timeout=20,
+        timeout=60,
     )
 
     yield client
