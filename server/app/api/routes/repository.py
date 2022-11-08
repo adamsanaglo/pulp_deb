@@ -212,7 +212,10 @@ async def publish_repository(id: RepoId, publish: PublishRequest) -> Any:
                 if pub_resp["count"] > 0:
                     raise HTTPException(
                         status_code=422,
-                        detail=f"{repo['name']} has already published. Use 'force' to it anyway.",
+                        detail=(
+                            f"{repo['name']} has already published. "
+                            "Use 'force' to publish anyway."
+                        ),
                     )
 
         return await api.publish(id)
