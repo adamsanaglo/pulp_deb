@@ -3,7 +3,7 @@
 # This script assumes it, and the tarball containing it, were unpacked in the same directory.
 # It also assumes that the tarball was unpacked as root, and that the current user has sudo.
 
-sudo install -o root -g root -m 555 -t /usr/local/bin config-activate.sh log-analyze.py
+sudo install -o root -g root -m 555 -t /usr/local/bin config-activate.sh log-analyze
 
 available=/etc/nginx/sites-available
 

@@ -1,0 +1,268 @@
+#!/usr/bin/python3
+import argparse
+import gzip
+import json
+import re
+import subprocess
+import time
+from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Dict, List, Optional, Pattern, Set, Tuple
+
+
+def get_contents(logfile: str) -> List[str]:
+    """
+    Get the lines in logfile. If logfile ends in .gz, decompress it.
+    """
+    if ":" in logfile:
+        host, logfile = logfile.split(":")
+    else:
+        host = ""
+
+    if "/" not in logfile:
+        logfile = f"/var/log/nginx/{logfile}"
+
+    if host:
+        print(f"Reading {logfile} from {host}...", end="", flush=True)
+        result = get_remote_contents(logfile, host)
+    else:
+        print(f"Reading {logfile}", end="")
+        if logfile.endswith(".gz"):
+            with gzip.open(logfile, "rt") as f:
+                result = f.readlines()
+        else:
+            with open(logfile, "r") as f:
+                result = f.readlines()
+
+    print(f" ({len(result)} lines)")
+    return result
+
+
+def get_remote_contents(logfile: str, host: str) -> List[str]:
+    """
+    Get the lines in logfile on host. If logfile ends in .gz, decompress it.
+    """
+    cat_cmd = f"zcat" if logfile.endswith(".gz") else "cat"
+    cmd = f"sudo ssh -o StrictHostKeyChecking=no -i ~apt-automation/.ssh/apt_automation.pem apt-automation@{host} sudo {cat_cmd} {logfile}"
+    # Run the command and get the output
+    stdout = subprocess.check_output(
+        cmd, shell=True, encoding="utf-8", stderr=subprocess.DEVNULL
+    )
+
+    return stdout.splitlines()
+
+
+def nginx_time_to_time_t(nginx_time: str) -> int:
+    """
+    Convert an nginx time string to a time_t.
+    """
+    when = time.strptime(nginx_time, "%d/%b/%Y:%H:%M:%S %z")
+    return int(time.mktime(when) - when.tm_gmtoff)
+
+
+def iso_8601_to_time_t(iso_8601: str) -> int:
+    """
+    Convert an ISO 8601 timestamp to a time_t.
+    """
+    if iso_8601.endswith("Z"):
+        iso_8601 = f"{iso_8601[:-1]}+0000"
+    when = time.strptime(iso_8601, "%Y-%m-%dT%H:%M:%S%z")
+    return int(time.mktime(when) - when.tm_gmtoff)
+
+
+def summarize_file(
+    logfile: str, start_time: int = 0
+) -> Tuple[Counter, Dict[str, Counter], Set, int]:
+    """
+    Compute a summary for a single nginx log file.
+
+    Return the following information:
+        status_counts: Counter of HTTP status codes
+        per_status_counts: Dict of counters of HTTP status codes per URI (except status 200)
+        unparseable: Set of unparseable log line
+        elapsed_time: Time elapsed from first log entry (no earlier than start_time) to last log entry
+    """
+    #  log_format noip 'redacted - $remote_user [$time_local] '  '"$request" $status $body_bytes_sent $request_time '  '"$http_referer" "$http_user_agent"';
+    log_regex = re.compile(
+        r"""^(?P<remote_addr>\S+) - (?P<remote_user>\S+) \[(?P<time_local>.+)\] "(?P<method>\S+) (?P<uri>\S+) (?P<protocol>\S+)" (?P<status>\d+) (?P<body_bytes_sent>\d+) (?P<request_time>\d+\.\d+) "(?P<http_referer>.*)" "(?P<http_user_agent>.*)".*$"""
+    )
+    per_status_counts = defaultdict(Counter)
+    status_counts = Counter()
+    earliest_time: Optional[int] = None
+    end_time: Optional[int] = None
+    unparseable = set()
+
+    for line in get_contents(logfile):
+        m = log_regex.match(line)
+        if m:
+            # convert time string to a time_t
+            timet = nginx_time_to_time_t(m.group("time_local"))
+            if timet < start_time:
+                continue
+            if not earliest_time:
+                earliest_time = timet
+            end_time = timet
+            status = m.group("status")
+            uri = m.group("uri")
+            status_counts[status] += 1
+            if status != "200":
+                per_status_counts[status][uri] += 1
+        else:
+            unparseable.add(line)
+
+    elapsed_time = end_time - earliest_time if end_time else 0
+    return status_counts, per_status_counts, unparseable, elapsed_time
+
+
+def find_missing_files(per_status_counts: Dict[str, Counter]) -> Set[str]:
+    """Find files that are 404s but exist in the vCurrent local mirror.
+
+    Doesn't work for remote files, since there's no convenient local mirror to check.
+    Note: Path("/var/www/html") / "/foo" is actually "/foo", not "/var/www/html/foo".
+    """
+    return set(
+        uri
+        for uri in per_status_counts["404"].keys()
+        if (".." not in uri) and Path(f"/var/www/html/{uri}").exists()
+    )
+
+
+def filter_counts_by_status(
+    per_status_counts: Dict[str, Counter], status: str, filter: Optional[Pattern]
+) -> Counter:
+    raw = per_status_counts[status]
+    if filter is None:
+        return raw
+    else:
+        return Counter(
+            {uri: count for uri, count in raw.items() if not filter.match(uri)}
+        )
+
+
+def count_real_404s(per_status_counts: Dict[str, Counter]) -> Counter:
+    ignore = re.compile(
+        r"^(/clamav/.*\.cld|/.+/media\.1/media|.*/repodata/.*\.sqlite\.bz2)$"
+    )
+    return filter_counts_by_status(per_status_counts, "404", ignore)
+
+
+def analyze_one_file(
+    args: argparse.Namespace,
+    filename: str,
+    status_counts: Counter,
+    per_status_counts: Dict[str, Counter],
+    unparseable: Set,
+    elapsed_time: int,
+):
+    """
+    Produce a PMC-relevant summary of a single log file
+
+    Args:
+        filename: Name of the log file
+        The rest match the output from summarize_file
+    """
+    print(f"{filename} elapsed time: {elapsed_time}")
+    lines = []
+    for status, count in status_counts.items():
+        lines.append(f"{status}: {count} ({count / elapsed_time:.2f}/s)")
+    print("\n".join(sorted(lines)))
+
+    if ":" in filename:
+        print("Suppressing missing file checks for remote log file")
+    else:
+        missing_files = find_missing_files(per_status_counts)
+        if len(missing_files):
+            nl = "\n"
+            print(f"Missing files:{nl}{nl.join(missing_files)}")
+        else:
+            print("No 404s have existing files under /var/www/html")
+
+    if args.view_status:
+        uri_counts = filter_counts_by_status(
+            per_status_counts, args.view_status, args.view_filter
+        )
+        print(f"{len(uri_counts)} status {args.view_status} URIs")
+        lines = [f"{uri}: {count}" for uri, count in uri_counts.items()]
+        print("\n".join(sorted(lines)))
+
+    print("")
+
+
+def make_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="log-analyze", description="Analyze PMC nginx logs."
+    )
+    parser.add_argument(
+        "logfiles",
+        nargs="*",
+        help="Log files to analyze. Format is [host:]name where host specifies an ssh-accessible server and name is either absolute or relative to /var/log/nginx. Default is 'access.log'.",
+    )
+    parser.add_argument(
+        "--start-time",
+        type=str,
+        default="1970-01-01T00:00:00+0000",
+        help="ISO 8601 datetime before which log records are ignored.",
+    )
+    parser.add_argument(
+        "--out-404",
+        type=str,
+        default="",
+        help="Write 404s to this file (default is stdout).",
+    )
+    parser.add_argument(
+        "--view-status",
+        type=str,
+        default=None,
+        help="View requested URIs receiving a specific status code.",
+    )
+    parser.add_argument(
+        "--view-filter",
+        type=str,
+        default=None,
+        help="Ignore URIs (returned by --view-status) matching this regex.",
+    )
+    return parser
+
+
+def main():
+    args = make_parser().parse_args()
+    filenames = args.logfiles
+    if not filenames:
+        filenames = ["access.log"]
+
+    """Analyze PMC nginx logs."""
+    start_time = iso_8601_to_time_t(args.start_time)
+    total_counts = Counter()
+    all_unparseable = set()
+    all_404s = Counter()
+    for filename in args.logfiles:
+        status_counts, per_status_counts, unparseable, elapsed_time = summarize_file(
+            filename, start_time
+        )
+        analyze_one_file(
+            args, filename, status_counts, per_status_counts, unparseable, elapsed_time
+        )
+        total_counts = total_counts + status_counts
+        all_404s = all_404s + count_real_404s(per_status_counts)
+        all_unparseable = all_unparseable.union(unparseable)
+
+    if len(args.logfiles) > 1:
+        num_requests = sum(total_counts.values())
+        num_files = len(args.logfiles)
+        files = "files " if num_files > 1 else "file"
+        print(f"Total of {num_requests} records in {num_files} {files}")
+        lines = []
+        for status, count in total_counts.items():
+            lines.append(f"{status}: {count} ({100. * count / num_requests:.2f}%)")
+        print("\n".join(sorted(lines)))
+
+    all_404_json = json.dumps(all_404s, indent=4, sort_keys=True)
+    if args.out_404:
+        with open(args.out_404, "w") as f:
+            f.write(all_404_json)
+    else:
+        print(all_404_json)
+
+
+if __name__ == "__main__":
+    main()
