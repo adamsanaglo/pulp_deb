@@ -31,11 +31,21 @@ def list(
     limit: Optional[int] = LIMIT_OPT,
     offset: Optional[int] = OFFSET_OPT,
     name: Optional[str] = typer.Option(None),
+    name_contains: Optional[str] = typer.Option(
+        None, help="Filter repos with names that contain string."
+    ),
+    name_icontains: Optional[str] = typer.Option(
+        None, help="Filter repos with names that contain string (case insensitive)."
+    ),
 ) -> None:
     """List repositories."""
     params: Dict[str, Any] = dict(limit=limit, offset=offset)
     if name:
         params["name"] = name
+    if name_contains:
+        params["name__contains"] = name_contains
+    if name_icontains:
+        params["name__icontains"] = name_icontains
 
     with get_client(ctx.obj) as client:
         resp = client.get("/repositories/", params=params)

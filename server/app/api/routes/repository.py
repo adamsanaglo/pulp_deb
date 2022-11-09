@@ -38,10 +38,14 @@ logger = logging.getLogger(__name__)
 
 @router.get("/repositories/", response_model=RepositoryListResponse)
 async def list_repos(
-    pagination: Pagination = Depends(Pagination), name: Optional[str] = None
+    pagination: Pagination = Depends(Pagination),
+    name: Optional[str] = None,
+    name__contains: Optional[str] = None,
+    name__icontains: Optional[str] = None,
 ) -> Any:
+    params = {"name": name, "name__contains": name__contains, "name__icontains": name__icontains}
     async with RepositoryApi() as api:
-        return await api.list(pagination, params={"name": name})
+        return await api.list(pagination, params=params)
 
 
 @router.post(

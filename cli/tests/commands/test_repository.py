@@ -29,6 +29,28 @@ def test_paginated_list(yum_repo: Any, apt_repo: Any) -> None:
     assert response["results"][0]["id"] != id
 
 
+def test_list_with_filters(yum_repo: Any, apt_repo: Any) -> None:
+    result = invoke_command(["repo", "list", "--name", apt_repo["name"]])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) == 1
+
+    result = invoke_command(["repo", "list", "--name-contains", apt_repo["name"][2:-1]])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) == 1
+
+    result = invoke_command(["repo", "list", "--name-contains", apt_repo["name"][0:-2].upper()])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) == 0
+
+    result = invoke_command(["repo", "list", "--name-icontains", apt_repo["name"][0:-2].upper()])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) == 1
+
+
 def test_show(repo: Any) -> None:
     result = invoke_command(["repo", "show", repo["id"]])
     assert result.exit_code == 0, f"repo show {repo['id']} failed: {result.stderr}"
