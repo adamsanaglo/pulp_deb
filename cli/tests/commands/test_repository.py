@@ -146,3 +146,21 @@ def test_publish_with_name(repo: Any) -> None:
     assert result.exit_code == 0, f"repo publish {repo['name']} failed: {result.stderr}"
     response = json.loads(result.stdout)
     assert response["state"] == "completed"
+
+
+def test_republish(repo: Any) -> None:
+    # first one succeeds
+    result = invoke_command(["repo", "publish", repo["id"]])
+    assert result.exit_code == 0, f"repo publish {repo['id']} failed: {result.stderr}"
+
+    # second one fails
+    result = invoke_command(["repo", "publish", repo["id"]])
+    assert result.exit_code != 0
+    response = json.loads(result.stdout)
+    assert 422 == response["http_status"]
+
+    # republish with force
+    result = invoke_command(["repo", "publish", "--force", repo["name"]])
+    assert result.exit_code == 0, f"repo publish {repo['name']} failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert response["state"] == "completed"
