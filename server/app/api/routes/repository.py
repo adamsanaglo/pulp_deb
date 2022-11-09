@@ -207,7 +207,7 @@ async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = Non
         publish = PublishRequest()
 
     async with RepositoryApi() as api:
-        if not publish or not publish.force:
+        if not publish.force:
             # make sure there's not already a publication
             repo = await api.read(id)
             async with PublicationApi() as pub_api:

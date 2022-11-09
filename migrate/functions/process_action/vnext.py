@@ -28,10 +28,11 @@ def _raise_for_status(response: httpx.Response) -> None:
     try:
         response.raise_for_status()
     except httpx.HTTPStatusError as e:
-        logging.error(
-            f"Error: ({e.response.status_code}) response from {e.response.url}: "
-            f"{e.response.content}"
-        )
+        if not ("publish" in e.response.url.path and e.response.status_code == 422):
+            logging.error(
+                f"Error: ({e.response.status_code}) response from {e.response.url}: "
+                f"{e.response.content}"
+            )
         raise e
 
 
@@ -97,6 +98,18 @@ def _get_vnext_repo(client, repo_name):
     return resp_json["results"][0]
 
 
+def _publish_vnext_repo(client, repo):
+    logging.info(f"Triggering publish in vnext for repo '{repo['name']}'.")
+
+    try:
+        return client.post(f"/repositories/{repo['id']}/publish/")
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 422:
+            logging.info("Repo contents unchanged. Skipped publish.")
+        else:
+            raise
+
+
 def trigger_vnext_sync(repo_name):
     with _get_client() as client:
         repo = _get_vnext_repo(client, repo_name)
@@ -105,13 +118,10 @@ def trigger_vnext_sync(repo_name):
         response = client.post(f"/repositories/{repo['id']}/sync/")
         _wait_for_task(client, response)
 
-        logging.info(f"Triggering publish in vnext for repo '{repo_name}'.")
         try:
-            response = client.post(f"/repositories/{repo['id']}/publish/", json={})
-            response.json()["task"]
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code != 422:
-                raise
+            response = _publish_vnext_repo(client, repo)
+            if response:
+                response.json()["task"]
         except Exception as e:
             raise Exception(f"Got unexpected response: {e}")
 
@@ -153,6 +163,6 @@ def remove_vnext_package(action):
         response = client.patch(f"/repositories/{repo['id']}/packages/", json=data)
         _wait_for_task(client, response)
 
-        logging.info(f"Triggering publish in vnext for repo '{repo['name']}'.")
-        response = client.post(f"/repositories/{repo['id']}/publish/", json={})
-        _wait_for_task(client, response)
+        response = _publish_vnext_repo(client, repo)
+        if response:
+            _wait_for_task(client, response)
