@@ -18,88 +18,36 @@ While the `pmc` command has command-line options which let you specify all infor
 
 The `pmc` command uses `~/.config/pmc/settings.toml` as the default location of the configuration file. You can be override that with the `--config` option.
 
-You can generate a config file using `pmc config create`. We have some commands below for tuxdev and prod for your convenience.
-Alternatively, you can create the config file by hand; see the sample configs (below) for more information.
+See the sample config (below) for more information.
 
-Whether you use the commands or sample config files, you'll need to populate two fields when creating your config:
+### Sample config
 
+The sample config below has profiles for both tux-dev and prod. You may choose to only set up only
+one profile in your settings.toml file though if you are using only one environment.
+
+If you have  multiple profiles, use the `--profile` option to select the one you want to use
+(e.g. `pmc --profile prod repo list`).
+
+For each profile you'll need to populate two fields:
 - Set `msal_client_id` to be the Client ID associated with the security principal you setup for publishing activities.
 - Set `msal_cert_path` to be the path to the file containing the cert (with public and private key) associated with the security principal.
 
-### tuxdev
-
-#### Command
-
-```bash
-pmc config create --no-edit \
-    --base-url "https://tux-ingest.corp.microsoft.com/api/v4" \
-    --msal-scope "api://55391a9d-3c3b-4e4a-afa6-0e49c2245175/.default" \
-    --msal-authority "https://login.microsoftonline.com/Microsoft.onmicrosoft.com" \
-    --msal-client-id "YOUR_CLIENT_ID" \
-    --msal-cert-path "/PATH/TO/YOUR/CERT"
-```
-
-#### Sample config
-
-```ini
-[cli]
-no_wait = false
-no_color = false
-id_only = false
-format = "json"
-debug = false
+```toml
+[tuxdev]
 base_url = "https://tux-ingest.corp.microsoft.com/api/v4"
-msal_client_id = "YOUR_CLIENT_ID"
+msal_client_id = "YOUR_TUX_CLIENT_ID"
 msal_scope = "api://55391a9d-3c3b-4e4a-afa6-0e49c2245175/.default"
-msal_cert_path = "/PATH/TO/YOUR/CERT"
+msal_cert_path = "/PATH/TO/YOUR/TUX_CERT"
 msal_SNIAuth = true
 msal_authority = "https://login.microsoftonline.com/Microsoft.onmicrosoft.com"
-```
 
-### Prod (packages.microsoft.com)
-
-#### Command
-
-```bash
-pmc config create --no-edit \
-    --base-url "https://pmc-ingest.corp.microsoft.com/api/v4" \
-    --msal-scope "api://d48bb382-20ec-41b9-a0ea-07758a21ccd0/.default" \
-    --msal-authority "https://login.microsoftonline.com/MSAzureCloud.onmicrosoft.com" \
-    --msal-client-id "YOUR_CLIENT_ID" \
-    --msal-cert-path "/PATH/TO/YOUR/CERT"
-```
-
-#### Sample config
-
-```ini
-[cli]
-no_wait = false
-no_color = false
-id_only = false
-format = "json"
-debug = false
+[prod]
 base_url = "https://pmc-ingest.trafficmanager.net/api/v4"
-msal_client_id = "YOUR_CLIENT_ID"
+msal_client_id = "YOUR_PROD_CLIENT_ID"
 msal_scope = "api://d48bb382-20ec-41b9-a0ea-07758a21ccd0/.default"
-msal_cert_path = "/PATH/TO/YOUR/CERT"
+msal_cert_path = "/PATH/TO/YOUR/PROD_CERT"
 msal_SNIAuth = true
 msal_authority = "https://login.microsoftonline.com/MSAzureCloud.onmicrosoft.com"
-```
-
-### Multiple configs
-
-It is possible to have multiple configs (e.g. one for each environment). Here's an example:
-
-```bash
-pmc config create --no-edit \
-    --location "~/.config/pmc/tuxdev.toml" \
-    --base-url "https://tux-ingest.corp.microsoft.com/api/v4" \
-    --msal-scope "api://55391a9d-3c3b-4e4a-afa6-0e49c2245175/.default" \
-    --msal-authority "https://login.microsoftonline.com/Microsoft.onmicrosoft.com" \
-    --msal-client-id "YOUR_CLIENT_ID" \
-    --msal-cert-path "/PATH/TO/YOUR/CERT"
-
-pmc -c ~/.config/pmc/tuxdev.toml repo list
 ```
 
 ## Usage

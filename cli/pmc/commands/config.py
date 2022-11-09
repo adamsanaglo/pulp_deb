@@ -6,7 +6,7 @@ import tomli_w
 import typer
 
 from pmc.schemas import CONFIG_PATHS, Config, Format, RepoSigningService
-from pmc.utils import UserFriendlyTyper, validate_config
+from pmc.utils import UserFriendlyTyper
 
 app = UserFriendlyTyper()
 
@@ -39,12 +39,6 @@ MSAL_AUTHORITY_OPT = typer.Option(
     "--msal-authority",
     help="Authority URL for authentication (i.e. https://login.microsoftonline.com/...)",
 )
-
-
-def _edit_config(path: Path) -> None:
-    """Open editor to edit config file and then validate the config."""
-    click.edit(filename=str(path))
-    validate_config(path)
 
 
 @app.command()
@@ -94,7 +88,7 @@ def create(
 
     if location.suffix == ".toml":
         with location.open("wb") as f:
-            tomli_w.dump({"cli": config}, f)
+            tomli_w.dump({"default": config}, f)
     elif location.suffix == ".json":
         with location.open("w") as f:
             json.dump(config, f, indent=3)
@@ -102,7 +96,7 @@ def create(
         raise click.UsageError(f"invalid file extension for '{location}'.")
 
     if edit:
-        _edit_config(location)
+        click.edit(filename=str(location))
 
 
 @app.command()
@@ -114,4 +108,4 @@ def edit(ctx: typer.Context) -> None:
     if not config_path.is_file():
         raise click.UsageError(f"location '{config_path}' is not a file.")
 
-    _edit_config(config_path)
+    click.edit(filename=str(config_path))

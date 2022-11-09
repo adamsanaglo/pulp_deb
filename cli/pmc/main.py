@@ -57,12 +57,13 @@ NO_TRACEBACK_EXCEPTIONS = (httpx.HTTPStatusError, UsageError, ValidationError, D
 def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
     """Callback that attempts to load config."""
     path: Optional[Path] = None
+    profile = ctx.params.get("profile", None)
 
     path = resolve_config_path(value)
 
     if path:
         try:
-            config = parse_config(path)
+            config = parse_config(path, profile)
             ctx.default_map = config.dict(exclude_unset=True)
         except Exception as e:
             # Ignore parse exceptions for now. validate later once we can exclude config subcommands
@@ -129,6 +130,13 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
 @app.callback()
 def main(
     ctx: typer.Context,
+    profile: Optional[str] = typer.Option(
+        None,
+        "--profile",
+        "-p",
+        help="Select which profile in the config to use. Defaults to the first profile.",
+        is_eager=True,
+    ),
     config_path: Path = typer.Option(
         None,
         "--config",
@@ -161,7 +169,7 @@ def main(
         return
 
     if config_path:
-        validate_config(config_path)
+        validate_config(config_path, profile)
     else:
         typer.echo(
             "Warning: no config file. One can be generated with 'pmc config create'.", err=True

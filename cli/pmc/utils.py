@@ -1,12 +1,14 @@
 import json
 import re
 import sys
+from contextlib import suppress
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Pattern, Union
 
 import tomli
 import typer
+from click.exceptions import UsageError
 
 from pmc.client import get_client
 from pmc.schemas import CONFIG_PATHS, Config
@@ -44,12 +46,21 @@ def resolve_config_path(value: Optional[Path]) -> Optional[Path]:
     return path
 
 
-def _raw_config(path: Path) -> Dict[str, Any]:
+def _raw_config(path: Path, profile: Optional[str]) -> Dict[str, Any]:
     with path.open("rb") as f:
         if path.suffix == ".json":
             settings = json.load(f)
         elif path.suffix == ".toml":
-            settings = next(iter(tomli.load(f).values()), {})
+            profiles = tomli.load(f)
+            if profile:
+                try:
+                    settings = profiles[profile]
+                except KeyError:
+                    raise UsageError(f"Invalid profile '{profile}'.")
+            else:
+                if len(profiles.values()) < 1:
+                    raise UsageError(f"Could not find profiles in '{path}'.")
+                settings = next(iter(profiles.values()))
         else:
             raise UnsupportedFileType(f"Unsupported file type for '{path}'.")
 
@@ -57,20 +68,20 @@ def _raw_config(path: Path) -> Dict[str, Any]:
     return settings
 
 
-def parse_config(path: Path) -> Config:
+def parse_config(path: Path, profile: Optional[str]) -> Config:
     """
     Parse a config file at path and return Config.
 
     This function could raise UnsupportedFileType, JSONDecodeError, TOMLDecodeError, or a
     ValidationError.
     """
-    return Config(**_raw_config(path))
+    return Config(**_raw_config(path, profile))
 
 
-def validate_config(path: Path) -> None:
+def validate_config(path: Path, profile: Optional[str]) -> None:
     """Validate config at path and handle any problems."""
     try:
-        parse_config(path)
+        parse_config(path, profile)
     except (json.decoder.JSONDecodeError, tomli.TOMLDecodeError) as e:
         raise DecodeError(f"Parse error when parsing '{path}': {e}.")
 
@@ -124,21 +135,35 @@ def id_or_name(
 @lru_cache
 def _parse_restricted_commands() -> bool:
     # attempt to parse config for hide_restricted_commands
-    path = None
 
-    for opt in ["--config", "-c"]:
-        # TODO: if we later add another "--config/-c" option this will pull this option value
-        # we need to stop parsing args once we reach the first subcommand
-        try:
-            path = Path(sys.argv[sys.argv.index(opt) + 1])
-            break
-        except (ValueError, IndexError):
-            continue
+    def _get_opt_val(*opt_names: str) -> Optional[str]:
+        # TODO: improve this function. if we later add other options with the same name this
+        # could return the wrong value. Instead we need to somehow stop parsing args once we
+        # reach the first subcommand.
+        val = None
+
+        for opt in opt_names:
+            try:
+                val = sys.argv[sys.argv.index(opt) + 1]
+                break
+            except (ValueError, IndexError):
+                continue
+
+        return val
+
+    profile = _get_opt_val("--profile", "-p")
+    path_str = _get_opt_val("--config", "-c")
+
+    if path_str:
+        path = Path(path_str)
+    else:
+        path = None
     path = resolve_config_path(path)
 
     if path:
-        config = _raw_config(path)
-        return config.get("hide_restricted_commands", True)
+        with suppress(UsageError):
+            config = _raw_config(path, profile)
+            return config.get("hide_restricted_commands", True)
 
     return True
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Union
 
 import pytest
+import tomli
 
 from pmc.schemas import RepoType, Role
 
@@ -20,15 +21,21 @@ from .utils import (
 
 
 @pytest.fixture(autouse=True, scope="session")
-def set_config() -> Path:
-    settings = Path.cwd() / "tests" / "settings.toml"
-    assert settings.is_file(), f"Could not find {settings}."
-    os.environ["PMC_CLI_CONFIG"] = str(settings)
-    return settings
+def config_file() -> Path:
+    config_path = Path.cwd() / "tests" / "settings.toml"
+    assert config_path.is_file(), f"Could not find {settings}."
+    os.environ["PMC_CLI_CONFIG"] = str(config_path)
+    return config_path
+
+
+@pytest.fixture()
+def settings(config_file: Path) -> Any:
+    profiles = tomli.load(config_file.open("rb"))
+    return next(iter(profiles.values()))
 
 
 @pytest.fixture(autouse=True, scope="session")
-def check_connection(set_config: Path) -> None:
+def check_connection(config_file: Path) -> None:
     try:
         become(Role.Account_Admin)
         result = invoke_command(["account", "list"])
