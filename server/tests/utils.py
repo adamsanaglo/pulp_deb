@@ -8,7 +8,7 @@ import pytest
 from httpx import Response
 
 from app.core.models import Role
-from app.core.schemas import ContentId, DistroType, PackageId, RepoId, RepoType
+from app.core.schemas import ContentId, DistroType, PackageId, RepoId, RepoType, RepoVersionId
 
 
 def gen_account_attrs(role: Role = Role.Publisher) -> Dict[str, Any]:
@@ -41,7 +41,14 @@ def gen_repo_attrs(type: Optional[RepoType] = None) -> Dict[str, Union[str, None
 
 
 def gen_pulp_repo_response(type: RepoType, name: str) -> Dict[str, Any]:
-    return {"id": gen_repo_id(type), "pulp_created": datetime.now(), "name": name}
+    repo_id = gen_repo_id(type)
+    repo_version = RepoVersionId(f"{repo_id}-versions-2")
+    return {
+        "id": gen_repo_id(type),
+        "pulp_created": datetime.now(),
+        "name": name,
+        "latest_version": repo_version,
+    }
 
 
 def gen_release_attrs() -> Dict[str, Union[str, List[str]]]:

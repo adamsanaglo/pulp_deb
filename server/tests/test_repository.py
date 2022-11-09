@@ -46,7 +46,7 @@ async def test_roles_repository_delete(async_client: AsyncClient, repository_api
 
 @pytest.mark.parametrize("repo_perm", (True, False))
 async def test_roles_repository_publish(
-    async_client, db_session, repository_api, account, repo_perm
+    async_client, db_session, repository_api, publication_api, account, repo_perm
 ):
     repo_id = f"repositories-deb-apt-{uuid4()}"
     db_session.add(account)

@@ -107,7 +107,11 @@ class TaskState(str, Enum):
 
 
 class Identifier(str):
-    """Represents an id in PMC."""
+    """
+    Represents an id in PMC.
+
+    Based on https://pydantic-docs.helpmanual.io/usage/types/#classes-with-__get_validators__
+    """
 
     pattern: Pattern[str] = re.compile(rf"^([a-z-]+)-({uuid_group})$")
     examples: List[str]

@@ -187,6 +187,12 @@ def repository_api(monkeypatch) -> Type[pulp_service_api.RepositoryApi]:
 
 
 @pytest.fixture
+def publication_api(monkeypatch) -> Type[pulp_service_api.PublicationApi]:
+    monkeypatch.setattr(pulp_service_api.PublicationApi, "list", get_async_mock(gen_list_attrs([])))
+    return pulp_service_api.PublicationApi
+
+
+@pytest.fixture
 def release_api(monkeypatch) -> Type[pulp_service_api.ReleaseApi]:
     monkeypatch.setattr(pulp_service_api.ReleaseApi, "list", get_async_mock(gen_list_attrs([])))
     for method in ("create", "update", "read", "destroy", "add_components", "add_architectures"):
