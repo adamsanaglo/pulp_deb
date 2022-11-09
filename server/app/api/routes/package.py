@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import Any, Optional, Union
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from pydantic import AnyHttpUrl
 
 from app.api.auth import requires_package_admin_or_publisher
 from app.core.schemas import (
@@ -64,23 +66,33 @@ async def files(pagination: Pagination = Depends(Pagination)) -> Any:
     dependencies=[Depends(requires_package_admin_or_publisher)],
 )
 async def create_package(
-    file: UploadFile,
+    file: Optional[UploadFile] = None,
+    url: Optional[AnyHttpUrl] = None,
     ignore_signature: Optional[bool] = False,
     file_type: Optional[PackageType] = None,
     relative_path: Optional[str] = None,
 ) -> Any:
+    if not file and not url:
+        raise HTTPException(status_code=422, detail="Must upload a file or specify url.")
+
+    if url:
+        resp = httpx.get(url)
+        file = UploadFile(Path(resp.url.path).name)
+        await file.write(resp.content)
+        await file.seek(0)
+    assert file is not None
+
     if not file_type:
         # attempt to resolve the file type using ext
-        extension = Path(file.filename).suffix.lstrip(".")
-        if extension == "whl":
-            file_type = PackageType.python
-        elif extension == "deb":
-            file_type = PackageType.deb
-        elif extension == "rpm":
-            file_type = PackageType.rpm
-        else:
+        types = {".whl": PackageType.python, ".deb": PackageType.deb, ".rpm": PackageType.rpm}
+        extension = Path(file.filename).suffix
+        if not (file_type := types.get(extension, None)):
             raise HTTPException(
-                status_code=422, detail=f"Unrecognized file extension: {extension}."
+                status_code=422,
+                detail=(
+                    f"Could not determine package type from '{extension}' "
+                    "extension. Please specify the file type."
+                ),
             )
 
     data = {"file": file, "file_type": file_type}

@@ -1,6 +1,8 @@
 from typing import Any, Dict, Optional
 
 import typer
+from click import BadParameter
+from pydantic import AnyHttpUrl, ValidationError, parse_obj_as
 
 from pmc.client import get_client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, PackageType
@@ -52,7 +54,7 @@ def file_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_O
 @app.command()
 def upload(
     ctx: typer.Context,
-    file: typer.FileBinaryRead,
+    package: str = typer.Argument(..., help="Path or url to package"),
     ignore_signature: bool = typer.Option(
         False,
         "--ignore-signature",
@@ -81,11 +83,20 @@ def upload(
             return client.get(f"/packages/{package_id}/")
 
     data: Dict[str, Any] = {"ignore_signature": ignore_signature}
+    files = None
+
+    try:
+        data["url"] = parse_obj_as(AnyHttpUrl, package)
+    except ValidationError:
+        try:
+            files = {"file": open(package, "rb")}
+        except FileNotFoundError:
+            raise BadParameter("Invalid path/url for package argument.")
+
     if file_type:
         data["file_type"] = file_type
     if relative_path:
         data["relative_path"] = relative_path
-    files = {"file": file}
 
     with get_client(ctx.obj) as client:
         resp = client.post("/packages/", params=data, files=files)

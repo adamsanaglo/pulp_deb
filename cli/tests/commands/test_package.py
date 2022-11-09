@@ -11,6 +11,10 @@ from tests.utils import become, invoke_command
 # Note that "package upload" is exercised by fixture.
 
 
+PACKAGE_URL = "https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb"
+FILE_URL = "https://packages.microsoft.com/keys/microsoft.asc"
+
+
 def test_upload_file_type(orphan_cleanup: None) -> None:
     become(Role.Package_Admin)
 
@@ -18,7 +22,7 @@ def test_upload_file_type(orphan_cleanup: None) -> None:
     path = Path.cwd() / "tests" / "assets" / "hello.txt"
     result = invoke_command(["package", "upload", str(path)])
     assert result.exit_code != 0
-    assert "Unrecognized file extension" in result.stdout
+    assert "Could not determine package type" in result.stdout
 
     # python with file type
     path = Path.cwd() / "tests" / "assets" / "helloworld-0.0.1.tar.gz"
@@ -73,3 +77,17 @@ def test_unsigned_package(package: str) -> None:
 def test_ignore_signature(forced_unsigned_package: Any) -> None:
     """This empty test ensures forcing an unsigned package works by exercising the fixture."""
     pass
+
+
+def test_package_upload_by_url(orphan_cleanup: None) -> None:
+    """Test a package upload by using a url."""
+    become(Role.Package_Admin)
+    result = invoke_command(["package", "upload", PACKAGE_URL])
+    assert result.exit_code == 0
+
+    result = invoke_command(["package", "upload", FILE_URL])
+    assert result.exit_code == 1
+    assert "Could not determine package type" in result.stdout
+
+    result = invoke_command(["package", "upload", "--type", "file", FILE_URL])
+    assert result.exit_code == 0
