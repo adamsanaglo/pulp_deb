@@ -94,7 +94,7 @@ def remove_vcurrent_package(action):
             )
 
     if errors:
-        [logging.error(err) for err in errors]
+        [logging.exception(err) for err in errors]
         raise Exception("Failed to delete packages.")
 
     logging.info(f"Deleted {len(packages)} package(s) from repo {action.repo_name}.")

@@ -23,6 +23,14 @@ else:
     MSAL_CERT = os.environ["MSAL_CERT"]
 
 
+def unique(items):
+    result = []
+    for item in items:
+        if item not in result:
+            result.append(item)
+    return result
+
+
 def _raise_for_status(response: httpx.Response) -> None:
     response.read()  # read the response's body before raise_for_status closes it
     try:
@@ -108,12 +116,51 @@ def _publish_vnext_repo(client, repo):
     logging.info(f"Triggering publish in vnext for repo '{repo['name']}'.")
 
     try:
-        return client.post(f"/repositories/{repo['id']}/publish/")
+        response = client.post(f"/repositories/{repo['id']}/publish/")
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 422:
             logging.info("Repo contents unchanged. Skipped publish.")
         else:
             raise
+
+    try:
+        response.json()["task"]
+    except Exception as e:
+        raise Exception(f"Got unexpected response: {e}")
+
+
+def _get_package_id(client, package, repo):
+    """Find the package id for a given package."""
+    if isinstance(package, DebPackage):
+        params = {
+            "package": package.name,
+            "version": package.version,
+            "architecture": package.arch,
+            "repository": repo["id"],
+        }
+        response = client.get("/deb/packages/", params=params)
+    elif isinstance(package, RpmPackage):
+        params = package.dict()
+        params["repository"] = repo["id"]
+        if params["epoch"] is None:
+            # pulp_rpm defaults epoch to 0
+            params["epoch"] = 0
+        response = client.get("/rpm/packages/", params=params)
+    else:
+        raise Exception(f"Unexpected package type: {type(package)}")
+
+    resp_json = response.json()
+
+    if resp_json["count"] == 0:
+        logging.warning(f"Found 0 packages in {repo['name']} for {package}.")
+        return None
+
+    if resp_json["count"] > 1:
+        raise Exception(
+            f"Found {resp_json['count']} packages in {repo['name']} for {package}."
+        )
+
+    return resp_json["results"][0]["id"]
 
 
 def trigger_vnext_sync(repo_name):
@@ -123,54 +170,36 @@ def trigger_vnext_sync(repo_name):
         logging.info(f"Triggering sync in vnext for repo '{repo_name}'.")
         response = client.post(f"/repositories/{repo['id']}/sync/")
         _wait_for_task(client, response)
-
-        try:
-            response = _publish_vnext_repo(client, repo)
-            if response:
-                response.json()["task"]
-        except Exception as e:
-            raise Exception(f"Got unexpected response: {e}")
-
-    logging.info(f"Successfully synced '{repo_name}'.")
+        _publish_vnext_repo(client, repo)
 
 
-def remove_vnext_package(action):
-    logging.info(f"Removing package from vnext {action.repo_name} repo: {action.package}.")
+def remove_vnext_packages(repo_name, release, packages):
+    errors = []
+    package_ids = []
 
     with _get_client() as client:
-        repo = _get_vnext_repo(client, action.repo_name)
+        repo = _get_vnext_repo(client, repo_name)
 
-        # find the package id
-        if isinstance(action.package, DebPackage):
-            params = {
-                "package": action.package.name,
-                "version": action.package.version,
-                "architecture": action.package.arch,
-                "repository": repo["id"],
-            }
-            response = client.get("/deb/packages/", params=params)
-        elif isinstance(action.package, RpmPackage):
-            params = action.package.dict()
-            params["repository"] = repo["id"]
-            if params["epoch"] is None:
-                # pulp_rpm defaults epoch to 0
-                params["epoch"] = 0
-            response = client.get("/rpm/packages/", params=params)
-        else:
-            raise Exception(f"Unexpected package type: {type(action.package)}")
+        # find the package ids
+        for package in unique(packages):
+            try:
+                package_id = _get_package_id(client, package, repo)
+                if package_id:
+                    package_ids.append(package_id)
+            except Exception as e:
+                logging.exception(e)
+                errors.append(str(e))
 
-        resp_json = response.json()
-        if resp_json["count"] != 1:
-            raise Exception(f"Found {resp_json['count']} packages for {action.package}.")
-        package_id = resp_json["results"][0]["id"]
-
-        # remove the package id from the repo
-        data = {"remove_packages": [package_id], "migration": True}
-        if isinstance(action.package, DebPackage):
-            data["release"] = action.release
-        response = client.patch(f"/repositories/{repo['id']}/packages/", json=data)
-        _wait_for_task(client, response)
-
-        response = _publish_vnext_repo(client, repo)
-        if response:
+        if package_ids:
+            # remove the package ids from the repo
+            data = {"remove_packages": unique(package_ids), "migration": True}
+            if isinstance(packages[0], DebPackage):
+                data["release"] = release
+            response = client.patch(f"/repositories/{repo['id']}/packages/", json=data)
             _wait_for_task(client, response)
+
+            _publish_vnext_repo(client, repo)
+
+        logging.info(f"Removed {len(package_ids)} packages(s) from {repo['name']}.")
+
+        return errors

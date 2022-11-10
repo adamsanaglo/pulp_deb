@@ -6,7 +6,8 @@
             "type": "serviceBusTrigger",
             "direction": "in",
             "queueName": "pmcmigrate",
-            "connection": "AzureServiceBusConnectionString"
+            "connection": "AzureServiceBusConnectionString",
+            "cardinality": "many",
         }
     ]
 }
