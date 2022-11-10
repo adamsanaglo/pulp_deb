@@ -6,7 +6,7 @@ from pydantic import AnyHttpUrl, ValidationError, parse_obj_as
 
 from pmc.client import get_client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, PackageType
-from pmc.utils import UserFriendlyTyper, raise_if_task_failed
+from pmc.utils import UserFriendlyTyper, id_or_name, raise_if_task_failed
 
 app = UserFriendlyTyper()
 deb = UserFriendlyTyper()
@@ -19,36 +19,62 @@ app.add_typer(rpm, name="rpm", help="Manage rpm packages")
 app.add_typer(python, name="python", help="Manage python packages")
 app.add_typer(file, name="file", help="Manage files")
 
+name_option = typer.Option(None, help="Name of the packages.")
+repo_option = typer.Option(None, help="Id or Name of the repo that contains the packages.")
 
-def _list(package_type: PackageType, ctx: typer.Context, limit: int, offset: int) -> None:
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+
+def _list(package_type: PackageType, ctx: typer.Context, params: Dict[str, Any]) -> None:
     with get_client(ctx.obj) as client:
         resp = client.get(f"/{package_type}/packages/", params=params)
         handle_response(ctx.obj, resp)
 
 
 @deb.command(name="list")
-def deb_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
+def deb_list(
+    ctx: typer.Context,
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
+    name: Optional[str] = name_option,
+    repository: Optional[str] = id_or_name("repositories", repo_option),
+) -> None:
     """List deb packages."""
-    _list(PackageType.deb, ctx, limit, offset)
+    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+    if name:
+        params["package"] = name
+    if repository:
+        params["repository"] = repository
+    _list(PackageType.deb, ctx, params)
 
 
 @rpm.command(name="list")
-def rpm_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
+def rpm_list(
+    ctx: typer.Context,
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
+    name: Optional[str] = name_option,
+    repository: Optional[str] = id_or_name("repositories", repo_option),
+) -> None:
     """List rpm packages."""
-    _list(PackageType.rpm, ctx, limit, offset)
+    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+    if name:
+        params["name"] = name
+    if repository:
+        params["repository"] = repository
+    _list(PackageType.rpm, ctx, params)
 
 
 @python.command(name="list")
 def python_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
     """List python packages."""
-    _list(PackageType.python, ctx, limit, offset)
+    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+    _list(PackageType.python, ctx, params)
 
 
 @file.command(name="list")
 def file_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
     """List files."""
-    _list(PackageType.file, ctx, limit, offset)
+    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+    _list(PackageType.file, ctx, params)
 
 
 @app.command()

@@ -146,10 +146,12 @@ def remove_vnext_package(action):
                 "package": action.package.name,
                 "version": action.package.version,
                 "architecture": action.package.arch,
+                "repository": repo["id"],
             }
             response = client.get("/deb/packages/", params=params)
         elif isinstance(action.package, RpmPackage):
             params = action.package.dict()
+            params["repository"] = repo["id"]
             if params["epoch"] is None:
                 # pulp_rpm defaults epoch to 0
                 params["epoch"] = 0

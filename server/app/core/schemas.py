@@ -472,6 +472,7 @@ class DebPackageQuery(BaseModel):
     package: Optional[str]
     version: Optional[str]
     architecture: Optional[str]
+    repository: Optional[DebRepoId]
 
 
 class DebPackageListResponse(ListResponse):
@@ -534,6 +535,7 @@ class RpmPackageQuery(BaseModel):
     version: Optional[str]
     release: Optional[str]
     arch: Optional[str]
+    repository: Optional[RepoId]
 
 
 class RpmPackageListResponse(ListResponse):

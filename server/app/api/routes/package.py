@@ -37,7 +37,9 @@ async def deb_packages(
     pagination: Pagination = Depends(Pagination), query: DebPackageQuery = Depends()
 ) -> Any:
     async with PackageApi() as api:
-        return await api.list(pagination, params=query.dict(), type=PackageType.deb)
+        return await api.list(
+            pagination, params=query.dict(exclude_none=True), type=PackageType.deb
+        )
 
 
 @router.get("/rpm/packages/", response_model=RpmPackageListResponse)
@@ -45,7 +47,9 @@ async def rpm_packages(
     pagination: Pagination = Depends(Pagination), query: RpmPackageQuery = Depends()
 ) -> Any:
     async with PackageApi() as api:
-        return await api.list(pagination, params=query.dict(), type=PackageType.rpm)
+        return await api.list(
+            pagination, params=query.dict(exclude_none=True), type=PackageType.rpm
+        )
 
 
 @router.get("/python/packages/", response_model=PythonPackageListResponse)

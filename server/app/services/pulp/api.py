@@ -419,6 +419,23 @@ class PackageApi(PulpApi):
         resp = await self.post(path, files={"file": file.file}, data=data)
         return translate_response(resp.json())
 
+    async def list(
+        self,
+        pagination: Optional[Pagination] = None,
+        params: Optional[Dict[str, Any]] = None,
+        **endpoint_args: Any,
+    ) -> Any:
+        """Call the list endpoint."""
+        # Translate the repo_id into the repo_version_href pulp wants, if provided.
+        if params and "repository" in params:
+            params = params.copy()
+            repository = params.pop("repository")
+            repo_id = RepoId(repository)
+            async with RepositoryApi() as api:
+                params["repository_version"] = await api.latest_version_href(repo_id)
+
+        return await super().list(pagination, params, **endpoint_args)
+
     async def get_package_name(self, package_id: PackageId) -> Any:
         """Call PackageApi.read and parse the response to return the name of the package."""
         response = await self.read(package_id)
