@@ -80,6 +80,12 @@ def _wait_for_task(client: httpx.Client, task_response: httpx.Response) -> None:
 
     while True:
         response = client.get(f"/tasks/{task_id}/")
+        # While waiting for long tasks, we occasionally encounter an issue where our auth token
+        # expires /right after/ we make a request and we get a 401. In that case let's simply try
+        # again one extra time, which should trigger a re-auth and work.
+        if response.status_code == httpx.codes.UNAUTHORIZED:
+            response = client.get(f"/tasks/{task_id}/")
+
         state = response.json()["state"]
         if state == "completed":
             return

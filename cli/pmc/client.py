@@ -95,6 +95,11 @@ def _extract_ids(resp_json: Any) -> Union[str, List[str], None]:
 def poll_task(ctx: PMCContext, task_id: str, task_handler: TaskHandler = None) -> Any:
     with get_client(ctx) as client:
         resp = client.get(f"/tasks/{task_id}/")
+        # While waiting for long tasks, we occasionally encounter an issue where our auth token
+        # expires /right after/ we make a request and we get a 401. In that case let's simply try
+        # again one extra time, which should trigger a re-auth and work.
+        if resp.status_code == httpx.codes.UNAUTHORIZED:
+            resp = client.get(f"/tasks/{task_id}/")
 
         if ctx.config.no_wait:
             return resp
