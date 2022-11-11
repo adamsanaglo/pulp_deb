@@ -383,6 +383,7 @@ class RepositoryResponse(BaseModel):
     description: Optional[str]
     retain_repo_versions: Optional[int]
     remote: Optional[RemoteId]
+    latest_version: RepoVersionId
 
 
 class RepositoryListResponse(ListResponse):
