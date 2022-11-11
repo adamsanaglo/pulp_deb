@@ -4,6 +4,7 @@ These migration functions keep repo contents (ie packages) in sync between the c
 (aka vCurrent) and the Compute-PMC app (aka v4/vNext).
 
 There are three actions that are performed:
+
 * When a package is added to a repo in vCurrent, vNext syncs in the repo's packages from vCurrent
 * When a package is removed from a repo in vCurrent, the package gets removed from the vNext repo
 * When a package is removed from a repo in vNext, the package gets removed from the vCurrent repo
@@ -39,7 +40,7 @@ as well.
 
 To set these up in a Python virtual environment, run:
 
-```
+```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install azure-cli
@@ -54,11 +55,11 @@ in Azure (see the Service Bus section) and then running the Functions locally.
 
 To create a service bus using the Azure CLI, run:
 
-```
+```bash
 rg="mypmcmigrate"
 az group create --name $rg --location eastus
 az servicebus namespace create --resource-group $rg --name pmcmigrate
-az servicebus queue create --resource-group $rg --namespace-name pmcmigrate --name pmcmigrate --max-delivery-count 3
+az servicebus queue create --resource-group $rg --namespace-name pmcmigrate --name pmcmigrate --max-delivery-count 3 --lock-duration PT5M
 az servicebus namespace authorization-rule keys list --resource-group $rg --namespace-name pmcmigrate --name RootManageSharedAccessKey --query primaryConnectionString --output tsv
 ```
 
@@ -68,13 +69,13 @@ connection string.
 
 Then copy `config.sh.local` to `config.sh`, fill in any variables, and then run:
 
-```
+```bash
 source config.sh
 ```
 
 Finally, run the Function App:
 
-```
+```bash
 func start
 ```
 
@@ -84,7 +85,7 @@ Grab the url for the queue\_action function (should be something like
 
 You can also debug by making requests directly via httpie:
 
-```
+```bash
 http :7071/api/queue_action action_type=remove source=vcurrent repo_name=test repo_type=apt release=nosuite component=asgard "package[name]=thor" "package[version]=1.0" "package[arch]=ppc64"
 ```
 
@@ -97,14 +98,14 @@ in vCurrent.
 
 First though, you must serve the packages from vcurrent. Set up a python http server:
 
-```
+```bash
 cd /var/lib/azure-aptcatalog
 python3 -m http.server 8888
 ```
 
 Now on vcurrent, set up a repo:
 
-```
+```bash
 repoclient repo add -l debtest apt admin
 ```
 
@@ -112,7 +113,7 @@ You should be able to curl the repo dir with `curl http://localhost:8888/repos/d
 
 On vNext set up your debtest repo:
 
-```
+```bash
 vcurrent="http://vcurrent:8888/"
 pmc remote create debtest-apt apt "${vcurrent}repos/debtest" --distributions bionic
 pmc repo create debtest-apt apt --remote debtest-apt
@@ -120,14 +121,13 @@ pmc repo create debtest-apt apt --remote debtest-apt
 
 Now back on vcurrent, try adding a package. You'll need the repo id (see `repoclient repo list`):
 
-```
+```bash
 curl -O https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/a/aadlogin-selinux/aadlogin-selinux_1.0.004850001_amd64.deb
 repoclient package add -r 634edfb182695c71fa630531 aadlogin-selinux_1.0.004850001_amd64.deb
 ```
 
 The package should now show up in `debtest-apt` on vnext. Check the function app output for any
 messages.
-
 
 ## Publishing
 
@@ -136,13 +136,13 @@ section of this document about how to install these.
 
 Then run the deploy script with your desired config.sh file:
 
-```
+```bash
 ./deploy.sh config.sh.ppe
 ```
 
 If you need to re-publish the function code after you have deployed the app, you can run:
 
-```
+```bash
 source config.sh.ppe
 func azure functionapp publish ${resourceGroup}app --python --build remote
 ```

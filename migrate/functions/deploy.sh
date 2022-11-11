@@ -49,7 +49,7 @@ function createServiceBus() {
     az servicebus namespace create --resource-group $resourceGroup --name $sbns --location $location --sku Premium
 
     echo "Creating queue 'pmcmigrate' for '$sbns'..."
-    az servicebus queue create --resource-group $resourceGroup --namespace-name $sbns --name pmcmigrate --max-delivery-count 3
+    az servicebus queue create --resource-group $resourceGroup --namespace-name $sbns --name pmcmigrate --max-delivery-count 3 --lock-duration PT5M
 }
 
 function createFunctionApp() {
