@@ -50,6 +50,44 @@ data:
         add_header X-Content-Type-Options nosniff;
         client_max_body_size 3G;
 
+        location ~ ^/config/ {
+          proxy_pass http://pulpcontent;
+        }
+
+        location ~ .*/Packages/.*\.rpm$ {
+          proxy_pass http://pulpcontent;
+        }
+
+        location ~ .*\.rpm$ {
+          rewrite ^/(.*)/([Mm][^/]+\.rpm)$ /$1/Packages/m/$2 last;
+          rewrite ^/(.*)/([Pp][^/]+\.rpm)$ /$1/Packages/p/$2 last;
+          rewrite ^/(.*)/([Dd][^/]+\.rpm)$ /$1/Packages/d/$2 last;
+          rewrite ^/(.*)/([Ll][^/]+\.rpm)$ /$1/Packages/l/$2 last;
+          rewrite ^/(.*)/([Cc][^/]+\.rpm)$ /$1/Packages/c/$2 last;
+          rewrite ^/(.*)/([Aa][^/]+\.rpm)$ /$1/Packages/a/$2 last;
+          rewrite ^/(.*)/([Kk][^/]+\.rpm)$ /$1/Packages/k/$2 last;
+          rewrite ^/(.*)/([Rr][^/]+\.rpm)$ /$1/Packages/r/$2 last;
+          rewrite ^/(.*)/([Gg][^/]+\.rpm)$ /$1/Packages/g/$2 last;
+          rewrite ^/(.*)/([Ss][^/]+\.rpm)$ /$1/Packages/s/$2 last;
+          rewrite ^/(.*)/([Oo][^/]+\.rpm)$ /$1/Packages/o/$2 last;
+          rewrite ^/(.*)/([Qq][^/]+\.rpm)$ /$1/Packages/q/$2 last;
+          rewrite ^/(.*)/([HH][^/]+\.rpm)$ /$1/Packages/h/$2 last;
+          rewrite ^/(.*)/([Nn][^/]+\.rpm)$ /$1/Packages/n/$2 last;
+          rewrite ^/(.*)/([Bb][^/]+\.rpm)$ /$1/Packages/b/$2 last;
+          rewrite ^/(.*)/([Tt][^/]+\.rpm)$ /$1/Packages/t/$2 last;
+          rewrite ^/(.*)/([Ee][^/]+\.rpm)$ /$1/Packages/e/$2 last;
+          rewrite ^/(.*)/([Ff][^/]+\.rpm)$ /$1/Packages/f/$2 last;
+          rewrite ^/(.*)/([Ii][^/]+\.rpm)$ /$1/Packages/i/$2 last;
+          rewrite ^/(.*)/([Uu][^/]+\.rpm)$ /$1/Packages/u/$2 last;
+          rewrite ^/(.*)/([Xx][^/]+\.rpm)$ /$1/Packages/x/$2 last;
+          rewrite ^/(.*)/([Jj][^/]+\.rpm)$ /$1/Packages/j/$2 last;
+          rewrite ^/(.*)/([Vv][^/]+\.rpm)$ /$1/Packages/v/$2 last;
+          rewrite ^/(.*)/([Ww][^/]+\.rpm)$ /$1/Packages/w/$2 last;
+          rewrite ^/(.*)/([Zz][^/]+\.rpm)$ /$1/Packages/z/$2 last;
+          rewrite ^/(.*)/([Yy][^/]+\.rpm)$ /$1/Packages/y/$2 last;
+          rewrite ^/(.*)/([0-9])([^/]+\.rpm)$ /$1/Packages/$2/$2$3 last;
+        }
+
         location /nginx_status {
             stub_status on;
             allow 127.0.0.1;
