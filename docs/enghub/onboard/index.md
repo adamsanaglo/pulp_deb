@@ -12,7 +12,8 @@ Access to the PMC publishing service is secured via client-side certificate asso
 You must generate a certificate to be used by your publishing workflow when it uses the PMC CLI.
 There are many ways to generate a certificate.
 
-- We recommend using OneCert to create certificates and manage their lifecycle in KeyVault.
+- Azure security team encourages all teams to use [OneCert](https://aka.ms/onecert) to create certificates and manage their lifecycle in KeyVault.
+    - This option will result in an auto-rotating certificate, which will save you time in the long-term. It's *highly* recommended to use this option.
 - A simpler solution, useful only for certs with short lifespans, is using OpenSSL.
 
 #### Creating a certificate with OneCert
@@ -20,14 +21,14 @@ There are many ways to generate a certificate.
 OneCert handles creating client authentication certificates in KeyVault which it will automatically rotate.
 A publishing pipeline or tool would retrieve the current certificate, including the private key, from KeyVault to be used with the pmcclient CLI.
 
-Documentation for OneCert can be found on [eng.ms](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/onecert-customer-guide/docs).
+Documentation for OneCert can be found on [eng.ms](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/onecert-customer-guide/docs) and in [ADO](https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/67233/Configure-ServicePrincipal-with-auto-rotated-cert).
 
 - Register a domain for the client authentication certificate.
   - The domain name will not be exported and should not end in .net, .com, etc.
   - Select AME as the Private Issuer (V2).
   - Set your Service Tree ID to the one associated with your [IcM incident queue](#creating-an-icm-incident-queue).
 - Associate the OneCert issuer with your KeyVault [(example)](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/onecert-customer-guide/docs/requesting-a-onecert-certificate-with-keyvault). Tied to that association is a policy governing rotation for certificates imported from that issuer.
-- Enroll the desired cert in KeyVault against that policy. KeyVault uses OneCert to (re)generate the cert . Repeat this step to create multiple certificates from the same issuer (and thus in the same domain).
+- Enroll the desired cert in KeyVault against that policy. KeyVault uses OneCert to (re)generate the cert. Repeat this step to create multiple certificates from the same issuer (and thus in the same domain).
 
 The domain name should be chosen to collect authentication certificates in buckets tied to their purpose.
 For example, a team might have multiple pipelines to build and publish packages.
