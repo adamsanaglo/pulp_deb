@@ -11,6 +11,7 @@ from app.core.schemas import (
     DebPackageQuery,
     DebPackageResponse,
     FilePackageListResponse,
+    FilePackageQuery,
     FilePackageResponse,
     FullDebPackageResponse,
     FullFilePackageResponse,
@@ -20,6 +21,7 @@ from app.core.schemas import (
     PackageType,
     Pagination,
     PythonPackageListResponse,
+    PythonPackageQuery,
     PythonPackageResponse,
     RpmPackageListResponse,
     RpmPackageQuery,
@@ -53,15 +55,23 @@ async def rpm_packages(
 
 
 @router.get("/python/packages/", response_model=PythonPackageListResponse)
-async def python_packages(pagination: Pagination = Depends(Pagination)) -> Any:
+async def python_packages(
+    pagination: Pagination = Depends(Pagination), query: PythonPackageQuery = Depends()
+) -> Any:
     async with PackageApi() as api:
-        return await api.list(pagination, type=PackageType.python)
+        return await api.list(
+            pagination, params=query.dict(exclude_none=True), type=PackageType.python
+        )
 
 
 @router.get("/file/packages/", response_model=FilePackageListResponse)
-async def files(pagination: Pagination = Depends(Pagination)) -> Any:
+async def files(
+    pagination: Pagination = Depends(Pagination), query: FilePackageQuery = Depends()
+) -> Any:
     async with PackageApi() as api:
-        return await api.list(pagination, type=PackageType.file)
+        return await api.list(
+            pagination, params=query.dict(exclude_none=True), type=PackageType.file
+        )
 
 
 @router.post(

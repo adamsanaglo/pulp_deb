@@ -211,7 +211,7 @@ def orphan_api(monkeypatch) -> Type[pulp_service_api.OrphanApi]:
 def package_api(monkeypatch) -> Type[pulp_service_api.PackageApi]:
     monkeypatch.setattr(pulp_service_api.PackageApi, "create", get_async_mock(gen_task_attrs()))
     monkeypatch.setattr(pulp_service_api.PackageApi, "list", get_async_mock(gen_list_attrs([])))
-    for method in ("update", "read", "destroy", "repository_packages", "get_package_name"):
+    for method in ("update", "read", "destroy", "get_package_name"):
         monkeypatch.setattr(
             pulp_service_api.PackageApi, method, get_async_mock(gen_package_attrs())
         )

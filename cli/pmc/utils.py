@@ -6,6 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Pattern, Union
 
+import click
 import tomli
 import typer
 from click.exceptions import UsageError
@@ -14,6 +15,7 @@ from pmc.client import get_client
 from pmc.schemas import CONFIG_PATHS, Config
 
 PulpTask = Dict[str, Any]
+ParamType = Union[typer.core.TyperOption, typer.core.TyperArgument]
 
 
 class UnsupportedFileType(Exception):
@@ -93,9 +95,16 @@ def raise_if_task_failed(task: PulpTask) -> None:
 
 
 def _lookup_id_or_name(
-    resource: str, id_regex: Union[str, Pattern[str]], ctx: typer.Context, field: str, value: str
+    resource: str,
+    id_regex: Union[str, Pattern[str]],
+    ctx: typer.Context,
+    field: ParamType,
+    value: str,
 ) -> str:
-    url = "/" + (resource % ctx.params) + "/"
+    try:
+        url = "/" + (resource % ctx.params) + "/"
+    except KeyError as exc:
+        raise click.BadParameter(f"Missing {exc} field needed to lookup '{field.name}'.")
     if not value or re.match(id_regex, value):
         return value
 
@@ -120,7 +129,7 @@ def id_or_name(
     The param argument should be a typer.Argument() or typer.Option().
     """
 
-    def callback(ctx: typer.Context, field: str, val: str) -> str:
+    def callback(ctx: typer.Context, field: ParamType, val: str) -> str:
         return _lookup_id_or_name(resource, id_regex, ctx, field, val)
 
     if param is None:

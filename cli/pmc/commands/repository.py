@@ -186,27 +186,6 @@ def publish(
         handle_response(ctx.obj, resp)
 
 
-@packages.command(name="list")
-def list_packages(
-    ctx: typer.Context,
-    repo_id: str = id_or_name("repositories"),
-    release: Optional[str] = id_or_name(
-        "repositories/%(repo_id)s/releases",
-        typer.Argument(None, help="Name or Id. Only list packages in this apt release."),
-    ),
-    limit: Optional[int] = LIMIT_OPT,
-    offset: Optional[int] = OFFSET_OPT,
-) -> None:
-    """List packages for a repository."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
-    if release:
-        params["release"] = release
-
-    with get_client(ctx.obj) as client:
-        resp = client.get(f"/repositories/{repo_id}/packages/", params=params)
-        handle_response(ctx.obj, resp)
-
-
 @packages.command(name="update")
 def update_packages(
     ctx: typer.Context,

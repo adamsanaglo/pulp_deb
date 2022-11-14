@@ -86,24 +86,27 @@ def test_update_with_name(repo: Any) -> None:
 def _update_list_packages(package_id: str, repo_id: str, release: Optional[str] = None) -> None:
     # Note: Not a test. You can't just shove any package in any repo. See callers below.
     become(Role.Repo_Admin)
-    cmd = ["repo", "packages", "update", repo_id, "--add-packages", package_id]
+    add_cmd = ["repo", "packages", "update", repo_id, "--add-packages", package_id]
     if release:
-        cmd[4:4] = [release]
+        list_cmd = ["package", "deb", "list", "--repo", repo_id, "--release", release]
+        add_cmd[4:4] = [release]
+    else:
+        list_cmd = ["package", "rpm", "list", "--repo", repo_id]
 
-    result = invoke_command(cmd)
+    result = invoke_command(add_cmd)
     assert result.exit_code == 0, f"adding package to repo failed: {result.stderr}"
 
-    result = invoke_command(["repo", "packages", "list", repo_id])
+    result = invoke_command(list_cmd)
     assert result.exit_code == 0
     response = json.loads(result.stdout)
     assert response["count"] == 1
     assert response["results"][0]["id"] == package_id
 
-    cmd = ["repo", "packages", "update", repo_id, "--remove-packages", package_id]
+    cmd = ["repo", "package", "update", repo_id, "--remove-packages", package_id]
     result = invoke_command(cmd)
     assert result.exit_code == 0, f"removing package from repo failed: {result.stderr}"
 
-    result = invoke_command(["repo", "packages", "list", repo_id])
+    result = invoke_command(list_cmd)
     assert result.exit_code == 0
     response = json.loads(result.stdout)
     assert response["count"] == 0

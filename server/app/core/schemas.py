@@ -417,12 +417,20 @@ class BasePackageResponse(BaseModel):
     sha512: Optional[str]
 
 
+class PackageQuery(BaseModel):
+    repository: Optional[RepoId]
+
+
 class FilePackageResponse(BasePackageResponse):
     relative_path: str
 
 
 class FullFilePackageResponse(FilePackageResponse):
     pass
+
+
+class FilePackageQuery(PackageQuery):
+    relative_path: Optional[str]
 
 
 class FilePackageListResponse(ListResponse):
@@ -469,11 +477,11 @@ class FullDebPackageResponse(DebPackageResponse):
     replaces: Optional[str]
 
 
-class DebPackageQuery(BaseModel):
+class DebPackageQuery(PackageQuery):
     package: Optional[str]
     version: Optional[str]
     architecture: Optional[str]
-    repository: Optional[DebRepoId]
+    release: Optional[ReleaseId]
 
 
 class DebPackageListResponse(ListResponse):
@@ -530,13 +538,12 @@ class FullRpmPackageResponse(RpmPackageResponse):
     time_file: Optional[int]
 
 
-class RpmPackageQuery(BaseModel):
+class RpmPackageQuery(PackageQuery):
     name: Optional[str]
     epoch: Optional[str]
     version: Optional[str]
     release: Optional[str]
     arch: Optional[str]
-    repository: Optional[RepoId]
 
 
 class RpmPackageListResponse(ListResponse):
@@ -545,13 +552,13 @@ class RpmPackageListResponse(ListResponse):
 
 class PythonPackageResponse(BasePackageResponse):
     filename: str
-    packagetype: str
     name: str
     version: str
 
 
 class FullPythonPackageResponse(PythonPackageResponse):
     # https://github.com/pulp/pulp_python/blob/938dc67e/pulp_python/app/models.py#L141
+    packagetype: str
     python_version: Optional[str]
     summary: Optional[str]
     keywords: Optional[str]
@@ -568,19 +575,13 @@ class FullPythonPackageResponse(PythonPackageResponse):
     supported_platform: Optional[str]
 
 
+class PythonPackageQuery(PackageQuery):
+    name: Optional[str]
+    filename: Optional[str]
+
+
 class PythonPackageListResponse(ListResponse):
     results: List[PythonPackageResponse]
-
-
-class PackageResponse(BaseModel):
-    # ensure that FilePackageResponse is last so other responses don't match it
-    __root__: Union[
-        RpmPackageResponse, DebPackageResponse, PythonPackageResponse, FilePackageResponse
-    ]
-
-
-class PackageListResponse(ListResponse):
-    results: List[PackageResponse]
 
 
 class ReleaseCreate(BaseModel):

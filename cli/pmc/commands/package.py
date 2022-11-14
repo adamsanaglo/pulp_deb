@@ -20,10 +20,15 @@ app.add_typer(python, name="python", help="Manage python packages")
 app.add_typer(file, name="file", help="Manage files")
 
 name_option = typer.Option(None, help="Name of the packages.")
-repo_option = typer.Option(None, help="Id or Name of the repo that contains the packages.")
+repo_option = typer.Option(
+    None, "--repository", "--repo", help="Id or Name of the repo that contains the packages."
+)
 
 
 def _list(package_type: PackageType, ctx: typer.Context, params: Dict[str, Any]) -> None:
+    # filter out null values
+    params = {key: val for key, val in params.items() if val is not None}
+
     with get_client(ctx.obj) as client:
         resp = client.get(f"/{package_type}/packages/", params=params)
         handle_response(ctx.obj, resp)
@@ -36,13 +41,23 @@ def deb_list(
     offset: int = OFFSET_OPT,
     name: Optional[str] = name_option,
     repository: Optional[str] = id_or_name("repositories", repo_option),
+    release: Optional[str] = id_or_name(
+        "repositories/%(repository)s/releases",
+        typer.Option(None, help="Name or Id. Only list packages in this apt release."),
+    ),
+    version: Optional[str] = typer.Option(None),
+    arch: Optional[str] = typer.Option(None),
 ) -> None:
     """List deb packages."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
-    if name:
-        params["package"] = name
-    if repository:
-        params["repository"] = repository
+    params = {
+        "repository": repository,
+        "release": release,
+        "package": name,
+        "version": version,
+        "architecture": arch,
+        "limit": limit,
+        "offset": offset,
+    }
     _list(PackageType.deb, ctx, params)
 
 
@@ -53,27 +68,60 @@ def rpm_list(
     offset: int = OFFSET_OPT,
     name: Optional[str] = name_option,
     repository: Optional[str] = id_or_name("repositories", repo_option),
+    version: Optional[str] = typer.Option(None),
+    arch: Optional[str] = typer.Option(None),
+    release: Optional[str] = typer.Option(None),
+    epoch: Optional[str] = typer.Option(None),
 ) -> None:
     """List rpm packages."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
-    if name:
-        params["name"] = name
-    if repository:
-        params["repository"] = repository
+    params = {
+        "repository": repository,
+        "name": name,
+        "version": version,
+        "arch": arch,
+        "release": release,
+        "epoch": epoch,
+        "limit": limit,
+        "offset": offset,
+    }
     _list(PackageType.rpm, ctx, params)
 
 
 @python.command(name="list")
-def python_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
+def python_list(
+    ctx: typer.Context,
+    repository: Optional[str] = id_or_name("repositories", repo_option),
+    name: Optional[str] = typer.Option(None),
+    filename: Optional[str] = typer.Option(None),
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
+) -> None:
     """List python packages."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+    params = {
+        "repository": repository,
+        "name": name,
+        "filename": filename,
+        "limit": limit,
+        "offset": offset,
+    }
     _list(PackageType.python, ctx, params)
 
 
 @file.command(name="list")
-def file_list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
+def file_list(
+    ctx: typer.Context,
+    repository: Optional[str] = id_or_name("repositories", repo_option),
+    relative_path: Optional[str] = typer.Option(None),
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
+) -> None:
     """List files."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+    params = {
+        "repository": repository,
+        "relative_path": relative_path,
+        "limit": limit,
+        "offset": offset,
+    }
     _list(PackageType.file, ctx, params)
 
 

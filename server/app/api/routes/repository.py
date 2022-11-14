@@ -15,10 +15,8 @@ from app.core.config import settings
 from app.core.db import AsyncSession, get_session
 from app.core.models import Account, OwnedPackage, RepoAccess, Role
 from app.core.schemas import (
-    PackageListResponse,
     Pagination,
     PublishRequest,
-    ReleaseId,
     RemoteId,
     RepoId,
     RepositoryCreate,
@@ -86,14 +84,6 @@ async def delete_repository(id: RepoId) -> Any:
 async def sync_repository(id: RepoId, remote: Optional[RemoteId] = None) -> Any:
     async with RepositoryApi() as api:
         return await api.sync(id, remote)
-
-
-@router.get("/repositories/{id}/packages/", response_model=PackageListResponse)
-async def get_packages(
-    id: RepoId, pagination: Pagination = Depends(Pagination), release: Optional[ReleaseId] = None
-) -> Any:
-    async with PackageApi() as api:
-        return await api.repository_packages(id, pagination, release)
 
 
 @router.patch("/repositories/{id}/packages/", response_model=TaskResponse)

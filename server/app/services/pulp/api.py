@@ -381,30 +381,6 @@ class DistributionApi(PulpApi):
 
 
 class PackageApi(PulpApi):
-    async def repository_packages(
-        self, repo_id: RepoId, pagination: Pagination, release: Optional[ReleaseId] = None
-    ) -> Any:
-        """Call the package list endpoint and filter by repo id."""
-        if repo_id.type == "apt":
-            type = PackageType.deb
-        elif repo_id.type == "yum":
-            type = PackageType.rpm
-        elif repo_id.type == "python":
-            type = PackageType.python
-        elif repo_id.type == "file":
-            type = PackageType.file
-        else:
-            raise TypeError(f"Unsupported repository type: {repo_id.type.value}")
-
-        async with RepositoryApi() as repo_api:
-            version_href = await repo_api.latest_version_href(repo_id)
-            params = {"repository_version": version_href}
-
-        if release:
-            params["release"] = f"{release.uuid},{params['repository_version']}"
-
-        return await self.list(pagination, params, type=type)
-
     async def create(self, data: Dict[str, Any]) -> Any:
         """Call the package create endpoint."""
         file = data.pop("file")
@@ -426,13 +402,21 @@ class PackageApi(PulpApi):
         **endpoint_args: Any,
     ) -> Any:
         """Call the list endpoint."""
+        if not params:
+            params = {}
+
         # Translate the repo_id into the repo_version_href pulp wants, if provided.
-        if params and "repository" in params:
+        if params.get("repository", None):
             params = params.copy()
             repository = params.pop("repository")
             repo_id = RepoId(repository)
             async with RepositoryApi() as api:
                 params["repository_version"] = await api.latest_version_href(repo_id)
+
+        if release := params.get("release", None):
+            if "repository_version" not in params:
+                raise ValueError("Must supply repository when filtering by release.")
+            params["release"] = f"{release.uuid},{params['repository_version']}"
 
         return await super().list(pagination, params, **endpoint_args)
 
