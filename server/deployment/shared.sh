@@ -74,6 +74,24 @@ function pmc_run() {
     kubectl exec --stdin -c pmc --tty $PMCPOD -- /bin/bash -c ${@}
 }
 
+function kube_bash() {
+    # Starts a bash shell in the specified container.
+    # Useful for debugging.
+    local container="${1}"
+    declare -A pods
+    for name in pmc pulp-worker pulp-content nginx; do
+        pods["${name}"]="${name}"
+    done
+    pods["signer"]="pulp-worker"
+    pods["pulp-api"]="pmc"
+    local POD=${pods[${container}]}
+    if [[ -z "${POD}" ]]; then
+        bail "Container name ${container} not recognized"
+    fi
+    local podName=$(get_pod_name ${POD})
+    kubectl exec -it -c ${container} $podName -- /bin/bash
+}
+
 function create_initial_account() {
     # Add the initial Account_Admin specified in the env-specific setup script.
     psqlcmd="PGPASSWORD=$PMC_POSTGRES_PASSWORD psql -h $pg_server -U pmcserver"
