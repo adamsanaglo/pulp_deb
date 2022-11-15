@@ -55,18 +55,22 @@ def _assert_package_list_empty(type: str, filters: Optional[Dict[str, Any]] = No
 
 def test_deb_list(deb_package: Any) -> None:
     _assert_package_list_not_empty("deb")
-    _assert_package_list_not_empty("deb", {"name": deb_package["package"]})
-    _assert_package_list_empty("deb", {"name": "helloworld"})
+    _assert_package_list_not_empty("deb", {"name": deb_package["name"]})
+    _assert_package_list_empty("deb", {"name": "notarealpackagename"})
     _assert_package_list_not_empty("deb", {"version": deb_package["version"]})
     _assert_package_list_empty("deb", {"arch": "flux64"})
+    # Tests hashing and sha-filter. This file is uploaded by the deb_package fixture.
+    _assert_package_list_not_empty("deb", {"file": "tests/assets/signed-by-us.deb"})
 
 
 def test_rpm_list(rpm_package: Any) -> None:
     _assert_package_list_not_empty("rpm")
     _assert_package_list_not_empty("rpm", {"name": rpm_package["name"]})
-    _assert_package_list_empty("rpm", {"name": "helloworld"})
+    _assert_package_list_empty("rpm", {"name": "notarealpackagename"})
     _assert_package_list_not_empty("rpm", {"version": rpm_package["version"]})
     _assert_package_list_empty("rpm", {"version": "0.0.0.0.0.0.0.0.1"})
+    # Tests hashing and sha-filter. This file is uploaded by the rpm_package fixture.
+    _assert_package_list_not_empty("rpm", {"file": "tests/assets/signed-by-us.rpm"})
 
 
 def test_file_list(file_package: Any) -> None:

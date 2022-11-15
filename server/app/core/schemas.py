@@ -419,6 +419,7 @@ class BasePackageResponse(BaseModel):
 
 class PackageQuery(BaseModel):
     repository: Optional[RepoId]
+    sha256: Optional[str]
 
 
 class FilePackageResponse(BasePackageResponse):
@@ -438,10 +439,14 @@ class FilePackageListResponse(ListResponse):
 
 
 class DebPackageResponse(BasePackageResponse):
-    package: str
+    # rename "package" -> "name" and "architecture" -> "arch" to provide unified interface with rpm
+    package: str = Field(..., alias="name")
     version: str
-    architecture: str
+    architecture: str = Field(..., alias="arch")
     relative_path: str
+
+    class Config:
+        allow_population_by_field_name = True
 
 
 class FullDebPackageResponse(DebPackageResponse):

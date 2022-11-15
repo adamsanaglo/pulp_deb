@@ -1,3 +1,4 @@
+import hashlib
 from typing import Any, Dict, Optional
 
 import typer
@@ -23,6 +24,19 @@ name_option = typer.Option(None, help="Name of the packages.")
 repo_option = typer.Option(
     None, "--repository", "--repo", help="Id or Name of the repo that contains the packages."
 )
+sha256_option = typer.Option(None, help="Sha256 sum of the file in question.")
+file_option = typer.Option(
+    None,
+    help="Path to the local file you're searching for. Calculates sha256 sum and uses that filter.",
+)
+
+
+def _sha256sum(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for line in f:
+            h.update(line)
+    return h.hexdigest()
 
 
 def _list(package_type: PackageType, ctx: typer.Context, params: Dict[str, Any]) -> None:
@@ -37,24 +51,29 @@ def _list(package_type: PackageType, ctx: typer.Context, params: Dict[str, Any])
 @deb.command(name="list")
 def deb_list(
     ctx: typer.Context,
-    limit: int = LIMIT_OPT,
-    offset: int = OFFSET_OPT,
-    name: Optional[str] = name_option,
     repository: Optional[str] = id_or_name("repositories", repo_option),
     release: Optional[str] = id_or_name(
         "repositories/%(repository)s/releases",
         typer.Option(None, help="Name or Id. Only list packages in this apt release."),
     ),
+    name: Optional[str] = name_option,
     version: Optional[str] = typer.Option(None),
     arch: Optional[str] = typer.Option(None),
+    sha256: Optional[str] = sha256_option,
+    file: Optional[str] = file_option,
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
 ) -> None:
     """List deb packages."""
+    if file:
+        sha256 = _sha256sum(file)
     params = {
         "repository": repository,
         "release": release,
         "package": name,
         "version": version,
         "architecture": arch,
+        "sha256": sha256,
         "limit": limit,
         "offset": offset,
     }
@@ -64,16 +83,20 @@ def deb_list(
 @rpm.command(name="list")
 def rpm_list(
     ctx: typer.Context,
+    repository: Optional[str] = id_or_name("repositories", repo_option),
+    name: Optional[str] = name_option,
+    epoch: Optional[str] = typer.Option(None),
+    version: Optional[str] = typer.Option(None),
+    release: Optional[str] = typer.Option(None),
+    arch: Optional[str] = typer.Option(None),
+    sha256: Optional[str] = sha256_option,
+    file: Optional[str] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
-    name: Optional[str] = name_option,
-    repository: Optional[str] = id_or_name("repositories", repo_option),
-    version: Optional[str] = typer.Option(None),
-    arch: Optional[str] = typer.Option(None),
-    release: Optional[str] = typer.Option(None),
-    epoch: Optional[str] = typer.Option(None),
 ) -> None:
     """List rpm packages."""
+    if file:
+        sha256 = _sha256sum(file)
     params = {
         "repository": repository,
         "name": name,
@@ -81,6 +104,7 @@ def rpm_list(
         "arch": arch,
         "release": release,
         "epoch": epoch,
+        "sha256": sha256,
         "limit": limit,
         "offset": offset,
     }
@@ -93,14 +117,19 @@ def python_list(
     repository: Optional[str] = id_or_name("repositories", repo_option),
     name: Optional[str] = typer.Option(None),
     filename: Optional[str] = typer.Option(None),
+    sha256: Optional[str] = sha256_option,
+    file: Optional[str] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
 ) -> None:
     """List python packages."""
+    if file:
+        sha256 = _sha256sum(file)
     params = {
         "repository": repository,
         "name": name,
         "filename": filename,
+        "sha256": sha256,
         "limit": limit,
         "offset": offset,
     }
@@ -112,13 +141,18 @@ def file_list(
     ctx: typer.Context,
     repository: Optional[str] = id_or_name("repositories", repo_option),
     relative_path: Optional[str] = typer.Option(None),
+    sha256: Optional[str] = sha256_option,
+    file: Optional[str] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
 ) -> None:
     """List files."""
+    if file:
+        sha256 = _sha256sum(file)
     params = {
         "repository": repository,
         "relative_path": relative_path,
+        "sha256": sha256,
         "limit": limit,
         "offset": offset,
     }
