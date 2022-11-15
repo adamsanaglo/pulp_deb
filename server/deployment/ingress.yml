@@ -71,7 +71,7 @@ data:
           rewrite ^/(.*)/([Ss][^/]+\.rpm)$ /$1/Packages/s/$2 last;
           rewrite ^/(.*)/([Oo][^/]+\.rpm)$ /$1/Packages/o/$2 last;
           rewrite ^/(.*)/([Qq][^/]+\.rpm)$ /$1/Packages/q/$2 last;
-          rewrite ^/(.*)/([HH][^/]+\.rpm)$ /$1/Packages/h/$2 last;
+          rewrite ^/(.*)/([Hh][^/]+\.rpm)$ /$1/Packages/h/$2 last;
           rewrite ^/(.*)/([Nn][^/]+\.rpm)$ /$1/Packages/n/$2 last;
           rewrite ^/(.*)/([Bb][^/]+\.rpm)$ /$1/Packages/b/$2 last;
           rewrite ^/(.*)/([Tt][^/]+\.rpm)$ /$1/Packages/t/$2 last;
