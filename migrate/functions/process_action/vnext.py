@@ -23,6 +23,46 @@ else:
     MSAL_CERT = os.environ["MSAL_CERT"]
 
 
+class RetryClient(httpx.Client):
+    def __init__(self, *args, **kwargs):
+        self.retries = 1
+        self.retry_status_codes = [401]
+
+        if "retries" in kwargs:
+            self.retries = kwargs.pop("retries")
+        if "retry_status_codes" in kwargs:
+            self.retry_status_codes = kwargs.pop("retry_status_codes")
+
+        super().__init__(*args, **kwargs)
+
+    def request(self, *args, **kwargs):
+        retries = self.retries
+        url = f"{args[0]} {args[1]}"  # 0 = method, 1 = url
+
+        while True:
+            try:
+                resp = super().request(*args, **kwargs)
+                return resp
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code in self.retry_status_codes and retries > 0:
+                    resp = e.response
+                    logging.warning(
+                        f"Received {resp.status_code} response for {url}. Retrying."
+                    )
+                    retries -= 1
+                    continue
+                else:
+                    raise
+            except httpx.HTTPError as e:
+                # HTTPError includes various potential network problems like ConnectError
+                if retries > 0:
+                    logging.warning(f"HTTPError: {e} for {url}. Retrying.")
+                    retries -= 1
+                    continue
+                else:
+                    raise
+
+
 def unique(items):
     result = []
     for item in items:
@@ -37,7 +77,7 @@ def _raise_for_status(response: httpx.Response) -> None:
         response.raise_for_status()
     except httpx.HTTPStatusError as e:
         if not ("publish" in e.response.url.path and e.response.status_code == 422):
-            logging.error(
+            logging.warning(
                 f"Error: ({e.response.status_code}) response from {e.response.url}: "
                 f"{e.response.content}"
             )
@@ -66,7 +106,7 @@ def _get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, Non
 
     logging.info(f"Using PMC API correlation ID: {cid.hex}.")
 
-    client = httpx.Client(
+    client = RetryClient(
         base_url=f"{VNEXT_URL}/api/v4",
         event_hooks={"request": [_set_auth_header], "response": [_raise_for_status]},
         headers={"x-correlation-id": cid.hex},
@@ -88,11 +128,6 @@ def _wait_for_task(client: httpx.Client, task_response: httpx.Response) -> None:
 
     while True:
         response = client.get(f"/tasks/{task_id}/")
-        # While waiting for long tasks, we occasionally encounter an issue where our auth token
-        # expires /right after/ we make a request and we get a 401. In that case let's simply try
-        # again one extra time, which should trigger a re-auth and work.
-        if response.status_code == httpx.codes.UNAUTHORIZED:
-            response = client.get(f"/tasks/{task_id}/")
 
         state = response.json()["state"]
         if state == "completed":
@@ -125,7 +160,8 @@ def _publish_vnext_repo(client, repo):
             raise
 
     try:
-        response.json()["task"]
+        # validate that there's a task key in the response json
+        _ = response.json()["task"]
     except Exception as e:
         raise Exception(f"Got unexpected response: {e}")
 
