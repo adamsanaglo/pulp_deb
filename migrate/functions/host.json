@@ -16,7 +16,7 @@
   "extensions": {
       "serviceBus": {
           "maxConcurrentCalls": 1,
-          "prefetchCount": 20,
+          "maxMessageBatchSize": 20,
       }
   }
 }

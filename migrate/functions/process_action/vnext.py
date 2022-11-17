@@ -120,6 +120,7 @@ def _publish_vnext_repo(client, repo):
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 422:
             logging.info("Repo contents unchanged. Skipped publish.")
+            return
         else:
             raise
 
