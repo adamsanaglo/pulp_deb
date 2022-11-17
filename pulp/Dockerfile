@@ -66,7 +66,8 @@ RUN	tdnf -y install wget git \
 					sqlite-devel \
 					zchunk-devel \
 					file-devel \
-					tzdata
+					tzdata \
+                    patch
 #RUN tdnf builddep createrepo_c
 RUN	tdnf clean all
 
@@ -94,7 +95,7 @@ RUN mkdir -p /etc/pulp \
 RUN pip install pulpcore
 RUN pip install pulp-python
 #RUN pip install pulp-deb
-RUN pip install pulp-rpm
+RUN pip install pulp-rpm==3.18.8  # pin until https://github.com/pulp/pulp_rpm/issues/2892 is fixed
 RUN pip install pulp-file
 
 # Enable use of cloud storage using vendored clone of github.com/jasonzio/django_storages
@@ -104,6 +105,10 @@ RUN pip install /tmp/django_storages
 # Enable vendored clone of pulp-deb from github.com/sdherr/pulp_deb
 COPY container-assets/pulp_deb /tmp/pulp_deb
 RUN pip install /tmp/pulp_deb
+
+# Add a patch until a fix for https://github.com/pulp/pulp_rpm/issues/2892 is released
+COPY container-assets/pulp_rpm /tmp/pulp_rpm
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_rpm/0001-Rewind-repo.xml.key-file-before-hashing.patch
 
 # In this image the manager is in /usr/bin, not /usr/local/bin
 RUN ["ln", "-s", "/usr/bin/pulpcore-manager", "/usr/local/bin/pulpcore-manager"]
