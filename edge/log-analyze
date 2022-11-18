@@ -32,6 +32,7 @@ def get_contents(logfile: str) -> List[str]:
     if "/" not in logfile:
         logfile = f"/var/log/nginx/{logfile}"
 
+    start = time.time()
     if host:
         verbose(f"Reading {logfile} from {host}...", end="", flush=True)
         result = get_remote_contents(logfile, host)
@@ -44,7 +45,8 @@ def get_contents(logfile: str) -> List[str]:
             with open(logfile, "r", encoding="utf-8") as f:
                 result = f.readlines()
 
-    verbose(f" ({len(result)} lines)")
+    elapsed = time.time() - start
+    verbose(f" ({len(result)} lines in {elapsed:.2f} seconds)")
     return result
 
 
@@ -104,14 +106,18 @@ def summarize_file(logfile: str, start_time: int = 0) -> Dict[str, Any]:
         r"""^(?P<remote_addr>\S+) - (?P<remote_user>\S+) \[(?P<time_local>.+)\] "(?P<method>\S+) (?P<uri>\S+) +(?P<protocol>\S+)" (?P<status>\d+) (?P<body_bytes_sent>\d+) (?P<request_time>\d+\.\d+) "(?P<http_referer>.*)" "(?P<http_user_agent>.*)".*$"""
     )
     ignore_404 = re.compile(
-        r"(/clamav/.*\.cld$|.+/media\.1/media$|.+/repodata/.*\.sqlite\.bz2$|.+/main/i18n/Translation|/ubuntu/16\.04/.*/xenial|/ubuntu/18\.04/.*/(xenial|focal|jammy)/|/ubuntu/20\.04/.*/(bionic|jammy)/)"
+        r"(/clamav/.*\.(cld|cdiff)$|.+/media\.1/media$|.+/Packages\.(bz2|zst|xz|lzma)$|.+/aplinux-prod/|.+/by-hash/|.+/repodata/.*\.sqlite\.bz2$|.+/main/i18n/Translation|/ubuntu/16\.04/.*/xenial|/ubuntu/18\.04/.*/(xenial|focal|jammy)/|/ubuntu/20\.04/.*/(bionic|jammy)/|.+-(primary|filelists)(\.xml)?\.gz$)"
     )
+    force_404 = re.compile(r"(.+\.(cld|cdiff)$|.+/media\.1/media$|.+/aplinux-prod/)")
 
     per_status_counts = defaultdict(Counter)
     status_counts = Counter()
     earliest_time: Optional[int] = None
     end_time: Optional[int] = None
     unparseable = set()
+    unforced_404s = Counter()
+    forced_404_count = 0
+    start = time.time()
 
     for line in get_contents(logfile):
         m = log_regex.match(line)
@@ -126,28 +132,37 @@ def summarize_file(logfile: str, start_time: int = 0) -> Dict[str, Any]:
             status = m.group("status")
             uri = m.group("uri")
             status_counts[status] += 1
-            if status not in ("200", "304"):
+            if status not in ("200", "304", "404") or (
+                status == "404" and not ignore_404.match(uri)
+            ):
                 per_status_counts[status][uri] += 1
+            if status == "404":
+                if force_404.match(uri):
+                    forced_404_count += 1
+                else:
+                    unforced_404s[uri] += 1
         else:
             unparseable.add(line)
-    per_status_counts["404"] = filter_counts_by_status(
-        per_status_counts, "404", ignore_404
-    )
 
     results = {
         "logfile": logfile,
         "elapsed_time": end_time - earliest_time if earliest_time else 0,
+        "compute_time": time.time() - start,
     }
     if earliest_time:
         results["first_entry"] = time_t_to_iso_8601_UTC(earliest_time)
         results["first_entry_time_t"] = earliest_time
         results["last_entry"] = time_t_to_iso_8601_UTC(end_time)
         results["last_entry_time_t"] = end_time
-    results["status_counts"] = status_counts
-    results["per_status_counts"] = per_status_counts
-    results["unparseable"] = list(unparseable)
+    results["status_counts"] = Counter(
+        {status: status_counts[status] for status in sorted(status_counts.keys())}
+    )
+    results["forced_404_count"] = forced_404_count
+    results["top_404s"] = unforced_404s.most_common(20)
     if ":" not in logfile:
         results["missing_files"] = sorted(find_missing_files(per_status_counts))
+    results["per_status_counts"] = per_status_counts
+    results["unparseable"] = list(unparseable)
 
     return results
 
@@ -184,13 +199,6 @@ def filter_counts_by_status(
         )
 
 
-def count_real_404s(per_status_counts: Dict[str, Counter]) -> Counter:
-    ignore = re.compile(
-        r"^(/clamav/.*\.cld|/.+/media\.1/media|.*/repodata/.*\.sqlite\.bz2|.*/main/i18n/Translation|/ubuntu/16\.04/.*/xenial|/ubuntu/18\.04/.*/(focal|jammy)/|/ubuntu/20\.04/.*/(bionic|jammy)|)$"
-    )
-    return filter_counts_by_status(per_status_counts, "404", ignore)
-
-
 def display_results(
     args: argparse.Namespace,
     filename: str,
@@ -203,11 +211,14 @@ def display_results(
         filename: Name of the log file
         results: The results dict from summarize_file()
     """
-    elapsed_time = results["elapsed_time"]
-    print(f"{filename} elapsed time: {elapsed_time} seconds")
+    time_span = results["elapsed_time"]
+    compute_time = results["compute_time"]
+    print(
+        f"{filename} spans {time_span} seconds processed in {compute_time:.2f} seconds"
+    )
     lines = []
     for status, count in results["status_counts"].items():
-        lines.append(f"{status}: {count} ({count / elapsed_time:.2f}/s)")
+        lines.append(f"{status}: {count} ({count / time_span:.2f}/s)")
     print("\n".join(sorted(lines)))
 
     if "missing_files" not in results:
@@ -220,6 +231,10 @@ def display_results(
         else:
             print("No 404s have existing files under /var/www/html")
 
+    print(f"\nForced 404s: {results['forced_404_count']}")
+    print("Top unforced 404s:")
+    print("\n".join(f"{uri}: {count}" for uri, count in results["top_404s"]), "\n")
+
     if args.view_status:
         uri_counts = results[f"status_{args.view_status}"]
         print(f"{len(uri_counts)} status {args.view_status} URIs")
@@ -228,9 +243,14 @@ def display_results(
 
     if args.view_unparseable:
         print(f"{len(results['unparseable'])} unparseable lines")
-        print("\n".join(sorted(results["unparseable"])))
+        print("\n".join(sorted(results["unparseable"])), "\n")
 
-    print("")
+    if args.view_404:
+        entries = results["per_status_counts"]["404"]
+        print(f"Filtered 404 URIs:")
+        print(
+            "\n".join(f"{uri}: {entries[uri]}" for uri in sorted(entries.keys())), "\n"
+        )
 
 
 def make_parser() -> argparse.ArgumentParser:
@@ -316,7 +336,7 @@ def main():
 
         if args.view_404:
             print(f"{len(all_404s)} 404s")
-            lines = [f"{uri}: {count}" for uri, count in all_404s.items()]
+            lines = [f"{uri}: {all_404s[uri]}" for uri in sorted(all_404s.keys())]
             print("\n".join(sorted(lines)))
 
 
