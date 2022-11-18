@@ -7,6 +7,7 @@ from pydantic import AnyHttpUrl
 
 from app.api.auth import requires_package_admin_or_publisher
 from app.core.schemas import (
+    BasePackageResponse,
     DebPackageListResponse,
     DebPackageQuery,
     DebPackageResponse,
@@ -34,44 +35,51 @@ from app.services.pulp.api import PackageApi
 router = APIRouter()
 
 
+def _field_list(response: BasePackageResponse) -> str:
+    # use pulp's fields parameter to request specific fields and limit response size
+    fields = list(response.schema(by_alias=False)["properties"].keys())
+    fields.append("pulp_href")
+    return (",").join(fields)
+
+
 @router.get("/deb/packages/", response_model=DebPackageListResponse)
 async def deb_packages(
     pagination: Pagination = Depends(Pagination), query: DebPackageQuery = Depends()
 ) -> Any:
+    params = query.dict(exclude_none=True)
+    params["fields"] = _field_list(DebPackageResponse)
     async with PackageApi() as api:
-        return await api.list(
-            pagination, params=query.dict(exclude_none=True), type=PackageType.deb
-        )
+        return await api.list(pagination, params=params, type=PackageType.deb)
 
 
 @router.get("/rpm/packages/", response_model=RpmPackageListResponse)
 async def rpm_packages(
     pagination: Pagination = Depends(Pagination), query: RpmPackageQuery = Depends()
 ) -> Any:
+    params = query.dict(exclude_none=True)
+    params["fields"] = _field_list(RpmPackageResponse)
     async with PackageApi() as api:
-        return await api.list(
-            pagination, params=query.dict(exclude_none=True), type=PackageType.rpm
-        )
+        return await api.list(pagination, params=params, type=PackageType.rpm)
 
 
 @router.get("/python/packages/", response_model=PythonPackageListResponse)
 async def python_packages(
     pagination: Pagination = Depends(Pagination), query: PythonPackageQuery = Depends()
 ) -> Any:
+    params = query.dict(exclude_none=True)
+    params["fields"] = _field_list(PythonPackageResponse)
     async with PackageApi() as api:
-        return await api.list(
-            pagination, params=query.dict(exclude_none=True), type=PackageType.python
-        )
+        return await api.list(pagination, params=params, type=PackageType.python)
 
 
 @router.get("/file/packages/", response_model=FilePackageListResponse)
 async def files(
     pagination: Pagination = Depends(Pagination), query: FilePackageQuery = Depends()
 ) -> Any:
+    params = query.dict(exclude_none=True)
+    params["fields"] = _field_list(FilePackageResponse)
     async with PackageApi() as api:
-        return await api.list(
-            pagination, params=query.dict(exclude_none=True), type=PackageType.file
-        )
+        return await api.list(pagination, params=params, type=PackageType.file)
 
 
 @router.post(
