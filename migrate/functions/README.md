@@ -103,20 +103,23 @@ cd /var/lib/azure-aptcatalog
 python3 -m http.server 8888
 ```
 
-Now on vcurrent, set up a repo:
+Now on vcurrent, set up some repos:
 
 ```bash
 repoclient repo add -l debtest apt admin
+repoclient repo add -l yumtest apt admin
 ```
 
-You should be able to curl the repo dir with `curl http://localhost:8888/repos/debtest/`.
+You should be able to curl the repo dirs e.g. `curl http://localhost:8888/repos/debtest/`.
 
-On vNext set up your debtest repo:
+On vNext set up your repos and point to the vcurrent urls:
 
 ```bash
 vcurrent="http://vcurrent:8888/"
 pmc remote create debtest-apt apt "${vcurrent}repos/debtest" --distributions bionic
-pmc repo create debtest-apt apt --remote debtest-apt
+pmc repo create debtest-apt apt --remote debtest-apt --paths debtest
+pmc remote create yumtest-yum yum "${vcurrent}repos/yumtest"
+pmc repo create yumtest-yum yum --remote yumtest-yum --paths yumtest
 ```
 
 Now back on vcurrent, try adding a package. You'll need the repo id (see `repoclient repo list`):

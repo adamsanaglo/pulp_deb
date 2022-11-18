@@ -413,7 +413,7 @@ class PackageApi(PulpApi):
             async with RepositoryApi() as api:
                 params["repository_version"] = await api.latest_version_href(repo_id)
 
-        if release := params.get("release", None):
+        if endpoint_args["type"] == PackageType.deb and (release := params.get("release", None)):
             if "repository_version" not in params:
                 raise ValueError("Must supply repository when filtering by release.")
             params["release"] = f"{release.uuid},{params['repository_version']}"
