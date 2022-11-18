@@ -149,3 +149,10 @@ If you need to re-publish the function code after you have deployed the app, you
 source config.sh.ppe
 func azure functionapp publish ${resourceGroup}app --python --build remote
 ```
+
+### Publishing to tux-dev
+
+Because the function app in tux-dev has restricted network access, you'll have to deploy from a
+server that can access it such as tux-ingest1. You'll also want to make sure that the hostname
+pmc-tux-migrateapp.scm.azurewebsites.net resolves to the function app ip. This has been hardcoded in
+the hosts file on tux-ingest1 already.
