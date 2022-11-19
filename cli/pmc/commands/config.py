@@ -45,6 +45,7 @@ MSAL_AUTHORITY_OPT = typer.Option(
 def create(
     ctx: typer.Context,
     location: Path = typer.Option(CONFIG_PATHS[0]),
+    profile: str = typer.Option("default", help="Name of the profile to create."),
     edit: bool = typer.Option(True, help="Open the file for editing after creating it."),
     overwrite: bool = typer.Option(False, help="Overwrite the existing config."),
     no_wait: bool = NO_WAIT_OPT,
@@ -88,7 +89,7 @@ def create(
 
     if location.suffix == ".toml":
         with location.open("wb") as f:
-            tomli_w.dump({"default": config}, f)
+            tomli_w.dump({profile: config}, f)
     elif location.suffix == ".json":
         with location.open("w") as f:
             json.dump(config, f, indent=3)
