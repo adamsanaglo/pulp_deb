@@ -54,23 +54,22 @@ def _raw_config(path: Path, profile: Optional[str]) -> Dict[str, Any]:
             settings = json.load(f)
         elif path.suffix == ".toml":
             profiles = tomli.load(f)
+
             if len(profiles.values()) < 1:
                 raise UsageError(f"Could not find profiles in '{path}'.")
 
             # Start with the default profile
-            default_profile = {}
+            settings = {}
             if "default" in profiles:
-                default_profile = profiles["default"]
+                settings = profiles["default"]
 
             # Override values specified in requested profile, if any
             if profile:
                 try:
-                    settings = default_profile.update(profiles[profile])
+                    settings.update(profiles[profile])
                 except KeyError:
                     raise UsageError(f"Invalid profile '{profile}'.")
-            elif default_profile:
-                settings = default_profile
-            else:
+            elif not settings:
                 # The first (only?) one listed in the file.
                 settings = next(iter(profiles.values()))
         else:
