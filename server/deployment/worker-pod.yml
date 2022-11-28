@@ -33,11 +33,8 @@ spec:
         image: $loginserver/signer:latest
         resources:
           requests:
-            cpu: 100m
-            memory: 250Mi
-          limits:
-            cpu: 250m
-            memory: 350Mi
+            cpu: 1500m
+            memory: 1000Mi
         ports:
           - containerPort: 8888
             name: signer-port
