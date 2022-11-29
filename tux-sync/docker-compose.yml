@@ -42,6 +42,7 @@ services:
       env_file:
         - .env-signer
       restart: unless-stopped
+      stop_grace_period: 310s
 
     pulp-migrate:
       image: pmctuxacr.azurecr.io/pulp
@@ -91,6 +92,7 @@ services:
       env_file:
         - .env-pulp
       restart: unless-stopped
+      stop_grace_period: 310s
 
     pulp-content:
       image: pmctuxacr.azurecr.io/pulp

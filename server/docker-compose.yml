@@ -78,6 +78,7 @@ services:
         - ../server/.test.key:/mnt/test.key
       env_file:
         - ../server/.env
+      stop_grace_period: 310s
 
     pulp-migrate:
       image: localhost/pulp:stable
@@ -149,6 +150,7 @@ services:
       env_file:
         - .env
         - .env.storage
+      stop_grace_period: 310s
 
     pulp-content:
       image: localhost/pulp:stable

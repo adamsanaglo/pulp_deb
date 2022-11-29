@@ -14,6 +14,8 @@ spec:
     spec:
       nodeSelector:
         "kubernetes.io/os": linux
+      # A little longer than PULP_WORKER_TTL to give running tasks a chance to complete
+      terminationGracePeriodSeconds: 310
       containers:
       - name: pulp-worker
         image: $loginserver/pulp:latest

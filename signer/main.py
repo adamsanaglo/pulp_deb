@@ -32,8 +32,8 @@ def handle_request(file: UploadFile, clearsign: bool, key_id: str, task_id: str)
 
 @app.post("/sign")
 async def sign(
-        background_tasks: BackgroundTasks, clearsign: bool, key_id: str, file: UploadFile
-    ) -> Dict:
+    background_tasks: BackgroundTasks, clearsign: bool, key_id: str, file: UploadFile
+) -> Dict:
     """
     Request a signature, which will be processed in the background.
     Required params:
@@ -75,6 +75,5 @@ async def signature(task_id: str, response: Response) -> Response:
 
 @app.get("/status", status_code=200)
 async def status() -> Dict:
-    redis.set("heartbeat", "thump")
-    redis.get("heartbeat")
-    return {"Computer?": "WORKING"}
+    num = len(redis.keys("*"))
+    return {"Computer?": "idle" if not num else num}

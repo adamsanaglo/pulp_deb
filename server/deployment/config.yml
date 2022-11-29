@@ -41,6 +41,8 @@ data:
   PULP_CONTENT_PATH_PREFIX: "/"
   PULP_PUBLISH_RELEASE_FILE_LABEL: "true"
   PULP_CONTENT_WORKERS: "8"
+  # Long enough to let tasks complete, a little less than AKS terminationGracePeriodSeconds
+  PULP_WORKER_TTL: "300"
 ---
 apiVersion: v1
 kind: ConfigMap
