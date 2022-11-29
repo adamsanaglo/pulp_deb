@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Optional, Union
+from typing import List, Optional, Union
 
-from pydantic import BaseModel, MissingError, validator
+from pydantic import BaseModel
 
 
 class StrEnum(str, Enum):
@@ -46,14 +46,7 @@ class Action(BaseModel):
     repo_name: str
     repo_type: RepoType
     release: Optional[str]
-    package: Union[RpmPackage, DebPackage, None]
-
-    @validator("package")
-    def validate_package(cls, value, values):
-        if not (values["source"] == "vcurrent" and values["action_type"] == "add"):
-            if not value:
-                raise MissingError()
-        return value
+    packages: Union[List[RpmPackage], List[DebPackage]]
 
     def translate_repo_name(self):
         if self.source == SourceType.vnext:

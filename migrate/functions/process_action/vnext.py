@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 import httpx
 
 from process_action.auth import pmcauth
-from schemas import DebPackage, RpmPackage
+from schemas import DebPackage, RpmPackage, RepoType
 
 VNEXT_URL = os.environ["VNEXT_URL"]
 MSAL_CLIENT_ID = os.environ["MSAL_CLIENT_ID"]
@@ -210,15 +210,15 @@ def trigger_vnext_sync(repo_name):
         _publish_vnext_repo(client, repo)
 
 
-def remove_vnext_packages(repo_name, release, packages):
+def remove_vnext_packages(action):
     errors = []
     package_ids = []
 
     with _get_client() as client:
-        repo = _get_vnext_repo(client, repo_name)
+        repo = _get_vnext_repo(client, action.repo_name)
 
         # find the package ids
-        for package in unique(packages):
+        for package in unique(action.packages):
             try:
                 package_id = _get_package_id(client, package, repo)
                 if package_id:
@@ -230,13 +230,14 @@ def remove_vnext_packages(repo_name, release, packages):
         if package_ids:
             # remove the package ids from the repo
             data = {"remove_packages": unique(package_ids), "migration": True}
-            if isinstance(packages[0], DebPackage):
-                data["release"] = release
+            if action.repo_type == RepoType.apt:
+                data["release"] = action.release
             response = client.patch(f"/repositories/{repo['id']}/packages/", json=data)
             _wait_for_task(client, response)
 
             _publish_vnext_repo(client, repo)
 
-        logging.info(f"Removed {len(package_ids)} packages(s) from {repo['name']}.")
-
-        return errors
+        if errors:
+            raise Exception(errors)
+        else:
+            logging.info(f"Removed {len(package_ids)} package(s) from {repo['name']}.")

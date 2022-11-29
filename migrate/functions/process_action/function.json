@@ -7,7 +7,6 @@
             "direction": "in",
             "queueName": "pmcmigrate",
             "connection": "AzureServiceBusConnectionString",
-            "cardinality": "many",
         }
     ]
 }

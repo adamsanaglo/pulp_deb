@@ -16,7 +16,7 @@
   "extensions": {
       "serviceBus": {
           "maxConcurrentCalls": 1,
-          "maxMessageBatchSize": 20,
+          "maxAutoLockRenewalDuration": "01:00:00",
       }
   }
 }

@@ -86,7 +86,8 @@ Grab the url for the queue\_action function (should be something like
 You can also debug by making requests directly via httpie:
 
 ```bash
-http :7071/api/queue_action action_type=remove source=vcurrent repo_name=test repo_type=apt release=nosuite component=asgard "package[name]=thor" "package[version]=1.0" "package[arch]=ppc64"
+http :7071/api/queue_action action_type=add source=vcurrent repo_name=debtest repo_type=apt release=bionic component=asgard packages:='[{"name": "aadlogin-selinux", "version": "1.0.016050002", "arch": "amd64"}]'
+http :7071/api/queue_action action_type=remove source=vcurrent repo_name=debtest repo_type=apt release=bionic component=asgard packages:='[{"name": "aadlogin-selinux", "version": "1.0.016050002", "arch": "amd64"}]'
 ```
 
 If you get a 403 response from vnext, make sure the account you're using has the Migration role.

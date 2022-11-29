@@ -48,29 +48,33 @@ async def remove_vcurrent_packages(
         repo = await api.read(repo_id)
         repo_name = repo["name"]
 
+    data = {
+        "repo_name": repo_name,
+        "repo_type": repo_id.type,
+        "source": "vnext",
+        "action_type": "remove",
+        "packages": [],
+    }
+
+    if repo_id.type.apt:
+        data["release"] = release
+
     async with get_client() as client:
         for package_id in package_ids:
-            logger.info(f"[MIGRATION] Removing {package_id} from {repo_name}.")
-
-            data = {
-                "repo_name": repo_name,
-                "repo_type": repo_id.type,
-                "source": "vnext",
-                "action_type": "remove",
-            }
-            if repo_id.type.apt:
-                data["release"] = release
 
             async with PackageApi() as api:
-                package = await api.read(package_id)
-                data["package"] = {
-                    "name": package.get("name") or package["package"],
-                    "version": package["version"],
-                    "arch": package.get("arch") or package["architecture"],
+                resp = await api.read(package_id)
+                package = {
+                    "name": resp.get("name") or resp["package"],
+                    "version": resp["version"],
+                    "arch": resp.get("arch") or resp["architecture"],
                 }
                 if package_id.type == PackageType.rpm:
-                    data["package"]["release"] = package["release"]
-                    data["package"]["epoch"] = package["epoch"]
+                    package["release"] = resp["release"]
+                    package["epoch"] = resp["epoch"]
 
-            resp = await client.post("", json=data)
-            logger.info(f"[MIGRATION] Received {resp.status_code} response: {resp}.")
+                data["packages"].append(package)
+
+    logger.info(f"[MIGRATION] Removing {len(data['packages'])} from {repo_name}.")
+    resp = await client.post("", json=data)
+    logger.info(f"[MIGRATION] Received {resp.status_code} response: {resp}.")
