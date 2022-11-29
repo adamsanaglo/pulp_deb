@@ -18,6 +18,7 @@ PAGER_OPT = typer.Option(
 )
 ID_ONLY_OPT = typer.Option(False, "--id-only", help="Show ids instead of full responses.")
 DEBUG_OPT = typer.Option(False, "--debug", "-d", help="Show debug output.")
+SSL_VERIFY_OPT = typer.Option(True, help="Verify the ssl cert.", hidden=True)
 RESP_FORMAT_OPT = typer.Option(Format.json, "--format", hidden=True)  # TODO: add more formats
 BASE_URL_OPT = typer.Option("", help="The base url of the server (i.e. https://<hostname>/api/v4)")
 MSAL_CLIENT_ID_OPT = typer.Option(
@@ -53,6 +54,7 @@ def create(
     pager: bool = PAGER_OPT,
     id_only: bool = ID_ONLY_OPT,
     debug: bool = DEBUG_OPT,
+    ssl_verify: bool = SSL_VERIFY_OPT,
     resp_format: Format = RESP_FORMAT_OPT,
     base_url: str = BASE_URL_OPT,
     msal_client_id: str = MSAL_CLIENT_ID_OPT,

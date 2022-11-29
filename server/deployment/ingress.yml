@@ -16,10 +16,7 @@ kind: ConfigMap
 metadata:
   name: nginx-settings
 data:
-  ssl.conf: |
-    upstream pmcserver {
-        server pmc-service-internal:80; # The pmc-service LoadBalancer
-    }    
+  ssl-content.conf: |
     upstream pulpcontent {
         server pulp-content-internal:80; # The pulp-content LoadBalancer
     }
@@ -28,8 +25,6 @@ data:
     error_log  stderr warn;
     access_log  /dev/stdout main;
 
-    # Define the pulp-content server first so that requests with no HOST header hit that and not
-    # the api.
     server { # Server to handle incoming requests for the content
         listen              80;
         listen              443 ssl; # 'ssl' parameter tells NGINX to decrypt the traffic
@@ -98,6 +93,14 @@ data:
             proxy_pass http://pulpcontent;
         }
     }
+  ssl-api.conf: |
+    upstream pmcserver {
+        server pmc-service-internal:80; # The pmc-service LoadBalancer
+    }    
+
+    # Instruct nginx to publish logs to stderr / stdout so kubernetes can capture them.
+    error_log  stderr warn;
+    access_log  /dev/stdout main;
 
     server { # Server to handle incoming requests for the api
         listen              443 ssl; # 'ssl' parameter tells NGINX to decrypt the traffic
@@ -117,6 +120,12 @@ data:
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
         add_header X-Content-Type-Options nosniff;
         client_max_body_size 3G;
+
+        location /nginx_status {
+            stub_status on;
+            allow 127.0.0.1;
+            deny all;
+        }
 
         location / {
             proxy_pass http://pmcserver;
@@ -148,21 +157,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx
+  name: nginx-content
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: nginx
+      app: nginx-content
   template:
     metadata:
       labels:
-        app: nginx
+        app: nginx-content
     spec:
       nodeSelector:
         "kubernetes.io/os": linux
       containers:
-      - name: nginx
+      - name: nginx-content
         image: mcr.microsoft.com/cbl-mariner/base/nginx:1
         resources:
           requests:
@@ -206,19 +215,92 @@ spec:
           configMap:
             name: nginx-settings
             items:
-              - key: ssl.conf
+              - key: ssl-content.conf
+                path: nginx.conf.default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-api
+  template:
+    metadata:
+      labels:
+        app: nginx-api
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: nginx-api
+        image: mcr.microsoft.com/cbl-mariner/base/nginx:1
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 3Gi
+          limits:
+            cpu: 1000m
+        ports:
+          - containerPort: 443
+            name: https
+        readinessProbe:
+          exec:
+            command:
+              - "curl"
+              - "--insecure"
+              - "https://localhost/nginx_status"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        volumeMounts:
+        - name: tls-secrets-volume
+          mountPath: "/mnt/secrets"
+          readOnly: true
+        - name: ssl-conf-volume
+          mountPath: "/etc/nginx/nginx.conf.default"
+          subPath: nginx.conf.default
+          readOnly: true
+      volumes:
+        - name: tls-secrets-volume
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "tls-secret-provider"
+        - name: ssl-conf-volume
+          configMap:
+            name: nginx-settings
+            items:
+              - key: ssl-api.conf
                 path: nginx.conf.default
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: nginx
+  name: nginx-content
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: nginx
-  minReplicas: 4
+    name: nginx-content
+  minReplicas: $min_pulp_content
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 40
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx-api
+  minReplicas: 2
   maxReplicas: 10
   targetCPUUtilizationPercentage: 40
 ---
@@ -231,7 +313,7 @@ spec:
   ports:
   - port: 443
   selector:
-    app: nginx
+    app: nginx-api
 ---
 apiVersion: v1
 kind: Service
@@ -245,4 +327,4 @@ spec:
   - port: 443
     name: https
   selector:
-    app: nginx
+    app: nginx-content

@@ -51,7 +51,7 @@ class RetriableException(Exception):
     pass
 
 
-def with_retries(original_function=None, *, max_attempts: int = 20):
+def with_retries(original_function=None, *, max_attempts: int = 120):
     """
     This idiom defines a function decorator, `with_retries`, that can either be called with the
     max_attempts _kwarg_ or without. It must be a kwarg, not a positional arg.
@@ -69,7 +69,7 @@ def with_retries(original_function=None, *, max_attempts: int = 20):
                 except RetriableException as e:
                     last_ex = e
                     attempt += 1
-                    time.sleep(60)
+                    time.sleep(10)
             # Max attempts exceeded
             raise last_ex
 

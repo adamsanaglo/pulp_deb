@@ -30,6 +30,8 @@ function set_initial_vars() {
     export esrpAuthCertPath="/mnt/secrets/${esrpAuthCert}"
     export api_cert_name="api-cert"  # name of the tls certificate in the keyvault
     export content_cert_name="content-cert"
+    export min_pulp_workers="2"
+    export min_pulp_content="2"
     env_overrides
 }
 

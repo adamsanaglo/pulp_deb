@@ -1,7 +1,8 @@
 #!/bin/bash -e
 shopt -s expand_aliases
 if [ -z "$1" ]; then
-  echo 'usage: update.sh "ppe|tux|prod" [api-pod|worker-pod|pulp-content|nginx] [<yml-file>]'
+  echo 'usage: update.sh "ppe|tux|prod" [api-pod|worker-pod|pulp-content|nginx-api|nginx-content]' \
+       '[<yml-file>]'
   echo 'If the optional args are not provided then all yaml files will be applied, migrations' \
        'run, and all containers will be bounced.'
   echo 'Or you can only roll a pod (to pick up new released images) by providing $2.'
@@ -24,7 +25,8 @@ if [ -z "$2" ]; then
   kubectl rollout restart deployment api-pod
   kubectl rollout restart deployment worker-pod
   kubectl rollout restart deployment pulp-content
-  kubectl rollout restart deployment nginx
+  kubectl rollout restart deployment nginx-api
+  kubectl rollout restart deployment nginx-content
   exit
 fi
 

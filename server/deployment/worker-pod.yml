@@ -129,7 +129,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: worker-pod
-  minReplicas: 10
+  minReplicas: $min_pulp_workers
   maxReplicas: 10
   targetCPUUtilizationPercentage: 60
 ---
@@ -142,7 +142,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: pulp-content
-  minReplicas: 4
+  minReplicas: $min_pulp_content
   maxReplicas: 10
   targetCPUUtilizationPercentage: 40
 ---

@@ -21,5 +21,6 @@ function env_overrides() {
     export acr="pmcprod"
     export api_cert_name="pmcIngestTLS"  # name of the tls certificate in the keyvault
     export content_cert_name="pmcDistroTLS"
-
+    export min_pulp_workers="10"
+    export min_pulp_content="4"
 }

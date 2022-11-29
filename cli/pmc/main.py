@@ -26,6 +26,7 @@ from .commands.config import (
     NO_WAIT_OPT,
     PAGER_OPT,
     RESP_FORMAT_OPT,
+    SSL_VERIFY_OPT,
 )
 from .context import PMCContext
 from .schemas import CONFIG_PATHS, Config, Format
@@ -150,6 +151,7 @@ def main(
     pager: bool = PAGER_OPT,
     id_only: bool = ID_ONLY_OPT,
     debug: bool = DEBUG_OPT,
+    ssl_verify: bool = SSL_VERIFY_OPT,
     resp_format: Format = RESP_FORMAT_OPT,
     base_url: str = BASE_URL_OPT,
     msal_client_id: str = MSAL_CLIENT_ID_OPT,
@@ -182,6 +184,7 @@ def main(
         pager=pager,
         id_only=id_only,
         debug=debug,
+        ssl_verify=ssl_verify,
         resp_format=resp_format,
         msal_client_id=msal_client_id,  # pyright: ignore
         msal_scope=msal_scope,  # pyright: ignore
