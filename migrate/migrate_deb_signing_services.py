@@ -16,7 +16,9 @@ if len(sys.argv) == 3:
     password = sys.argv[2]
     auth = HTTPBasicAuth("admin", password)
 
-response = requests.get("http://" + hostname + "/pulp/api/v3/repositories/deb/apt/", auth=auth)
+response = requests.get(
+    "http://" + hostname + "/pulp/api/v3/repositories/deb/apt/", params={"limit": "500"}, auth=auth
+)
 for repo in response.json()["results"]:
     href = repo["pulp_href"]
     labels = repo.pop("pulp_labels", {})
@@ -24,5 +26,5 @@ for repo in response.json()["results"]:
     if service:
         print(f"Updating {repo['name']} to {service}")
         repo["signing_service"] = service
-        resp = requests.put("http://" + hostname + href, data=repo)
+        resp = requests.put("http://" + hostname + href, data=repo, auth=auth)
         print(resp)
