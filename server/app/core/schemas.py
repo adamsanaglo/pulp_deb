@@ -114,7 +114,7 @@ class Identifier(str):
     """
 
     pattern: Pattern[str] = re.compile(rf"^([a-z-]+)-({uuid_group})$")
-    examples: List[str]
+    examples: List[str] = []
 
     @classmethod
     def __get_validators__(cls: Type[T]) -> Generator[Callable[[str], T], None, None]:
