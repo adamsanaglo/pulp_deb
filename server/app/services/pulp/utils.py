@@ -1,3 +1,4 @@
+import asyncio
 import re
 from typing import Any, Optional
 
@@ -68,3 +69,31 @@ def translate_response(response_json: Any, pagination: Optional[Pagination] = No
         response_json["offset"] = pagination.offset
 
     return response_json
+
+
+def memoize(func) -> Any:  # type: ignore
+    """
+    (c) 2021 Nathan Henrie, MIT License
+    https://n8henrie.com/2021/11/decorator-to-memoize-sync-or-async-functions-in-python/
+    """
+    cache = {}  # type: ignore
+
+    async def memoized_async_func(*args, **kwargs):  # type: ignore
+        key = (args, frozenset(sorted(kwargs.items())))
+        if key in cache:
+            return cache[key]
+        result = await func(*args, **kwargs)
+        cache[key] = result
+        return result
+
+    def memoized_sync_func(*args, **kwargs):  # type: ignore
+        key = (args, frozenset(sorted(kwargs.items())))
+        if key in cache:
+            return cache[key]
+        result = func(*args, **kwargs)
+        cache[key] = result
+        return result
+
+    if asyncio.iscoroutinefunction(func):
+        return memoized_async_func
+    return memoized_sync_func

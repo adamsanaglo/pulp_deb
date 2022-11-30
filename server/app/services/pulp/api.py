@@ -22,7 +22,7 @@ from app.core.schemas import (
     RepoVersionId,
     TaskId,
 )
-from app.services.pulp.utils import get_client, id_to_pulp_href, translate_response
+from app.services.pulp.utils import get_client, id_to_pulp_href, memoize, translate_response
 
 T = TypeVar("T", bound="PulpApi")
 
@@ -125,6 +125,7 @@ class PulpApi:
 
 class SigningService(PulpApi):
     @staticmethod
+    @memoize
     async def list_relevant(repo_type: str) -> Dict[str, str]:
         """
         List the signing services available for this repo type. This will also strip out the type
@@ -141,11 +142,21 @@ class SigningService(PulpApi):
                 ret[service["name"][: -len(suffix)]] = service["pulp_href"]
         return ret
 
+    @staticmethod
+    @memoize
+    async def id_to_name() -> Dict[str, str]:
+        """Return dict containing id -> service name mapping."""
+        async with PulpApi() as pa:
+            resp = translate_response((await pa.get("/signing-services/")).json())
+        ret = {}
+        for service in resp["results"]:
+            ret[service["id"]] = service["name"].removesuffix("_apt").removesuffix("_yum")
+        return ret
+
 
 class RepositoryApi(PulpApi):
     SS = "signing_service"
     MSS = "metadata_signing_service"
-    PL = "pulp_labels"
 
     @staticmethod
     async def _set_gpg_fields(data: Dict[str, Any], type: str) -> None:
@@ -159,8 +170,7 @@ class RepositoryApi(PulpApi):
             data["gpgcheck"] = 1
             data["repo_gpgcheck"] = 1
         elif signing_service:  # deb
-            # A work-around until https://github.com/pulp/pulp_deb/issues/641 is fixed.
-            data[RepositoryApi.PL] = {RepositoryApi.SS: services[signing_service]}
+            data[RepositoryApi.SS] = services[signing_service]
 
     async def create(self, data: Dict[str, Any]) -> Any:
         """Call the create endpoint."""
@@ -171,6 +181,21 @@ class RepositoryApi(PulpApi):
             data["remote"] = id_to_pulp_href(remote)
         resp = await self.post(self.endpoint("create", type=type), json=data)
         return translate_response(resp.json())
+
+    async def read(self, id: Identifier) -> Any:
+        """Read, translating the signing service"""
+        ret = await super().read(id)
+        services = await SigningService.id_to_name()
+
+        def _translate_key(key: str) -> None:
+            if key in ret:
+                value = ret.pop(key)
+                if value in services:
+                    ret[self.SS] = services[value]
+
+        _translate_key(self.SS)
+        _translate_key(self.MSS)
+        return ret
 
     async def update(self, id: RepoId, data: Dict[str, Any]) -> Any:
         if self.SS in data:
@@ -219,10 +244,6 @@ class RepositoryApi(PulpApi):
 
         if id.type == RepoType.apt:
             data["structured"] = True
-            # pulp-deb plugin wants us to specify the metadata signer every time we call publish,
-            # so we must look up the href we stored in pulp_labels and add it here.
-            details = await self.read(id)
-            data[RepositoryApi.SS] = details[RepositoryApi.PL][RepositoryApi.SS]
 
         if id.type == RepoType.file:
             data["manifest"] = "FILE_MANIFEST"
@@ -517,6 +538,17 @@ class ReleaseApi(PulpApi):
             resp = await api.list(params={"release": release_id.uuid})
             return [arch["architecture"] for arch in resp["results"]]
 
+    async def _translate_signing_services(self, release: Dict[str, Any]) -> None:
+        services = await SigningService.id_to_name()
+
+        def _translate_key(key: str) -> None:
+            if key in release:
+                value = release[key]
+                if value in services:
+                    release["signing_service"] = services[value]
+
+        _translate_key("signing_service")
+
     async def list(
         self,
         pagination: Optional[Pagination] = None,
@@ -539,6 +571,7 @@ class ReleaseApi(PulpApi):
             release_id = ReleaseId(release["id"])
             release["components"] = await self._get_components(release_id)
             release["architectures"] = await self._get_architectures(release_id)
+            await self._translate_signing_services(release)
 
         return releases
 

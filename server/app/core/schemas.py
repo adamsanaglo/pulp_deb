@@ -384,6 +384,7 @@ class RepositoryResponse(BaseModel):
     retain_repo_versions: Optional[int]
     remote: Optional[RemoteId]
     latest_version: RepoVersionId
+    signing_service: Optional[str]
 
 
 class RepositoryListResponse(ListResponse):
@@ -610,6 +611,7 @@ class ReleaseResponse(ReleaseCreate):
     id: ReleaseId
     origin: str
     label: str
+    signing_service: Optional[str]
 
 
 class ReleaseListResponse(ListResponse):

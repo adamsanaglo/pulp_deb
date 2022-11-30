@@ -34,7 +34,9 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/repositories/", response_model=RepositoryListResponse)
+@router.get(
+    "/repositories/", response_model=RepositoryListResponse, response_model_exclude_unset=True
+)
 async def list_repos(
     pagination: Pagination = Depends(Pagination),
     name: Optional[str] = None,

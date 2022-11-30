@@ -18,7 +18,11 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/repositories/{repo_id}/releases/", response_model=ReleaseListResponse)
+@router.get(
+    "/repositories/{repo_id}/releases/",
+    response_model=ReleaseListResponse,
+    response_model_exclude_unset=True,
+)
 async def list_releases(
     repo_id: DebRepoId,
     pagination: Pagination = Depends(Pagination),
