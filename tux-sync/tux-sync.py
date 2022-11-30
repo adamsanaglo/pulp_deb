@@ -138,6 +138,11 @@ def smoke_test():
     print(f"SUCCESS: {status}")
 
 
+def cleanup():
+    # cleanup old images and free up space
+    util.run_cmd("docker image prune -a -f")
+
+
 # Make Directories (if not present)
 create_directories()
 
@@ -158,3 +163,6 @@ restart_containers()
 
 # Test API Container
 smoke_test()
+
+# Cleanup
+cleanup()
