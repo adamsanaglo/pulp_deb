@@ -1,0 +1,25 @@
+From 17fe6f0d43fc23d2491d9dd128d2092876363319 Mon Sep 17 00:00:00 2001
+From: David Davis <daviddavis@microsoft.com>
+Date: Tue, 1 Nov 2022 18:41:19 +0000
+Subject: [PATCH] Merged PR 7056189: Fixing bad method call in pulp_deb
+
+---
+ pulp_deb/app/models/content.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pulp_deb/app/models/content.py b/pulp_deb/app/models/content.py
+index 75c9b2d..5835de6 100644
+--- a/pulp_deb/app/models/content.py
++++ b/pulp_deb/app/models/content.py
+@@ -100,7 +100,7 @@ class BasePackage(Content):
+ 
+     def generate_filename(self, component=""):
+         """Generate a new filename using name/version/arch."""
+-        return self.filename(component, generate_name())
++        return self.filename(component, self.generate_name())
+ 
+     repo_key_fields = ("package", "version", "architecture")
+ 
+-- 
+2.31.1
+

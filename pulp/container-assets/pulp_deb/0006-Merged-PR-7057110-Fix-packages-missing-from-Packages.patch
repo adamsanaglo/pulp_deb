@@ -1,0 +1,77 @@
+From 9d444d2e62c3d0c5fb5d738e3e92078046bb182b Mon Sep 17 00:00:00 2001
+From: David Davis <daviddavis@microsoft.com>
+Date: Wed, 2 Nov 2022 14:29:56 +0000
+Subject: [PATCH] Merged PR 7057110: Fix packages missing from Packages index
+
+Fix packages missing from Packages index
+
+Fixed an issue in Pulp where if packages belonged to more than one
+release, they would only show up in one Packages index.
+
+fixes #16102558
+
+Related work items: #16102558
+---
+ CHANGES/674.bugfix               |  2 ++
+ pulp_deb/app/tasks/publishing.py | 23 +++++++++++------------
+ 2 files changed, 13 insertions(+), 12 deletions(-)
+ create mode 100644 pulp/container-assets/pulp_deb/CHANGES/674.bugfix
+
+diff --git a/CHANGES/674.bugfix b/CHANGES/674.bugfix
+new file mode 100644
+index 0000000..ef8c11b
+--- /dev/null
++++ b/CHANGES/674.bugfix
+@@ -0,0 +1,2 @@
++Fixed a bug where packages were only showing up in one Packages index file if they belonged to two
++or more releases.
+diff --git a/pulp_deb/app/tasks/publishing.py b/pulp_deb/app/tasks/publishing.py
+index 60d0623..c054ece 100644
+--- a/pulp_deb/app/tasks/publishing.py
++++ b/pulp_deb/app/tasks/publishing.py
+@@ -1,5 +1,6 @@
+ import os
+ import shutil
++from contextlib import suppress
+ 
+ from datetime import datetime, timezone
+ from debian import deb822
+@@ -171,12 +172,9 @@ def publish(repository_version_pk, simple=False, structured=False, signing_servi
+                         pk__in=repo_version.content.order_by("-pulp_created"),
+                         release_component__in=components,
+                     ):
+-                        try:
+-                            release_helper.components[prc.release_component.component].add_package(
+-                                prc.package
+-                            )
+-                        except IntegrityError:
+-                            continue
++                        release_helper.components[prc.release_component.component].add_package(
++                            prc.package
++                        )
+                     release_helper.finish()
+ 
+     log.info(_("Publication: {publication} created").format(publication=publication.pk))
+@@ -204,12 +202,13 @@ class _ComponentHelper:
+             )
+ 
+     def add_package(self, package):
+-        published_artifact = PublishedArtifact(
+-            relative_path=package.filename(self.component),
+-            publication=self.parent.publication,
+-            content_artifact=package.contentartifact_set.get(),
+-        )
+-        published_artifact.save()
++        with suppress(IntegrityError):
++            published_artifact = PublishedArtifact(
++                relative_path=package.filename(self.component),
++                publication=self.parent.publication,
++                content_artifact=package.contentartifact_set.get(),
++            )
++            published_artifact.save()
+         package_serializer = Package822Serializer(package, context={"request": None})
+         package_serializer.to822(self.component).dump(
+             self.package_index_files[package.architecture][0]
+-- 
+2.31.1
+

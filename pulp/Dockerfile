@@ -94,7 +94,7 @@ RUN mkdir -p /etc/pulp \
 
 RUN pip install pulpcore
 RUN pip install pulp-python
-#RUN pip install pulp-deb
+RUN pip install pulp-deb==2.20.0  # pin for patches below
 RUN pip install pulp-rpm>=3.18.9  # set min for https://github.com/pulp/pulp_rpm/issues/2892
 RUN pip install pulp-file
 
@@ -102,9 +102,16 @@ RUN pip install pulp-file
 COPY container-assets/django_storages /tmp/django_storages
 RUN pip install /tmp/django_storages
 
-# Enable vendored clone of pulp-deb from github.com/sdherr/pulp_deb
+# Apply our pulp_deb patches until upstream accepts/releases our merge requests
 COPY container-assets/pulp_deb /tmp/pulp_deb
-RUN pip install /tmp/pulp_deb
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0001-Merged-PRs-6822668-And-6834315-Add-pulp_deb-filters.patch # https://github.com/pulp/pulp_deb/pull/647
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0002-Merged-PR-6941077-Apply-release-fields-feature-to-pu.patch # https://github.com/pulp/pulp_deb/pull/656
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0003-Merged-PR-6950075-Re-apply-pulp_deb-release-field-pa.patch # ^
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0004-Merged-PR-7045448-Preserve-the-names-of-deb-packages.patch # No upstream patch
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0005-Merged-PR-7056189-Fixing-bad-method-call-in-pulp_deb.patch # No upstream patch
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0006-Merged-PR-7057110-Fix-packages-missing-from-Packages.patch # https://github.com/pulp/pulp_deb/pull/675
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0007-Merged-PR-7174904-Sign-all-apt-releases-in-a-repo-co.patch # https://github.com/pulp/pulp_deb/pull/683
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0008-Merged-PR-7224968-Better-control-of-signing-services.patch # https://github.com/pulp/pulp_deb/pull/689
 
 # In this image the manager is in /usr/bin, not /usr/local/bin
 RUN ["ln", "-s", "/usr/bin/pulpcore-manager", "/usr/local/bin/pulpcore-manager"]

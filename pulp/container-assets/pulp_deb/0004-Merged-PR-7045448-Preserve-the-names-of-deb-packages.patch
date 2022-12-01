@@ -1,0 +1,98 @@
+From 60ca171b4087f826b172e35c992c5f625274c7b9 Mon Sep 17 00:00:00 2001
+From: David Davis <daviddavis@microsoft.com>
+Date: Mon, 31 Oct 2022 14:59:14 +0000
+Subject: [PATCH] Merged PR 7045448: Preserve the names of deb packages from
+ vcurrent
+
+Preserve the names of deb packages from vcurrent
+
+We're syncing deb packages from vcurrent that have the same
+name/version/arch but differ by filename. When publishing these dupe
+packages, only one gets published as pulp_deb generates the filenames
+using N/V/A. Instead, use the vcurrent filenames which are stored in the
+relative_path field.
+
+fixes #16043581
+
+Related work items: #16043581
+---
+ pulp_deb/app/models/content.py                | 26 ++++++++++++++++---
+ .../app/serializers/content_serializers.py    |  4 +--
+ 2 files changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/pulp_deb/app/models/content.py b/pulp_deb/app/models/content.py
+index ff99332..75c9b2d 100644
+--- a/pulp_deb/app/models/content.py
++++ b/pulp_deb/app/models/content.py
+@@ -1,4 +1,5 @@
+ import os
++from pathlib import Path
+ 
+ from django.db import models
+ 
+@@ -64,9 +65,16 @@ class BasePackage(Content):
+     @property
+     def name(self):
+         """Print a nice name for Packages."""
+-        return "{}_{}_{}".format(self.package, self.version, self.architecture)
++        # use relative_path for filename when publishing instead of generating new ones. this will
++        # preserve the filenames from old packages that we've imported from vcurrent
++        # new packages uploaded to vnext will have their relative_path set automatically to
++        # name/version/arch
++
++        # return "{}_{}_{}".format(self.package, self.version, self.architecture)
+ 
+-    def filename(self, component=""):
++        return Path(self.relative_path).stem
++
++    def filename(self, component="", name=None):
+         """Assemble filename in pool directory."""
+         sourcename = self.source or self.package
+         sourcename = sourcename.split("(", 1)[0].rstrip()
+@@ -74,14 +82,26 @@ class BasePackage(Content):
+             prefix = sourcename[0:4]
+         else:
+             prefix = sourcename[0]
++
++        if not name:
++            name = self.name
++
+         return os.path.join(
+             "pool",
+             component,
+             prefix,
+             sourcename,
+-            "{}.{}".format(self.name, self.SUFFIX),
++            "{}.{}".format(name, self.SUFFIX),
+         )
+ 
++    def generate_name(self):
++        """Generate a new name using name/version/arch."""
++        return "{}_{}_{}".format(self.package, self.version, self.architecture)
++
++    def generate_filename(self, component=""):
++        """Generate a new filename using name/version/arch."""
++        return self.filename(component, generate_name())
++
+     repo_key_fields = ("package", "version", "architecture")
+ 
+     class Meta:
+diff --git a/pulp_deb/app/serializers/content_serializers.py b/pulp_deb/app/serializers/content_serializers.py
+index 91139c0..520d0ce 100644
+--- a/pulp_deb/app/serializers/content_serializers.py
++++ b/pulp_deb/app/serializers/content_serializers.py
+@@ -534,9 +534,9 @@ class BasePackageSerializer(SingleArtifactContentUploadSerializer, ContentChecks
+         data["sha256"] = data["artifact"].sha256
+ 
+         if "relative_path" not in data:
+-            data["relative_path"] = self.Meta.model(**package_data).filename()
++            data["relative_path"] = self.Meta.model(**package_data).generate_filename()
+         elif not os.path.basename(data["relative_path"]) == "{}.{}".format(
+-            self.Meta.model(**package_data).name, self.Meta.model.SUFFIX
++            self.Meta.model(**package_data).generate_name(), self.Meta.model.SUFFIX
+         ):
+             data["artifact"].touch()  # Orphan cleanup protection so the user can try again!
+             raise ValidationError(_("Invalid relative_path provided, filename does not match."))
+-- 
+2.31.1
+
