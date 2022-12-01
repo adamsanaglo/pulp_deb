@@ -1,7 +1,7 @@
 General
 --------
 This resource (packages.microsoft.com) is a collection of package repositories and related content (i.e. config files and keys).
-This content is public by design. Directory browsing (aka "autoindex") is deliberately enabled for the convenience of our users.
+This content is public by design.
 
 Supported Interfaces
 ---------------------
@@ -17,6 +17,7 @@ Static/Supported Resources
 
 Resources that are subject to change
 - The HTML/directory browsing interface is subject to change, and is not guaranteed to exist in perpetuity.
+  - This is enabled only for interactive web browsing, and is not a stable or supported API.
   - This includes the underlying structure of the HTML as well as the timestamp and filesize presented.
 - The paths to individual packages are subject to change.
   - The repo metadata is the source of truth for a given package path if/when a change occurs.
