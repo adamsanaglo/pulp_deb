@@ -39,5 +39,5 @@ if [ "$1" == "migrate" ]; then
     psql_cmd 'grant all privileges on database pulp to pulp'
   fi
 else
-  python3 app/main.py
+  exec python3 app/main.py
 fi
