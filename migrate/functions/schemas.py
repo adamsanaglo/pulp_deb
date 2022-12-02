@@ -54,7 +54,7 @@ class Action(BaseModel):
                 self.repo_name = self.repo_name[:-4]
             if self.repo_type == RepoType.yum and self.repo_name.endswith("-yum"):
                 self.repo_name = self.repo_name[:-4]
-        if self.source == SourceType.vcurrent:
+        elif self.source == SourceType.vcurrent:
             if self.repo_type == RepoType.apt:
                 self.repo_name = f"{self.repo_name}-apt"
             if self.repo_type == RepoType.yum:

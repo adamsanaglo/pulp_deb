@@ -75,6 +75,6 @@ async def remove_vcurrent_packages(
 
                 data["packages"].append(package)
 
-    logger.info(f"[MIGRATION] Removing {len(data['packages'])} from {repo_name}.")
-    resp = await client.post("", json=data)
-    logger.info(f"[MIGRATION] Received {resp.status_code} response: {resp}.")
+        logger.info(f"[MIGRATION] Removing {len(data['packages'])} from {repo_name}.")
+        resp = await client.post("", json=data)
+        logger.info(f"[MIGRATION] Received {resp.status_code} response: {resp}.")
