@@ -113,7 +113,7 @@ class AsyncSession(_AsyncSession):
         return await super().__aenter__()
 
 
-engine = create_async_engine(settings.db_uri(), **settings.db_engine_args())
+engine = create_async_engine(settings.db_uri(), pool_pre_ping=True, **settings.db_engine_args())
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
