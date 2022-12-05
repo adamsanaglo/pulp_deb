@@ -1,0 +1,35 @@
+From 42312a628da97c4bcc588f43ce3f2c18bcbbd7d3 Mon Sep 17 00:00:00 2001
+From: David Davis <daviddavis@users.noreply.github.com>
+Date: Mon, 5 Dec 2022 11:39:35 -0500
+Subject: [PATCH] Prevent sync from breaking if a custom field is blank
+
+fixes #694
+---
+ CHANGES/694.bugfix                              | 1 +
+ pulp_deb/app/serializers/content_serializers.py | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+ create mode 100644 CHANGES/694.bugfix
+
+diff --git a/CHANGES/694.bugfix b/CHANGES/694.bugfix
+new file mode 100644
+index 0000000..6cbe7f7
+--- /dev/null
++++ b/CHANGES/694.bugfix
+@@ -0,0 +1 @@
++Fix bug where sync failed if "Build-Depends" field in Package index was blank.
+diff --git a/pulp_deb/app/serializers/content_serializers.py b/pulp_deb/app/serializers/content_serializers.py
+index 8b5ef65..7ceff18 100644
+--- a/pulp_deb/app/serializers/content_serializers.py
++++ b/pulp_deb/app/serializers/content_serializers.py
+@@ -255,7 +255,7 @@ class BasePackage822Serializer(SingleArtifactContentSerializer):
+     pre_depends = CharField(required=False)
+     provides = CharField(required=False)
+     replaces = CharField(required=False)
+-    custom_fields = DictField(child=CharField(), allow_empty=True, required=False)
++    custom_fields = DictField(child=CharField(allow_blank=True), allow_empty=True, required=False)
+ 
+     def __init__(self, *args, **kwargs):
+         """Initializer for BasePackage822Serializer."""
+-- 
+2.34.1
+

@@ -112,6 +112,7 @@ RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0005-Merged-P
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0006-Merged-PR-7057110-Fix-packages-missing-from-Packages.patch # https://github.com/pulp/pulp_deb/pull/675
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0007-Merged-PR-7174904-Sign-all-apt-releases-in-a-repo-co.patch # https://github.com/pulp/pulp_deb/pull/683
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0008-Merged-PR-7224968-Better-control-of-signing-services.patch # https://github.com/pulp/pulp_deb/pull/689
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0009-Prevent-sync-from-breaking-if-a-custom-field-is-blan.patch # https://github.com/pulp/pulp_deb/pull/695
 
 # In this image the manager is in /usr/bin, not /usr/local/bin
 RUN ["ln", "-s", "/usr/bin/pulpcore-manager", "/usr/local/bin/pulpcore-manager"]
