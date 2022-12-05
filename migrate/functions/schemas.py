@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import List, Optional, Union
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -47,6 +48,9 @@ class Action(BaseModel):
     repo_type: RepoType
     release: Optional[str]
     packages: Union[List[RpmPackage], List[DebPackage]]
+    task: Optional[str]
+    # TODO: make correlation_id required once new code has been deployed to vnext/vcurrent
+    correlation_id: Optional[UUID]
 
     def translate_repo_name(self):
         if self.source == SourceType.vnext:

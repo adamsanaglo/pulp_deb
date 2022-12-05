@@ -3,7 +3,7 @@ import os
 from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
-from typing import Generator, Optional
+from typing import Generator, Optional, Union
 from uuid import UUID, uuid4
 
 import httpx
@@ -100,7 +100,7 @@ def _set_auth_header(request: httpx.Request) -> None:
 
 
 @contextmanager
-def _get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, None]:
+def get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, None]:
     if not cid:
         cid = uuid4()
 
@@ -118,13 +118,16 @@ def _get_client(cid: Optional[UUID] = None) -> Generator[httpx.Client, None, Non
     client.close()
 
 
-def _wait_for_task(client: httpx.Client, task_response: httpx.Response) -> None:
-    try:
-        task_id = task_response.json()["task"]
-    except Exception as e:
-        raise Exception(f"Got unexpected response: {e}")
+def wait_for_task(client: httpx.Client, task: Union[httpx.Response, str]) -> None:
+    if isinstance(task, httpx.Response):
+        try:
+            task_id = task.json()["task"]
+        except Exception as e:
+            raise Exception(f"Got unexpected response: {e}")
+    else:
+        task_id = task
 
-    logging.debug(f"Polling task {task_id}.")
+    logging.info(f"Polling task {task_id}.")
 
     while True:
         response = client.get(f"/tasks/{task_id}/")
@@ -201,12 +204,12 @@ def _get_package_id(client, package, repo):
 
 
 def trigger_vnext_sync(repo_name):
-    with _get_client() as client:
+    with get_client() as client:
         repo = _get_vnext_repo(client, repo_name)
 
         logging.info(f"Triggering sync in vnext for repo '{repo_name}'.")
         response = client.post(f"/repositories/{repo['id']}/sync/")
-        _wait_for_task(client, response)
+        wait_for_task(client, response)
         _publish_vnext_repo(client, repo)
 
 
@@ -214,7 +217,7 @@ def remove_vnext_packages(action):
     errors = []
     package_ids = []
 
-    with _get_client() as client:
+    with get_client() as client:
         repo = _get_vnext_repo(client, action.repo_name)
 
         # find the package ids
@@ -233,7 +236,7 @@ def remove_vnext_packages(action):
             if action.repo_type == RepoType.apt:
                 data["release"] = action.release
             response = client.patch(f"/repositories/{repo['id']}/packages/", json=data)
-            _wait_for_task(client, response)
+            wait_for_task(client, response)
 
             _publish_vnext_repo(client, repo)
 

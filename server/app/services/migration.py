@@ -5,6 +5,7 @@ from typing import AsyncGenerator, List, Optional
 from urllib.parse import parse_qs, urlparse
 
 import httpx
+from asgi_correlation_id.context import correlation_id
 
 from app.core.config import settings
 from app.core.schemas import PackageId, PackageType, RepoId
@@ -41,7 +42,7 @@ async def get_client() -> AsyncGenerator[httpx.AsyncClient, None]:
 
 
 async def remove_vcurrent_packages(
-    package_ids: List[PackageId], repo_id: RepoId, release: Optional[str] = None
+    package_ids: List[PackageId], repo_id: RepoId, task_id: str, release: Optional[str] = None
 ) -> None:
     """Remove a set of packages from vcurrent."""
     async with RepositoryApi() as api:
@@ -54,6 +55,8 @@ async def remove_vcurrent_packages(
         "source": "vnext",
         "action_type": "remove",
         "packages": [],
+        "task_id": task_id,
+        "correlation_id": correlation_id.get(),
     }
 
     if repo_id.type.apt:
