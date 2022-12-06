@@ -187,10 +187,16 @@ async def update_packages(
     # TODO: [MIGRATE] remove these lines
     from app.services.migration import remove_vcurrent_packages
 
-    if settings.AF_QUEUE_ACTION_URL and repo_update.remove_packages and not repo_update.migration:
+    if (
+        id.type in (RepoType.apt, RepoType.yum)
+        and settings.AF_QUEUE_ACTION_URL
+        and repo_update.remove_packages
+        and not repo_update.migration
+    ):
         await remove_vcurrent_packages(
             repo_update.remove_packages, id, resp["task"], repo_update.release
         )
+    # END [MIGRATE]
 
     return resp
 
