@@ -172,6 +172,18 @@ class RepositoryApi(PulpApi):
         elif signing_service:  # deb
             data[RepositoryApi.SS] = services[signing_service]
 
+    @staticmethod
+    async def _translate_signing_service(repo: Dict[str, Any]) -> None:
+        services = await SigningService.id_to_name()
+
+        def _translate_key(key: str) -> None:
+            if key in repo:
+                value = repo.pop(key)
+                repo[RepositoryApi.SS] = services.get(value, value)
+
+        _translate_key(RepositoryApi.SS)
+        _translate_key(RepositoryApi.MSS)
+
     async def create(self, data: Dict[str, Any]) -> Any:
         """Call the create endpoint."""
         type = data.pop("type")
@@ -180,21 +192,14 @@ class RepositoryApi(PulpApi):
         if remote := data.get("remote", None):
             data["remote"] = id_to_pulp_href(remote)
         resp = await self.post(self.endpoint("create", type=type), json=data)
-        return translate_response(resp.json())
+        ret = translate_response(resp.json())
+        await self._translate_signing_service(ret)
+        return ret
 
     async def read(self, id: Identifier) -> Any:
         """Read, translating the signing service"""
         ret = await super().read(id)
-        services = await SigningService.id_to_name()
-
-        def _translate_key(key: str) -> None:
-            if key in ret:
-                value = ret.pop(key)
-                if value in services:
-                    ret[self.SS] = services[value]
-
-        _translate_key(self.SS)
-        _translate_key(self.MSS)
+        await self._translate_signing_service(ret)
         return ret
 
     async def update(self, id: RepoId, data: Dict[str, Any]) -> Any:
