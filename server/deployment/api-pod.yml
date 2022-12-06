@@ -29,7 +29,7 @@ spec:
         readinessProbe:
           httpGet:
             scheme: HTTP
-            path: /api/
+            path: /healthz/
             port: pmc-port
           initialDelaySeconds: 5
           periodSeconds: 5

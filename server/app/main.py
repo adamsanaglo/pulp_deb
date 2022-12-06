@@ -42,19 +42,21 @@ fastapi_microsoft_identity.initialize(settings.TENANT_ID, settings.APP_CLIENT_ID
 async def log_requests(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    logger.info(
-        f"request from {request.client.host}:{request.client.port} - "  # type: ignore
-        f"'{request.method} {request.url.path}'."
-    )
-    start_time = time.time()
+    if request.url.path != "/healthz/":
+        logger.info(
+            f"request from {request.client.host}:{request.client.port} - "  # type: ignore
+            f"'{request.method} {request.url.path}'."
+        )
+        start_time = time.time()
 
     response = await call_next(request)
 
-    process_time = (time.time() - start_time) * 1000
-    formatted_process_time = "{0:.2f}".format(process_time)
-    logger.info(
-        f"request completed_in={formatted_process_time}ms status_code={response.status_code}."
-    )
+    if request.url.path != "/healthz/":
+        process_time = (time.time() - start_time) * 1000
+        formatted_process_time = "{0:.2f}".format(process_time)
+        logger.info(
+            f"request completed_in={formatted_process_time}ms status_code={response.status_code}."
+        )
 
     return response
 
@@ -71,6 +73,11 @@ def api(request: Request) -> Dict[str, Any]:
         "server": {"version": settings.VERSION},
         "versions": {"v4": "v4/"},
     }
+
+
+@root_router.get("/healthz/", status_code=204)
+def healthz(request: Request) -> None:
+    return
 
 
 app.include_router(api_router, prefix=settings.API_PREFIX)
