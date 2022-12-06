@@ -4,6 +4,7 @@ from pathlib import Path
 
 import requests
 import time
+import socket
 import sys
 import util
 
@@ -48,6 +49,17 @@ secret_paths = {
     ],
     "nginx-conf": []
 }
+
+# Tux-public-ingest has a few differences from tux-ingest
+# - Different MSI
+# - Subset of containers
+# - Different docker-compose file
+is_public_ingest = socket.gethostname() == "tux-ingest-public"
+if is_public_ingest:
+    print("Running on public-ingest. Will deploy only API containers.")
+    msi_client_id = "ed6fd758-18fa-48d9-b068-5afb4dcb47d9"
+    for key in ["signer", "nginx", "nginx-conf"]:
+        secret_paths.pop(key)
 
 def get_kv_util():
     """
@@ -118,6 +130,8 @@ def update_function_url():
 
 def restart_containers():
     docker_compose_cmd = "sudo docker compose"
+    if is_public_ingest:
+        docker_compose_cmd += " -f dc-public-ingest.yml"
     for param in ["down", "up -d"]:
         print(f"Running {docker_compose_cmd} {param}")
         util.run_cmd(f"{docker_compose_cmd} {param}")
@@ -152,8 +166,9 @@ fetch_secrets()
 # Fetch Docker Images
 fetch_docker_images()
 
-# Copy nginx config into place
-install_nginx_config()
+if not is_public_ingest:
+    # Copy nginx config into place
+    install_nginx_config()
 
 # Update Function Url
 update_function_url()

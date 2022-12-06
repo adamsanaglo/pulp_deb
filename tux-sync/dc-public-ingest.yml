@@ -1,0 +1,65 @@
+version: "3"
+
+services:
+
+    api-migrate:
+      container_name: pmcserver-migrate
+      image: pmctuxacr.azurecr.io/pmcserver_api
+      command: migrate
+      volumes:
+        - /var/lib/pmc/pmcserver_api:/mnt/secrets
+      env_file:
+        - .env-api
+
+    api:
+      container_name: pmcserver
+      image: pmctuxacr.azurecr.io/pmcserver_api
+      depends_on:
+        pulp-api:
+          condition: service_healthy
+        api-migrate:
+          condition: service_completed_successfully
+      volumes:
+        - /var/lib/pmc/pmcserver_api:/mnt/secrets
+      ports:
+        - "8000:8000"
+      env_file:
+        - .env-api
+
+    pulp-migrate:
+      image: pmctuxacr.azurecr.io/pulp
+      container_name: pulp-migrate
+      command: pulp-migrate
+      depends_on:
+        api-migrate:
+          condition: service_completed_successfully
+      volumes:
+        - /var/lib/pmc/pulp:/mnt/secrets
+      env_file:
+        - .env-pulp
+
+    pulp-api:
+      image: pmctuxacr.azurecr.io/pulp
+      container_name: pulp-api
+      command: pulp-api
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:24817/pulp/api/v3/status/"]
+        interval: 5s
+        timeout: 1s
+        retries: 30
+      depends_on:
+        pulp-migrate:
+          condition: service_completed_successfully
+      ports:
+        - "8080:24817"
+      volumes:
+        - /var/lib/pmc/pulp:/mnt/secrets
+      devices:
+        - /dev/fuse
+      env_file:
+        - .env-pulp
+
+volumes:
+  pulp_storage:
+  containers:
+  postgres-data:
