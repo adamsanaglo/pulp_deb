@@ -2,7 +2,6 @@ import logging
 
 import azure.functions as func
 from pydantic import ValidationError
-
 from schemas import Action
 
 

@@ -7,9 +7,8 @@ from typing import Generator, Optional, Union
 from uuid import UUID, uuid4
 
 import httpx
-
 from process_action.auth import pmcauth
-from schemas import DebPackage, RpmPackage, RepoType
+from schemas import DebPackage, RepoType, RpmPackage
 
 VNEXT_URL = os.environ["VNEXT_URL"]
 MSAL_CLIENT_ID = os.environ["MSAL_CLIENT_ID"]
@@ -46,9 +45,7 @@ class RetryClient(httpx.Client):
             except httpx.HTTPStatusError as e:
                 if e.response.status_code in self.retry_status_codes and retries > 0:
                     resp = e.response
-                    logging.warning(
-                        f"Received {resp.status_code} response for {url}. Retrying."
-                    )
+                    logging.warning(f"Received {resp.status_code} response for {url}. Retrying.")
                     retries -= 1
                     continue
                 else:
@@ -196,9 +193,7 @@ def _get_package_id(client, package, repo):
         return None
 
     if resp_json["count"] > 1:
-        raise Exception(
-            f"Found {resp_json['count']} packages in {repo['name']} for {package}."
-        )
+        raise Exception(f"Found {resp_json['count']} packages in {repo['name']} for {package}.")
 
     return resp_json["results"][0]["id"]
 

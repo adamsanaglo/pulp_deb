@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 
 class StrEnum(str, Enum):
-
     def __repr__(self):
         return self.value
 

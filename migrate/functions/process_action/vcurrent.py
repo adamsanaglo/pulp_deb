@@ -59,8 +59,7 @@ def _get_packages(repo_id, package):
         packages = [
             pkg
             for pkg in packages
-            if _compare_epochs(pkg["epoch"], package.epoch)
-            and pkg["release"] == package.release
+            if _compare_epochs(pkg["epoch"], package.epoch) and pkg["release"] == package.release
         ]
 
     if len(packages) == 0:
@@ -70,9 +69,7 @@ def _get_packages(repo_id, package):
 
 
 def remove_vcurrent_package(action):
-    logging.info(
-        f"Removing package from vcurent {action.repo_name} repo: {action.package}."
-    )
+    logging.info(f"Removing package from vcurent {action.repo_name} repo: {action.package}.")
 
     if not (repo := _get_repo(action.repo_name)):
         logging.warn(f"Skipping removal action. Repo '{action.repo_name}' not found.")
