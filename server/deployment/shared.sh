@@ -62,53 +62,105 @@ function apply_migrations() {
 }
 
 function get_pod_name() {
-    kubectl get pods -l app=${1} -o jsonpath='{.items[0].metadata.name}'
-}
-
-function get_service_ip() {
-    kubectl get service/${1} -o jsonpath="{.status.loadBalancer.ingress[0].ip}"
-}
-
-function pmc_run() {
-    if [[ -z "${PMCPOD}" ]]; then
-        PMCPOD=$(get_pod_name pmc)
+    if [ $# -ne 1 ]; then
+        echo 'Usage: get_pod_name <container_name>'
+        return
     fi
-    kubectl exec --stdin -c pmc --tty $PMCPOD -- /bin/bash -c ${@}
-}
-
-function kube_bash() {
-    # Starts a bash shell in the specified container.
-    # Useful for debugging.
-    local container="${1}"
     declare -A pods
-    for name in pmc pulp-worker pulp-content nginx; do
+    for name in pmc pulp-worker pulp-content nginx-api nginx-content; do
         pods["${name}"]="${name}"
     done
     pods["signer"]="pulp-worker"
     pods["pulp-api"]="pmc"
-    local POD=${pods[${container}]}
+    local POD=${pods[${1}]}
     if [[ -z "${POD}" ]]; then
-        bail "Container name ${container} not recognized"
+        echo "Container name ${1} not recognized"
+        return
     fi
-    local podName=$(get_pod_name ${POD})
-    kubectl exec -it -c ${container} $podName -- /bin/bash
+    kubectl get pods -l app=${POD} -o jsonpath='{.items[0].metadata.name}'
+}
+
+function get_service_ip() {
+    if [ $# -ne 1 ]; then
+        echo 'Usage: get_service_ip <service_name>'
+        return
+    fi
+    kubectl get service/${1} -o jsonpath="{.status.loadBalancer.ingress[0].ip}"
+}
+
+function kube_init() {
+    # Set the necessary variables for running kubectl commands.
+    if [ $# -ne 1 ]; then
+        echo 'Usage: kube_init <environment>'
+        return
+    fi
+    if [ "$1" = "prod" ]; then
+        ../tools/login-deploy.py
+    fi
+    set_initial_vars $1
+    get_az_cli_vars
+    get_aks_creds
+}
+
+function kube_bash() {
+    # Starts a bash shell in the specified container.
+    if [ $# -lt 1 ]; then
+        echo 'Usage: kube_bash <container_name> [<command> ...]'
+        return
+    fi
+
+    local container="${1}"
+    shift
+    local podName=$(get_pod_name ${container})
+    if [ $# -lt 1 ]; then
+        kubectl exec -it -c ${container} $podName -- /bin/bash
+    else
+        kubectl exec -it -c ${container} $podName -- /bin/bash -c "$*"
+    fi
+}
+
+function kube_db() {
+    # Starts a db shell, tunneling thorugh the pmc container
+    if [ $# -lt 1 ]; then
+        echo 'Usage: kube_db <db_name> [<query> ...]'
+        return
+    fi
+
+    local db_name="$1"
+    shift
+    if [ "$db_name" = "pmcserver" ]; then
+        local secret='$SECRETS_MOUNTPOINT/pmcPostgresPassword'
+    elif [ "$db_name" = "pulp" ]; then
+        local secret='$SECRETS_MOUNTPOINT/pulpPostgresPassword'
+    else
+        echo "db_name must be pmcserver or pulp"
+        return
+    fi
+
+    if [ $# -lt 1 ]; then
+        kube_bash 'pmc' "PGPASSWORD=\$(cat ${secret}) psql -U $db_name -d $db_name -h \${POSTGRES_SERVER}"
+    else
+        kube_bash 'pmc' "PGPASSWORD=\$(cat ${secret}) psql -U $db_name -d $db_name -h \${POSTGRES_SERVER} -c '$*'"
+    fi
+}
+
+function kube_pulp_shell() {
+    # Starts a pulp shell in the pulp-api container
+    # Usage: kube_pulp_shell
+    kube_bash 'pulp-api' 'source /usr/bin/pmc-secrets-exporter.sh; pulpcore-manager shell'
 }
 
 function create_initial_account() {
     # Add the initial Account_Admin specified in the env-specific setup script.
-    psqlcmd="PGPASSWORD=$PMC_POSTGRES_PASSWORD psql -h $pg_server -U pmcserver"
-    pmc_run "${psqlcmd} -d pmcserver -c \"insert into account (id, oid, name, role, icm_service, icm_team, contact_email, is_enabled, created_at, last_edited) values (gen_random_uuid(), '$account_id', 'dev', 'Account_Admin', 'dev', 'dev', 'dev@user.com', 't', now(), now())\""
-}
-
-function worker_run() {
-    if [[ -z "${WORKERPOD}" ]]; then
-        WORKERPOD=$(get_pod_name pulp-worker)
-    fi
-    kubectl exec --stdin -c pulp-worker --tty $WORKERPOD -- /bin/bash -c ${@}
+    kube_db 'pmcserver' "insert into account (id, oid, name, role, icm_service, icm_team, contact_email, is_enabled, created_at, last_edited) values (gen_random_uuid(), '$account_id', 'dev', 'Account_Admin', 'dev', 'dev', 'dev@user.com', 't', now(), now())"
 }
 
 function register_signing_services () {
-    worker_run "/usr/bin/add_signer.sh" "${1}" "${2}" "${3}"
+    if [ $# -ne 3 ]; then
+        echo 'Usage: register_signing_services <script_type> <script_path> <public_key>'
+        return
+    fi
+    kube_bash 'pulp-worker' "/usr/bin/add_signer.sh ${1} ${2} ${3}"
 }
 
 function configureSigningServices() {
