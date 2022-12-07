@@ -7,7 +7,7 @@ Publishers operate on PMC repos via the `pmc` client CLI.
 The pmc client is a python package. This package is not published externally; it can only be installed from within corpnet.
 
 ```bash
-pip install http://tux-devrepo.corp.microsoft.com/pypi/pmc_cli-0.0.1-py3-none-any.whl
+pip install http://tux-devrepo.corp.microsoft.com/pypi/pmc_cli-0.0.2-py3-none-any.whl
 ```
 
 You can also download the latest .whl file from that endpoint and add that file to any environment which cannot access the corp.microsoft.com domain. The `pip` command can be used to install the pmc command from the .whl file; pip will resolve dependencies from the usual Python package source on the internet.

@@ -22,13 +22,19 @@ These steps assume that your pmc client is set up for the environment from which
 distribute the pmc cli package.
 
 1. Open up pyproject.toml file and confirm that the version field is correct.
-2. If it's not correct, update it and open a new PR with your change.
-3. Next run the following commands from your cli directory.
+1. If it's not correct, update it and open a new PR with your change.
+1. Once the PR is merged, create a new cli-x.x.x tag at <https://msazure.visualstudio.com/One/_git/Compute-PMC/tags>
+1. Next run the following commands from your cli directory replacing x.x.x with your new version.
 
 ```
+export VERSION="x.x.x"
+
+git fetch -t
+git checkout cli-$VERSION
+
 poetry build
 
-PACKAGE_ID=$(pmc --id-only package upload dist/pmc_cli-0.0.1-py3-none-any.whl)
+PACKAGE_ID=$(pmc --id-only package upload dist/pmc_cli-${VERSION}-py3-none-any.whl)
 
 pmc repo packages update pypi-python --add-packages $PACKAGE_ID
 
