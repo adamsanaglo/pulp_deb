@@ -29,14 +29,36 @@ Pulp documentation describes the
 [contribution guidelines](https://docs.pulpproject.org/pulpcore/contributing/index.html), but to
 summarize and make some things more clear, the workflow I recommend is to:
 
-1. Keep `main` tracking upstream, do work in a feature branch.
-1. They typically expect you to create an issue describing the problem first, if one does not exist.
+### Developing
+1. Create a working branch that tracks our image.
+   `./build-our-branch.sh 'pulp_deb' '2.20.0' 'new_awesome_branch'`
+1. Do your development work.
+1. Create a patch for our pulp image by doing `./make-patch.sh <number> <project>`. Reference it in
+   Dockerfile.
+1. Rebuild and test your local pulp image/containers.
+1. Repeat as necessary until everything is working.
+   The easiest thing to do is keep amending a single commit and rebuilding a single patch.
+   If you need database changes:
+   1. Make and apply your changes to the models above.
+   1. Get a shell in a docker container. `docker exec -it pulp-api bash`
+   1. Tell django to make a migration. `pulpcore-manager makemigrations --name <descriptive_name>`
+   1. Copy the generated migration file to the appropriate place on your host.
+      `docker cp pulp-api:<path> .`
+   1. Amend your previous commit, rebuild the patch, rebuild the image.
+1. Submit our PR, get feedback.
+   * Alternately, push this branch up your github fork and point people to that so they don't have
+     to attempt to review a patch.
+
+### Upstreaming
+1. Check out a new feature branch based on `upstream/main`.
+1. Cherry pick over your change. Merge differences as necessary. 
+1. If an Issue does not exist already describing the problem, create one in upstream repo.
 1. You need to
    [create a file](https://docs.pulpproject.org/pulpcore/contributing/git.html#changelog-update) in
    the `CHANGES` directory named in the `issueNumber.issueType` format.
    The contents should be a 1-line description of the change.
    Usually copying the commit message is fine.
-1. Make your changes, squashing all work into a single commit in your feature branch.
+1. Amend it to your commit. They want a single commit in your feature branch.
 1. The commit message should be something like:
    ```
    Description of the change.
@@ -45,10 +67,4 @@ summarize and make some things more clear, the workflow I recommend is to:
    ```
    Where "123" is the Issue number.
    If an issue is really not necessary you can append "[noissue]" to the end of your commit issue.
-1. Create a patch for our pulp image by doing `./make-patch.sh <number> <project>`.
-1. Reference it in the Dockerfile, rebuild, and test.
-1. If upstream main has sufficiently diverged from the version we're using then you may have to
-   cherry-pick your commit to a different branch that is based on the release we're using, and
-   make the patch from there instead.
-1. Once you're happy with the change, push the branch based on `main` to your github fork.
-1. File a PR requesting to merge branch into upstream `main`.
+1. Push the branch to your github fork and file a PR to merge branch into upstream `main`.

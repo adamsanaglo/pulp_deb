@@ -9,8 +9,8 @@ then
   exit
 fi
 
-cd $2
+pushd $2
 mkdir -p ../../pulp/container-assets/$2
 git format-patch --start-number $1 -1 --relative $2
 mv *.patch ../../pulp/container-assets/$2
-cd ..
+popd
