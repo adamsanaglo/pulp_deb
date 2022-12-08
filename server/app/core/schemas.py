@@ -609,10 +609,9 @@ class ReleaseCreate(BaseModel):
 
 class ReleaseResponse(ReleaseCreate):
     id: ReleaseId
-    description: str
+    description: Optional[str]
     origin: str
     label: str
-    signing_service: Optional[str]
 
 
 class ReleaseListResponse(ListResponse):
