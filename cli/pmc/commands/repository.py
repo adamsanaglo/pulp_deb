@@ -24,6 +24,10 @@ RELEASE_HELP = (
     "This option does nothing for yum repos."
 )
 
+sqlite_metadata_option = typer.Option(
+    None, help="Enable the generation of sqlite metadata files for yum repos (Deprecated)."
+)
+
 
 @app.command()
 def list(
@@ -70,12 +74,17 @@ def create(
     paths: Optional[str] = typer.Option(
         None, help=f"Create distributions with paths separated by {LIST_SEPARATOR}"
     ),
+    sqlite_metadata: Optional[bool] = sqlite_metadata_option,
 ) -> None:
     """Create a repository."""
-    data = {"name": name, "type": repo_type, "remote": remote}
+    data: Dict[str, Any] = {"name": name, "type": repo_type, "remote": remote}
 
     if releases and repo_type != RepoType.apt:
         raise Exception(f"Cannot create releases for {repo_type} repos.")
+
+    if sqlite_metadata:
+        typer.echo("Warning: sqlite_metadata is deprecated.", err=True)
+        data["sqlite_metadata"] = sqlite_metadata
 
     # set signing service
     if repo_type in [RepoType.yum, RepoType.apt]:
@@ -129,6 +138,7 @@ def update(
     remote: Optional[str] = id_or_name(
         "remotes", typer.Option(None, help="Remote id or name to use for sync.")
     ),
+    sqlite_metadata: Optional[bool] = sqlite_metadata_option,
 ) -> None:
     """Update a repository."""
 
@@ -146,6 +156,10 @@ def update(
             data["remote"] = None  # unset remote
         else:
             data["remote"] = remote
+    if sqlite_metadata is not None:
+        if sqlite_metadata:
+            typer.echo("Warning: sqlite_metadata is deprecated.", err=True)
+        data["sqlite_metadata"] = sqlite_metadata
 
     with get_client(ctx.obj) as client:
         resp = client.patch(f"/repositories/{id}/", json=data)

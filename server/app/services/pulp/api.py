@@ -238,9 +238,11 @@ class RepositoryApi(PulpApi):
         resp = await self.post(self.endpoint("modify", id=id), json=data)
         return translate_response(resp.json())
 
-    async def publish(self, id: RepoId) -> Any:
+    async def publish(self, id: RepoId, data: Optional[Dict[str, Any]] = None) -> Any:
         """Call the publication create endpoint."""
-        data: Dict[str, Any] = dict(repository=id_to_pulp_href(id))
+        if not data:
+            data = {}
+        data["repository"] = id_to_pulp_href(id)
 
         if id.type == RepoType.python:
             path = "/publications/python/pypi/"

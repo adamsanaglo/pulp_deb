@@ -359,6 +359,15 @@ class RepositoryCreate(BaseModel):
     type: RepoType
     signing_service: Optional[RepoSigningService]
     remote: Optional[RemoteId]
+    sqlite_metadata: Optional[bool] = None
+
+    @validator("sqlite_metadata")
+    def validate_sqlite_metadata(
+        cls, val: Optional[bool], values: Dict[str, Any]
+    ) -> Optional[bool]:
+        if val and values.get("type") != RepoType.yum:
+            raise ValueError("The sqlite_metadata option is only available for yum repos")
+        return val
 
     @validator("signing_service")
     def validate_signing_service(
@@ -374,6 +383,7 @@ class RepositoryUpdate(BaseModel):
     name: Optional[str]
     signing_service: Optional[RepoSigningService]
     remote: Union[RemoteId, EmptyStr, None]
+    sqlite_metadata: Optional[bool] = None
 
 
 class RepositoryResponse(BaseModel):
@@ -385,6 +395,10 @@ class RepositoryResponse(BaseModel):
     remote: Optional[RemoteId]
     latest_version: RepoVersionId
     signing_service: Optional[str]
+
+
+class RpmRepositoryResponse(RepositoryResponse):
+    sqlite_metadata: bool
 
 
 class RepositoryListResponse(ListResponse):

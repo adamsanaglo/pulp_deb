@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -25,6 +25,7 @@ from app.core.schemas import (
     RepositoryResponse,
     RepositoryUpdate,
     RepoType,
+    RpmRepositoryResponse,
     TaskResponse,
 )
 from app.services.pulp.api import PackageApi, PublicationApi, RepositoryApi
@@ -49,14 +50,16 @@ async def list_repos(
 
 
 @router.post(
-    "/repositories/", response_model=RepositoryResponse, dependencies=[Depends(requires_repo_admin)]
+    "/repositories/",
+    response_model=Union[RpmRepositoryResponse, RepositoryResponse],
+    dependencies=[Depends(requires_repo_admin)],
 )
 async def create_repository(repo: RepositoryCreate) -> Any:
     async with RepositoryApi() as api:
         return await api.create(repo.dict(exclude_unset=True))
 
 
-@router.get("/repositories/{id}/", response_model=RepositoryResponse)
+@router.get("/repositories/{id}/", response_model=Union[RpmRepositoryResponse, RepositoryResponse])
 async def read_repository(id: RepoId) -> Any:
     async with RepositoryApi() as api:
         return await api.read(id)
@@ -66,6 +69,11 @@ async def read_repository(id: RepoId) -> Any:
     "/repositories/{id}/", response_model=TaskResponse, dependencies=[Depends(requires_repo_admin)]
 )
 async def update_repository(id: RepoId, repo: RepositoryUpdate) -> Any:
+    if id.type != RepoType.yum and "sqlite_metadata" in repo.__fields_set__:
+        raise HTTPException(
+            status_code=422, detail="sqlite_metadata is only permitted for yum repositories."
+        )
+
     async with RepositoryApi() as api:
         return await api.update(id, repo.dict(exclude_unset=True))
 
@@ -211,9 +219,10 @@ async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = Non
         publish = PublishRequest()
 
     async with RepositoryApi() as api:
+        repo = await api.read(id)
+
         if not publish.force:
             # make sure there's not already a publication
-            repo = await api.read(id)
             async with PublicationApi() as pub_api:
                 pub_resp = await pub_api.list(params={"repository_version": repo["latest_version"]})
                 if pub_resp["count"] > 0:
@@ -225,4 +234,15 @@ async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = Non
                         ),
                     )
 
-        return await api.publish(id)
+        # the sqlite_metadata field on the repo is only used by Pulp when autopublishing but we'll
+        # use it when creating an rpm publication
+        if repo.get("sqlite_metadata", False):
+            logging.warning(
+                f"Warning: generating sqlite metadata for '{repo['name']}'. "
+                "This feature is deprecated in Pulp."
+            )
+            data = dict(sqlite_metadata=True)
+        else:
+            data = {}
+
+        return await api.publish(id, data)
