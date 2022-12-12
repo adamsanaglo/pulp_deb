@@ -189,3 +189,17 @@ def test_republish(repo: Any) -> None:
     assert result.exit_code == 0, f"repo publish {repo['name']} failed: {result.stderr}"
     response = json.loads(result.stdout)
     assert response["state"] == "completed"
+
+
+def test_retain_repo_versions(repo: Any) -> None:
+    result = invoke_command(["repo", "update", repo["name"], "--retain-repo-versions", "1"])
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["retain_repo_versions"] == 1
+
+    result = invoke_command(["repo", "update", repo["name"], "--retain-repo-versions", "abc"])
+    assert result.exit_code != 0
+    assert "not a valid int" in result.stderr
+
+    result = invoke_command(["repo", "update", repo["name"], "--retain-repo-versions", ""])
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["retain_repo_versions"] is None

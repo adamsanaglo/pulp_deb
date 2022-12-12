@@ -23,6 +23,10 @@ RELEASE_HELP = (
     "a remove operation. "
     "This option does nothing for yum repos."
 )
+RETAIN_REPO_VERSIONS_HELP = (
+    "The number of repository versions to retain. Pass an empty string to retain all. "
+    "Default is all."
+)
 
 sqlite_metadata_option = typer.Option(
     None, help="Enable the generation of sqlite metadata files for yum repos (Deprecated)."
@@ -75,9 +79,15 @@ def create(
         None, help=f"Create distributions with paths separated by {LIST_SEPARATOR}"
     ),
     sqlite_metadata: Optional[bool] = sqlite_metadata_option,
+    retain_repo_versions: Optional[int] = typer.Option(None, help=RETAIN_REPO_VERSIONS_HELP),
 ) -> None:
     """Create a repository."""
-    data: Dict[str, Any] = {"name": name, "type": repo_type, "remote": remote}
+    data = {
+        "name": name,
+        "type": repo_type,
+        "remote": remote,
+        "retain_repo_versions": retain_repo_versions,
+    }
 
     if releases and repo_type != RepoType.apt:
         raise Exception(f"Cannot create releases for {repo_type} repos.")
@@ -139,6 +149,7 @@ def update(
         "remotes", typer.Option(None, help="Remote id or name to use for sync.")
     ),
     sqlite_metadata: Optional[bool] = sqlite_metadata_option,
+    retain_repo_versions: Union[str] = typer.Option(None, help=RETAIN_REPO_VERSIONS_HELP),
 ) -> None:
     """Update a repository."""
 
@@ -160,6 +171,14 @@ def update(
         if sqlite_metadata:
             typer.echo("Warning: sqlite_metadata is deprecated.", err=True)
         data["sqlite_metadata"] = sqlite_metadata
+    if retain_repo_versions is not None:
+        if retain_repo_versions == "":
+            data["retain_repo_versions"] = None  # unset retain_repo_versions
+        else:
+            try:
+                data["retain_repo_versions"] = int(retain_repo_versions)
+            except ValueError:
+                raise typer.BadParameter(f"'{retain_repo_versions}' is not a valid integer.")
 
     with get_client(ctx.obj) as client:
         resp = client.patch(f"/repositories/{id}/", json=data)

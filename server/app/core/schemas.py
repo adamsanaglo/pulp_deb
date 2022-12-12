@@ -360,6 +360,7 @@ class RepositoryCreate(BaseModel):
     signing_service: Optional[RepoSigningService]
     remote: Optional[RemoteId]
     sqlite_metadata: Optional[bool] = None
+    retain_repo_versions: Optional[int]
 
     @validator("sqlite_metadata")
     def validate_sqlite_metadata(
@@ -384,6 +385,7 @@ class RepositoryUpdate(BaseModel):
     signing_service: Optional[RepoSigningService]
     remote: Union[RemoteId, EmptyStr, None]
     sqlite_metadata: Optional[bool] = None
+    retain_repo_versions: Optional[int]
 
 
 class RepositoryResponse(BaseModel):
