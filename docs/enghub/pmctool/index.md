@@ -69,8 +69,8 @@ pmc package deb list
 # List all .rpm Packages
 pmc package rpm list
 
-# List the Packages in a Repo:
-pmc repo package list $REPO_NAME
+# List the .rpm Packages in a Repo:
+pmc package rpm list --repo $REPO_NAME
 
 # Responses are paginated, so you'll only receive the first 100 responses by default
 # Use --offset to see the next "page" of resources
