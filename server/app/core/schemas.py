@@ -414,8 +414,7 @@ class RepositoryPackageUpdate(BaseModel):
     component: str = "main"
     migration: bool = False  # TODO: [MIGRATE] Remove this parameter
 
-    @root_validator
-    @classmethod
+    @root_validator(pre=False, skip_on_failure=True)
     def validate_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if not values["add_packages"] and not values["remove_packages"]:
             raise ValueError("Fields add_packages and remove_packages cannot both be empty.")

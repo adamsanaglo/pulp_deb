@@ -159,6 +159,38 @@ def test_yum_update_packages_with_release(rpm_package: Any, yum_repo: Any) -> No
     assert error["detail"] == "Release field is not permitted for yum repositories."
 
 
+def test_update_packages_invalid(yum_repo: Any) -> None:
+    become(Role.Repo_Admin)
+
+    # bad id
+    cmd = [
+        "repo",
+        "packages",
+        "update",
+        yum_repo["id"],
+        "--add-packages",
+        "bad_id",
+    ]
+    result = invoke_command(cmd)
+    assert result.exit_code == 1
+    error = json.loads(result.stdout)
+    assert error["http_status"] == 422
+    assert "invalid id" in result.stdout
+
+    # no ids
+    cmd = [
+        "repo",
+        "packages",
+        "update",
+        yum_repo["id"],
+    ]
+    result = invoke_command(cmd)
+    assert result.exit_code == 1
+    error = json.loads(result.stdout)
+    assert error["http_status"] == 422
+    assert "add_packages and remove_packages cannot both be empty" in result.stdout
+
+
 def test_publish(repo: Any) -> None:
     result = invoke_command(["repo", "publish", repo["id"]])
     assert result.exit_code == 0, f"repo publish {repo['id']} failed: {result.stderr}"
