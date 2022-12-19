@@ -13,6 +13,11 @@ msi_client_id = "eaa61057-9a02-4522-a5cf-0a2bc427a0ae"
 akv = "pmc-tux-keyvault-51689"
 root_folder="/var/lib/pmc"
 
+# Identify the tux-sync folder, where dependent artifacts reside
+script_dir = Path(__file__).resolve().parent
+tux_sync_dir = (script_dir.parent / "tux-sync/").resolve()
+
+
 # ACR Details
 acr="pmctuxacr.azurecr.io"
 acr_username = "55391a9d-3c3b-4e4a-afa6-0e49c2245175"
@@ -115,7 +120,7 @@ def install_nginx_config():
     Copy nginx config into mountable folder
     """
     nginx_dir = Path(root_folder) / "nginx-conf"
-    util.run_cmd(f"sudo cp nginx/ssl.conf {nginx_dir}")
+    util.run_cmd(f"sudo cp {tux_sync_dir}/nginx/ssl.conf {nginx_dir}")
 
 
 def update_function_url():
@@ -125,7 +130,7 @@ def update_function_url():
     kvutil = get_kv_util()
     af_queue_url = kvutil.get_secret(akv, af_secret_name)
     var_name="AF_QUEUE_ACTION_URL"
-    cmd = f"sed -i s|^{var_name}=.*|{var_name}={af_queue_url}| .env-api"
+    cmd = f"sed -i s|^{var_name}=.*|{var_name}={af_queue_url}| {tux_sync_dir}/.env-api"
     util.run_cmd(cmd)
 
 def restart_containers():
@@ -134,7 +139,7 @@ def restart_containers():
         docker_compose_cmd += " -f dc-public-ingest.yml"
     for param in ["down", "up -d"]:
         print(f"Running {docker_compose_cmd} {param}")
-        util.run_cmd(f"{docker_compose_cmd} {param}")
+        util.run_cmd(f"{docker_compose_cmd} {param}", tux_sync_dir)
 
 def smoke_test():
     print("Waiting for containers to come online...")
