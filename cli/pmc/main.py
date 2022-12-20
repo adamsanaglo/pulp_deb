@@ -137,6 +137,7 @@ def main(
         "-p",
         help="Select which profile in the config to use. Defaults to the first profile.",
         is_eager=True,
+        envvar="PMC_CLI_PROFILE",
     ),
     config_path: Path = typer.Option(
         None,
