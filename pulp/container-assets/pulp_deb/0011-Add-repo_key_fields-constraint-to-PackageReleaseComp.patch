@@ -1,0 +1,41 @@
+From 60ea3d0489680e25294552f6059a8d3783fb2401 Mon Sep 17 00:00:00 2001
+From: David Davis <daviddavis@users.noreply.github.com>
+Date: Thu, 15 Dec 2022 15:55:15 -0500
+Subject: [PATCH] Add repo_key_fields constraint to PackageReleaseComponent
+
+fixes #705
+---
+ CHANGES/705.bugfix                       | 2 ++
+ pulp_deb/app/models/structure_content.py | 7 +++++++
+ 2 files changed, 9 insertions(+)
+ create mode 100644 CHANGES/705.bugfix
+
+diff --git a/CHANGES/705.bugfix b/CHANGES/705.bugfix
+new file mode 100644
+index 0000000..f444e5b
+--- /dev/null
++++ b/CHANGES/705.bugfix
+@@ -0,0 +1,2 @@
++Fixed bug where PackageReleaseComponents were not being automatically removed when dupes were added
++to a repo version even though the duplicate Packages they referenced were being removed.
+diff --git a/pulp_deb/app/models/structure_content.py b/pulp_deb/app/models/structure_content.py
+index 4ff17a4..a1f3adf 100644
+--- a/pulp_deb/app/models/structure_content.py
++++ b/pulp_deb/app/models/structure_content.py
+@@ -91,6 +91,13 @@ class PackageReleaseComponent(Content):
+     package = models.ForeignKey(Package, on_delete=models.CASCADE)
+     release_component = models.ForeignKey(ReleaseComponent, on_delete=models.CASCADE)
+ 
++    repo_key_fields = (
++        "release_component",
++        "package__package",
++        "package__version",
++        "package__architecture",
++    )
++
+     class Meta:
+         default_related_name = "%(app_label)s_%(model_name)s"
+         unique_together = (("package", "release_component"),)
+-- 
+2.34.1
+
