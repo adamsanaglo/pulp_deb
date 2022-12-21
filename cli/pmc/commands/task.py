@@ -15,7 +15,7 @@ def list(
     ctx: typer.Context,
     limit: Optional[int] = LIMIT_OPT,
     offset: Optional[int] = OFFSET_OPT,
-    reserved_resources_record: str = typer.Option(
+    reserved_resource: str = typer.Option(
         None, help=f"Filter by list of reserved resource records separated by '{LIST_SEPARATOR}'."
     ),
     state: TaskState = typer.Option(None, help="Filter by task state."),
@@ -30,8 +30,8 @@ def list(
     """List tasks."""
     params: Dict[str, Any] = dict(limit=limit, offset=offset)
 
-    if reserved_resources_record:
-        params["reserved_resources_record"] = reserved_resources_record
+    if reserved_resource:
+        params["reserved_resources"] = reserved_resource
     if state:
         params["state"] = state
     if name:

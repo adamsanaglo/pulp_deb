@@ -9,6 +9,7 @@ from app.services.pulp.api import (
     ReleaseComponentApi,
     RepositoryApi,
 )
+from app.services.pulp.utils import id_to_pulp_href
 
 
 class ContentManager:
@@ -122,7 +123,7 @@ class ContentManager:
         """Get list of component ids in this release."""
         async with ReleaseComponentApi() as component_api:
             components = await component_api.list(
-                params={"release": release_id.uuid, "component": self.component}
+                params={"release": id_to_pulp_href(release_id), "component": self.component}
             )
         return [ContentId(x["id"]) for x in components["results"]]
 

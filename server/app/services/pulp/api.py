@@ -496,7 +496,10 @@ class PackageReleaseComponentApi(PulpApi):
     async def find(self, package_id: ContentId, comp_id: ContentId) -> Optional[ContentId]:
         """Find a package release component, if it exists."""
         resp = await self.list(
-            params={"package": package_id.uuid, "release_component": comp_id.uuid}
+            params={
+                "package": id_to_pulp_href(package_id),
+                "release_component": id_to_pulp_href(comp_id),
+            }
         )
         if resp["count"] > 0:
             return ContentId(resp["results"][0]["id"])
@@ -537,12 +540,12 @@ class ReleaseApi(PulpApi):
 
     async def _get_components(self, release_id: ReleaseId) -> Any:
         async with ReleaseComponentApi() as api:
-            resp = await api.list(params={"release": release_id.uuid})
+            resp = await api.list(params={"release": id_to_pulp_href(release_id)})
             return [comp["component"] for comp in resp["results"]]
 
     async def _get_architectures(self, release_id: ReleaseId) -> Any:
         async with ReleaseArchitectureApi() as api:
-            resp = await api.list(params={"release": release_id.uuid})
+            resp = await api.list(params={"release": id_to_pulp_href(release_id)})
             return [arch["architecture"] for arch in resp["results"]]
 
     async def _translate_signing_services(self, release: Dict[str, Any]) -> None:
@@ -590,7 +593,7 @@ class ReleaseApi(PulpApi):
 
         for item in items:
             async with api_class() as api:
-                response = await api.list(params={field: item, "release": release.uuid})
+                response = await api.list(params={field: item, "release": release_href})
                 if len(results := response["results"]) > 0:
                     result = results[0]
                 else:
@@ -651,10 +654,8 @@ class TaskApi(PulpApi):
         """Call the list endpoint."""
         if params:
             params = params.copy()
-            if "reserved_resources_record" in params:
-                params["reserved_resources_record"] = map(
-                    id_to_pulp_href, params["reserved_resources_record"]
-                )
+            if "reserved_resources" in params:
+                params["reserved_resources"] = id_to_pulp_href(params["reserved_resources"])
             if "created_resources" in params:
                 params["created_resources"] = id_to_pulp_href(params["created_resources"])
         return await super().list(pagination, params, **endpoint_args)

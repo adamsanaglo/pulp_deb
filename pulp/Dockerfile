@@ -92,8 +92,8 @@ RUN mkdir -p /etc/pulp \
 # https://github.com/python-ldap/python-ldap/issues/432#issuecomment-1016756358
 #RUN ln -s /usr/lib64/libldap.so /usr/lib64/libldap_r.so
 
-RUN pip install pulpcore~=3.21.3
-RUN pip install pulp-python~=3.7.3
+RUN pip install pulpcore~=3.22.0
+RUN pip install pulp-python~=3.8.0
 RUN pip install pulp-deb==2.20.0  # pin for patches below
 RUN pip install pulp-rpm~=3.18.9
 RUN pip install pulp-file~=1.11.2

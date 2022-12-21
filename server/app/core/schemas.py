@@ -56,6 +56,9 @@ class DistroType(str, Enum):
     yum = "yum"  # maps to 'rpm' in Pulp
     python = "pypi"
     file = "file"
+    # pulpcore create a "core.artifacts" distribution that we don't use but we still need to define
+    # its type in order to handle the core artifact distribution that shows up in list responses
+    core = "core"
 
 
 class RemoteType(str, Enum):
@@ -199,8 +202,11 @@ class DebRepoId(RepoId):
 
 
 class DistroId(Identifier):
+    # pulpcore create a "core.artifacts" distribution that we don't use but we still need to define
+    # its id type in order to handle the core artifact distro that shows up in list responses
     pattern = re.compile(
-        rf"^distributions-(?:deb|rpm|python|file)-(?P<type>apt|rpm|pypi|file)-({uuid_group})$"
+        rf"^distributions-(?:deb|rpm|python|file|core)-"
+        rf"(?P<type>apt|rpm|pypi|file|artifacts)-({uuid_group})$"
     )
     examples = [
         "distributions-deb-apt-5ad78d51-1eae-4d5c-bea6-c00da9339315",
@@ -634,7 +640,7 @@ class ReleaseListResponse(ListResponse):
 
 
 class TaskQuery(BaseModel):
-    reserved_resources_record: Optional[List[Identifier]]
+    reserved_resources: Optional[Identifier]
     created_resources: Optional[Identifier]
     state: Optional[TaskState]
     name: Optional[str]
