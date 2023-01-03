@@ -235,3 +235,26 @@ def test_retain_repo_versions(repo: Any) -> None:
     result = invoke_command(["repo", "update", repo["name"], "--retain-repo-versions", ""])
     assert result.exit_code == 0
     assert json.loads(result.stdout)["retain_repo_versions"] is None
+
+
+def test_purge(yum_repo: Any, rpm_package: Any) -> None:
+    repo_id = yum_repo["id"]
+    become(Role.Repo_Admin)
+    invoke_command(["repo", "packages", "update", repo_id, "--add-packages", rpm_package["id"]])
+    # Assert has content
+    result = invoke_command(["package", "rpm", "list", "--repo", repo_id])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert "count" in response
+    assert response["count"] > 0
+
+    # purge repo
+    result = invoke_command(["repo", "purge", repo_id, "--confirm"])
+    assert result.exit_code == 0, f"repo purge failed: {result.stderr}"
+
+    # Assert has no content
+    result = invoke_command(["package", "rpm", "list", "--repo", repo_id])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert "count" in response
+    assert response["count"] == 0

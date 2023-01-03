@@ -243,3 +243,25 @@ def update_packages(
     with get_client(ctx.obj) as client:
         resp = client.patch(f"/repositories/{repo_id}/packages/", json=data)
         handle_response(ctx.obj, resp)
+
+
+@app.command()
+def purge(
+    ctx: typer.Context,
+    repo_id: str = id_or_name("repositories"),
+    release: str = typer.Argument(
+        None, help="Only delete packages from this release (deb repos only)"
+    ),
+    confirm: bool = typer.Option(False),
+) -> None:
+    if not confirm:
+        if not typer.confirm("This will delete all content in the specified repo. Proceed?"):
+            typer.echo("Not confirmed. Exiting.", err=True)
+            return
+
+    with get_client(ctx.obj) as client:
+        params: Dict[str, Any] = {"all": True}
+        if release:
+            params["release"] = release
+        resp = client.patch(f"/repositories/{repo_id}/bulk_delete/", json=params)
+        handle_response(ctx.obj, resp)

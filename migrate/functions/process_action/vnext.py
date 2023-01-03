@@ -166,38 +166,6 @@ def _publish_vnext_repo(client, repo):
         raise Exception(f"Got unexpected response: {e}")
 
 
-def _get_package_id(client, package, repo):
-    """Find the package id for a given package."""
-    if isinstance(package, DebPackage):
-        params = {
-            "package": package.name,
-            "version": package.version,
-            "architecture": package.arch,
-            "repository": repo["id"],
-        }
-        response = client.get("/deb/packages/", params=params)
-    elif isinstance(package, RpmPackage):
-        params = package.dict()
-        params["repository"] = repo["id"]
-        if params["epoch"] is None:
-            # pulp_rpm defaults epoch to 0
-            params["epoch"] = 0
-        response = client.get("/rpm/packages/", params=params)
-    else:
-        raise Exception(f"Unexpected package type: {type(package)}")
-
-    resp_json = response.json()
-
-    if resp_json["count"] == 0:
-        logging.warning(f"Found 0 packages in {repo['name']} for {package}.")
-        return None
-
-    if resp_json["count"] > 1:
-        raise Exception(f"Found {resp_json['count']} packages in {repo['name']} for {package}.")
-
-    return resp_json["results"][0]["id"]
-
-
 def trigger_vnext_sync(repo_name):
     with get_client() as client:
         repo = _get_vnext_repo(client, repo_name)
@@ -209,33 +177,30 @@ def trigger_vnext_sync(repo_name):
 
 
 def remove_vnext_packages(action):
-    errors = []
-    package_ids = []
-
     with get_client() as client:
         repo = _get_vnext_repo(client, action.repo_name)
 
-        # find the package ids
+        logging.info(f"Triggering bulk_delete in vnext for repo '{action.repo_name}'.")
+        data = {"migration": True, "packages": []}
         for package in unique(action.packages):
-            try:
-                package_id = _get_package_id(client, package, repo)
-                if package_id:
-                    package_ids.append(package_id)
-            except Exception as e:
-                logging.exception(e)
-                errors.append(str(e))
+            if isinstance(package, DebPackage):
+                params = {
+                    "package": package.name,
+                    "version": package.version,
+                    "architecture": package.arch,
+                }
+            elif isinstance(package, RpmPackage):
+                params = package.dict()
+                if params["epoch"] is None:
+                    # pulp_rpm defaults epoch to 0
+                    params["epoch"] = 0
+            else:
+                raise Exception(f"Unexpected package type: {type(package)}")
+            data["packages"].append(params)
 
-        if package_ids:
-            # remove the package ids from the repo
-            data = {"remove_packages": unique(package_ids), "migration": True}
-            if action.repo_type == RepoType.apt:
-                data["release"] = action.release
-            response = client.patch(f"/repositories/{repo['id']}/packages/", json=data)
-            wait_for_task(client, response)
+        if action.repo_type == RepoType.apt:
+            data["release"] = action.release
+        response = client.patch(f"/repositories/{repo['id']}/bulk_delete/", json=data)
+        wait_for_task(client, response)
 
-            _publish_vnext_repo(client, repo)
-
-        if errors:
-            raise Exception(errors)
-        else:
-            logging.info(f"Removed {len(package_ids)} package(s) from {repo['name']}.")
+        _publish_vnext_repo(client, repo)

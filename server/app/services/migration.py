@@ -9,7 +9,8 @@ from asgi_correlation_id.context import correlation_id
 
 from app.core.config import settings
 from app.core.schemas import PackageId, PackageType, RepoId
-from app.services.pulp.api import PackageApi, RepositoryApi
+from app.services.pulp.api import RepositoryApi
+from app.services.pulp.package_lookup import package_lookup
 
 logger = logging.getLogger(__name__)
 
@@ -63,21 +64,19 @@ async def remove_vcurrent_packages(
         data["release"] = release
 
     async with get_client() as client:
-        for package_id in package_ids:
+        packages = await package_lookup(repo=repo_id, release=release, package_ids=package_ids)
+        for resp in packages:
+            package = {
+                "name": resp.get("name") or resp["package"],
+                "version": resp["version"],
+                "arch": resp.get("arch") or resp["architecture"],
+            }
+            if repo_id.package_type == PackageType.rpm:
+                package["release"] = resp["release"]
+                package["epoch"] = resp["epoch"]
 
-            async with PackageApi() as api:
-                resp = await api.read(package_id)
-                package = {
-                    "name": resp.get("name") or resp["package"],
-                    "version": resp["version"],
-                    "arch": resp.get("arch") or resp["architecture"],
-                }
-                if package_id.type == PackageType.rpm:
-                    package["release"] = resp["release"]
-                    package["epoch"] = resp["epoch"]
-
-                data["packages"].append(package)
+            data["packages"].append(package)
 
         logger.info(f"[MIGRATION] Removing {len(data['packages'])} from {repo_name}.")
-        resp = await client.post("", json=data)
-        logger.info(f"[MIGRATION] Received {resp.status_code} response: {resp}.")
+        response = await client.post("", json=data)
+        logger.info(f"[MIGRATION] Received {response.status_code} response: {response}.")

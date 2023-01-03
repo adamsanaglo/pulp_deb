@@ -1,6 +1,6 @@
 import asyncio
 import re
-from typing import Any, Optional
+from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, Optional
 
 import httpx
 from asgi_correlation_id.context import correlation_id
@@ -69,6 +69,40 @@ def translate_response(response_json: Any, pagination: Optional[Pagination] = No
         response_json["offset"] = pagination.offset
 
     return response_json
+
+
+async def yield_all(
+    function: Callable[..., Awaitable[Dict[str, Any]]],
+    pagination: Optional[Pagination] = None,
+    *args: Any,
+    **kwargs: Any,
+) -> AsyncGenerator[Dict[str, Any], None]:
+    """
+    Calls the function provided with the args provided, and then yields the results one-at-a-time,
+    loading additional pages when/if necessary.
+
+    function: must be a pulp-api-calling async function that returns the list dict with "results"
+              and "count" and such.
+    pagination: The pagination parameters you wish to use. If default options are acceptable then
+                you may pass None.
+    """
+    if pagination is None:
+        pagination = Pagination()
+
+    # Provide a default order to be extra super sure that Pulp is paginating correctly.
+    if "params" not in kwargs:
+        kwargs["params"] = {}
+    if "ordering" not in kwargs["params"]:
+        kwargs["params"]["ordering"] = "pulp_created"
+
+    while True:
+        results = await function(pagination, *args, **kwargs)
+        for result in results["results"]:
+            yield result
+        if pagination.limit + pagination.offset < results["count"]:
+            pagination.offset += pagination.limit
+        else:
+            return
 
 
 def memoize(func) -> Any:  # type: ignore

@@ -6,9 +6,19 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from tests.conftest import get_async_mock
 
+from app.api.routes import repository as repository_module
 from app.core.models import Account, OwnedPackage, RepoAccess, Role
+from app.core.schemas import RepoType
 
-from .utils import assert_expected_response, gen_account_attrs, gen_repo_attrs, gen_task_attrs
+from .utils import (
+    assert_expected_response,
+    gen_account_attrs,
+    gen_list_attrs,
+    gen_package_attrs,
+    gen_repo_attrs,
+    gen_repo_id,
+    gen_task_attrs,
+)
 
 # This marks all tests in the module as async.
 pytestmark = pytest.mark.asyncio
@@ -163,6 +173,9 @@ async def test_roles_repository_remove_package(
     repo_id = f"repositories-rpm-rpm-{uuid4()}"
     package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"
+    monkeypatch.setattr(
+        repository_module, "package_lookup", get_async_mock([{"name": package_name}])
+    )
     _setup_repo_package(
         package_api, db_session, repo_id, package_name, account, repo_perm, package_perm
     )
@@ -186,3 +199,31 @@ async def test_roles_repository_remove_package(
         expected_status = 200
 
     assert_expected_response(response, expected_status, content_manager.add_and_remove_packages)
+
+
+@pytest.mark.parametrize("repo_type", (RepoType.apt, RepoType.yum, RepoType.file, RepoType.python))
+async def test_bulk_delete(
+    async_client,
+    package_api,
+    repository_api,
+    repo_type,
+    monkeypatch,
+):
+    """This test confirms that the wiring works, most work is done in package_lookup."""
+    monkeypatch.setattr(repository_module, "_update_packages", get_async_mock(gen_task_attrs()))
+    package_type = repo_type.package_type
+    packages = [gen_package_attrs(package_type) for _ in range(3)]
+    expected_ids = [x["id"] for x in packages]
+    expected_names = {x[package_type.pulp_name_field] for x in packages}
+    package_api.list.side_effect = [gen_list_attrs([packages[i]]) for i in range(3)]
+    repo_id = gen_repo_id(repo_type)
+
+    await async_client.patch(
+        f"/api/v4/repositories/{repo_id}/bulk_delete/", json={"packages": packages}
+    )
+
+    assert package_api.list.call_count == 3
+    id, update_cmd, _, _, _, names = repository_module._update_packages.call_args.args
+    assert id == repo_id
+    assert names == expected_names
+    assert update_cmd.remove_packages == expected_ids

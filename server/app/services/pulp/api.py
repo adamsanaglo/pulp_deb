@@ -451,14 +451,7 @@ class PackageApi(PulpApi):
     async def get_package_name(self, package_id: PackageId) -> Any:
         """Call PackageApi.read and parse the response to return the name of the package."""
         response = await self.read(package_id)
-        if package_id.type in [PackageType.rpm, PackageType.python]:
-            return response["name"]
-        elif package_id.type == PackageType.deb:
-            return response["package"]
-        elif package_id.type == PackageType.file:
-            return response["relative_path"]
-        else:
-            raise ValueError(f"Unsupported package type: {package_id.type}")
+        return response[package_id.type.pulp_name_field]
 
     @staticmethod
     def endpoint(action: str, **kwargs: Any) -> str:

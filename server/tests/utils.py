@@ -8,7 +8,15 @@ import pytest
 from httpx import Response
 
 from app.core.models import Role
-from app.core.schemas import ContentId, DistroType, PackageId, RepoId, RepoType, RepoVersionId
+from app.core.schemas import (
+    ContentId,
+    DistroType,
+    PackageId,
+    PackageType,
+    RepoId,
+    RepoType,
+    RepoVersionId,
+)
 
 
 def gen_account_attrs(role: Role = Role.Publisher) -> Dict[str, Any]:
@@ -95,9 +103,9 @@ def gen_task_read_attrs() -> Dict[str, Any]:
     )
 
 
-def gen_list_attrs(my_list: List[Any]) -> Dict[str, Any]:
+def gen_list_attrs(my_list: List[Any], count: Optional[int] = None) -> Dict[str, Any]:
     return dict(
-        count=len(my_list),
+        count=count if count is not None else len(my_list),
         limit=100,
         offset=0,
         results=my_list,
@@ -136,24 +144,30 @@ def gen_repo_id(type: RepoType) -> RepoId:
         return RepoId(f"repositories-{type}-{type}-{uuid4()}")
 
 
-def gen_package_id() -> PackageId:
-    return PackageId(f"content-deb-packages-{uuid4()}")
+def gen_package_id(type: PackageType = PackageType.deb) -> PackageId:
+    return PackageId(f"content-{type}-packages-{uuid4()}")
 
 
-def gen_package_attrs() -> Dict[str, str]:
-    return dict(
-        id=gen_package_id(),
-        pulp_created="2022-10-4 17:23:00",
-        sha256="",
-        sha384="",
-        sha512="",
-        package="",
-        version="",
-        architecture="",
-        relative_path="",
-        maintainer="",
-        description="",
-    )
+def gen_package_attrs(type: PackageType = PackageType.deb) -> Dict[str, str]:
+    id = gen_package_id(type)
+    ret = dict(id=id, pulp_created="2022-10-4 17:23:00")
+
+    def add_attrs(*args):
+        for arg in args:
+            ret[arg] = f"{arg}-{id}"
+
+    add_attrs("sha256", "sha385", "sha512", "location_href")
+    if type == PackageType.deb:
+        add_attrs(
+            "package", "version", "architecture", "relative_path", "maintainer", "description"
+        )
+    elif type == PackageType.rpm:
+        add_attrs("name", "epoch", "version", "release", "arch")
+    elif type == PackageType.python:
+        add_attrs("name", "filename")
+    elif type == PackageType.file:
+        add_attrs("relative_path")
+    return ret
 
 
 def gen_release_id() -> ContentId:

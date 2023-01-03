@@ -28,6 +28,7 @@ from pydantic import (
     root_validator,
     validator,
 )
+from pydantic.main import ModelMetaclass
 
 from app.core.models import Role
 
@@ -39,6 +40,24 @@ uuid_group = r"?P<uuid>[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{
 
 def normalize_type(type: str) -> str:
     return "yum" if type == "rpm" else type
+
+
+class OptionalFieldsMeta(ModelMetaclass):
+    """
+    Allows you to inherit all the attributes from another pydantic model but make them all optional.
+    Must be used like this: "class NewClass(<InheritsFromBaseModel>, metaclass=OptionalFieldsMeta):"
+    https://stackoverflow.com/questions/67699451/make-every-fields-as-optional-with-pydantic
+    """
+
+    def __new__(self, name, bases, namespaces, **kwargs):  # type: ignore
+        annotations = namespaces.get("__annotations__", {})
+        for base in bases:
+            annotations.update(base.__annotations__)
+        for field in annotations:
+            if not field.startswith("__"):
+                annotations[field] = Optional[annotations[field]]
+        namespaces["__annotations__"] = annotations
+        return super().__new__(self, name, bases, namespaces, **kwargs)
 
 
 class EmptyStr(StrictStr):
@@ -68,15 +87,6 @@ class RemoteType(str, Enum):
     yum = "yum"  # maps to 'rpm' in Pulp
 
 
-class RepoType(str, Enum):
-    """Type for a repository."""
-
-    apt = "apt"
-    yum = "yum"  # maps to 'rpm' in Pulp
-    python = "python"
-    file = "file"
-
-
 class RepoSigningService(str, Enum):
     """What Signing Service to use to sign the repo metadata."""
 
@@ -85,12 +95,48 @@ class RepoSigningService(str, Enum):
 
 
 class PackageType(str, Enum):
-    """Type for a package."""
+    """
+    Type for a package. In addition to the values evaluating to strings, they also have a
+    "pulp_name_field" and "pulp_identifying_fields" attribute.
+    """
 
     deb = "deb"
     rpm = "rpm"
     python = "python"
     file = "file"
+
+    @property
+    def pulp_name_field(self) -> str:
+        return self.natural_key_fields[0]
+
+    @property
+    def natural_key_fields(self) -> List[str]:
+        fields = {
+            "deb": ["package", "version", "architecture"],
+            "rpm": ["name", "epoch", "version", "release", "arch"],
+            "python": ["name", "filename"],
+            "file": ["relative_path"],
+        }
+        return fields[self.value]
+
+
+class RepoType(str, Enum):
+    """Type for a repository."""
+
+    apt = "apt"
+    yum = "yum"  # maps to 'rpm' in Pulp
+    python = "python"
+    file = "file"
+
+    @property
+    def package_type(self) -> PackageType:
+        types = {
+            "apt": PackageType.deb,
+            "yum": PackageType.rpm,
+            "python": PackageType.python,
+            "file": PackageType.file,
+        }
+        return types[self.value]
 
 
 class TaskState(str, Enum):
@@ -106,7 +152,7 @@ class TaskState(str, Enum):
 
     def __str__(self) -> str:
         """Return value as the string representation."""
-        return str(self.value)
+        return self.name
 
 
 class Identifier(str):
@@ -163,7 +209,8 @@ class Identifier(str):
 
 class RepoId(Identifier):
     pattern = re.compile(
-        rf"^repositories-(?:deb|rpm|python|file)-(?P<type>apt|rpm|python|file)-({uuid_group})$"
+        r"^repositories-(?P<plugin>deb|rpm|python|file)-"
+        rf"(?P<type>apt|rpm|python|file)-({uuid_group})$"
     )
     examples = [
         "repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558",
@@ -175,6 +222,10 @@ class RepoId(Identifier):
     @property
     def type(self) -> RepoType:
         return RepoType(normalize_type(self._pieces.group("type")))
+
+    @property
+    def package_type(self) -> PackageType:
+        return PackageType(self._pieces.group("plugin"))
 
 
 class RepoVersionId(Identifier):
@@ -452,8 +503,12 @@ class FullFilePackageResponse(FilePackageResponse):
     pass
 
 
-class FilePackageQuery(PackageQuery):
-    relative_path: Optional[str]
+class StrictFilePackageQuery(PackageQuery):
+    relative_path: str
+
+
+class FilePackageQuery(StrictFilePackageQuery, metaclass=OptionalFieldsMeta):
+    pass
 
 
 class FilePackageListResponse(ListResponse):
@@ -504,10 +559,13 @@ class FullDebPackageResponse(DebPackageResponse):
     replaces: Optional[str]
 
 
-class DebPackageQuery(PackageQuery):
-    package: Optional[str]
-    version: Optional[str]
-    architecture: Optional[str]
+class StrictDebPackageQuery(PackageQuery):
+    package: str
+    version: str
+    architecture: str
+
+
+class DebPackageQuery(StrictDebPackageQuery, metaclass=OptionalFieldsMeta):
     release: Optional[ReleaseId]
 
 
@@ -565,12 +623,16 @@ class FullRpmPackageResponse(RpmPackageResponse):
     time_file: Optional[int]
 
 
-class RpmPackageQuery(PackageQuery):
-    name: Optional[str]
-    epoch: Optional[str]
-    version: Optional[str]
-    release: Optional[str]
-    arch: Optional[str]
+class StrictRpmPackageQuery(PackageQuery):
+    name: str
+    epoch: str
+    version: str
+    release: str
+    arch: str
+
+
+class RpmPackageQuery(StrictRpmPackageQuery, metaclass=OptionalFieldsMeta):
+    pass
 
 
 class RpmPackageListResponse(ListResponse):
@@ -602,9 +664,13 @@ class FullPythonPackageResponse(PythonPackageResponse):
     supported_platform: Optional[str]
 
 
-class PythonPackageQuery(PackageQuery):
-    name: Optional[str]
-    filename: Optional[str]
+class StrictPythonPackageQuery(PackageQuery):
+    name: str
+    filename: str
+
+
+class PythonPackageQuery(StrictPythonPackageQuery, metaclass=OptionalFieldsMeta):
+    pass
 
 
 class PythonPackageListResponse(ListResponse):
@@ -637,6 +703,29 @@ class ReleaseResponse(ReleaseCreate):
 
 class ReleaseListResponse(ListResponse):
     results: List[ReleaseResponse]
+
+
+class RepositoryBulkDelete(BaseModel):
+    packages: Optional[
+        List[
+            Union[
+                StrictRpmPackageQuery,
+                StrictDebPackageQuery,
+                StrictPythonPackageQuery,
+                StrictFilePackageQuery,
+            ]
+        ]
+    ]
+    release: Optional[str]
+    component: str = "main"
+    all: bool = False
+    migration: bool = False  # TODO: [MIGRATE] Remove this parameter
+
+    @root_validator(pre=False, skip_on_failure=True)
+    def validate_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if (not values["all"] and not values["packages"]) or (values["all"] and values["packages"]):
+            raise ValueError("You must specify either 'all' or a list of package queries.")
+        return values
 
 
 class TaskQuery(BaseModel):
@@ -687,11 +776,8 @@ class AccountCreate(BaseModel):
         return v
 
 
-class AccountUpdate(BaseModel):
-    # reuse AccountCreate but make fields optional
-    __annotations__ = {
-        k: Optional[v] for k, v in AccountCreate.__annotations__.items()  # pyright: ignore
-    }
+class AccountUpdate(AccountCreate, metaclass=OptionalFieldsMeta):
+    pass
 
 
 class AccountResponse(AccountCreate):
