@@ -129,6 +129,9 @@ Note: You'll need to set your Pulp username and password in your
 [`.netrc`](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) file or
 use httpie's `--auth` option.
 
+You can find the values for username and password in your .env file under `PULP_ADMIN_USERNAME` and
+`PULP_ADMIN_PASSWORD`.
+
 ```
 http :8080/pulp/api/v3/status/
 http :8080/pulp/api/v3/repositories/
