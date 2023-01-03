@@ -67,7 +67,14 @@ The last command will output the service bus connection string. Copy `local.sett
 to `local.settings.json` and fill in `AzureServiceBusConnectionString` with your service bus
 connection string.
 
-Then copy `config.sh.local` to `config.sh`, fill in any variables, and then run:
+Next set up your `config.sh` by copying one of the templates such as `config.sh.example` to
+`config.sh` and filling in the values.
+You can use `config.sh.local` which will automatically load your MSAL variables vnext
+from your cli's settings.toml.
+However, this won't work if you have multiple profiles set up in which case you can use
+`config.sh.example` to manually define your MSAL variables.
+
+Once your config.sh file is set up, source it:
 
 ```bash
 source config.sh

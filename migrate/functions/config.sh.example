@@ -12,6 +12,8 @@ export VCURRENT_PORT="8443"
 # vnext MSAL vars
 
 # uncomment these lines to use the settings from your settings.toml config
+# note: this won't work if you have multiple profiles in your settings.toml
+#
 # echo "Extracting MSAL vars from ~/.config/pmc/settings.toml"
 # for var in $(grep msal ~/.config/pmc/settings.toml | sed -e 's/^\(\S*\) = /\U\1=/'); do eval "export $var"; done
 
