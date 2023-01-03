@@ -114,7 +114,7 @@ class PulpApi:
 
     async def destroy(self, id: Identifier) -> Any:
         """Call the destroy endpoint."""
-        resp = await self.delete(self.endpoint("delete", id=id))
+        resp = await self.delete(self.endpoint("destroy", id=id))
         return translate_response(resp.json())
 
     @staticmethod
@@ -284,7 +284,7 @@ class RepositoryApi(PulpApi):
             return "/repositories/"
         elif action == "create":
             return RepositoryApi._detail_uri(kwargs["type"])
-        elif action in ("read", "delete", "update"):
+        elif action in ("read", "destroy", "update"):
             assert isinstance((id := kwargs["id"]), RepoId)
             return f"{RepositoryApi._detail_uri(id.type)}{id.uuid}/"
         elif action in ["modify", "sync"]:
@@ -356,7 +356,7 @@ class RemoteApi(PulpApi):
             return "/remotes/"
         elif action == "create":
             return RemoteApi._detail_uri(kwargs["type"])
-        elif action in ("read", "delete", "update"):
+        elif action in ("read", "destroy", "update"):
             assert isinstance((id := kwargs["id"]), RemoteId)
             return f"{RemoteApi._detail_uri(id.type)}{id.uuid}/"
         else:
@@ -400,7 +400,7 @@ class DistributionApi(PulpApi):
             return "/distributions/"
         elif action == "create":
             return DistributionApi._detail_uri(kwargs["type"])
-        elif action in ("read", "delete", "update"):
+        elif action in ("read", "destroy", "update"):
             assert isinstance((id := kwargs["id"]), DistroId)
             uuid = id.uuid
             return f"{DistributionApi._detail_uri(id.type)}{uuid}/"
