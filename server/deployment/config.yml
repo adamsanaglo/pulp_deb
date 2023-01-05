@@ -43,6 +43,8 @@ data:
   PULP_CONTENT_WORKERS: "8"
   # Long enough to let tasks complete, a little less than AKS terminationGracePeriodSeconds
   PULP_WORKER_TTL: "300"
+  PULP_DATABASES__default__OPTIONS__sslmode: "verify-full"
+  PULP_DATABASES__default__OPTIONS__sslrootcert: "/usr/bin/DigiCertGlobalRootCA.crt.pem"
 ---
 apiVersion: v1
 kind: ConfigMap
