@@ -20,7 +20,7 @@ enabled=/etc/nginx/sites-enabled
 if [ -f $enabled/ssl ]; then
     sudo mv $enabled/ssl $enabled/vCurrent.conf
 fi
-if [ -f $enabled/vCurrent.conf]; then
+if [ -f $enabled/vCurrent.conf ]; then
     sudo cp $enabled/vCurrent.conf $available
 fi
 
