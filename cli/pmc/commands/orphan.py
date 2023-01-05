@@ -1,6 +1,6 @@
 import typer
 
-from pmc.client import get_client, handle_response
+from pmc.client import client, handle_response
 from pmc.utils import UserFriendlyTyper
 
 app = UserFriendlyTyper(no_args_is_help=True)
@@ -17,9 +17,8 @@ def cleanup(
     ),
 ) -> None:
     """Delete packages that are not in any Repos."""
-    with get_client(ctx.obj) as client:
-        options = {}
-        if protection_time is not None:
-            options["protection_time"] = protection_time
-        resp = client.post("/orphans/cleanup/", params=options)
-        handle_response(ctx.obj, resp)
+    options = {}
+    if protection_time is not None:
+        options["protection_time"] = protection_time
+    resp = client.post("/orphans/cleanup/", params=options)
+    handle_response(ctx.obj, resp)

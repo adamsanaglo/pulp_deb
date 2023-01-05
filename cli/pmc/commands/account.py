@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional
 
 import typer
 
-from pmc.client import get_client, handle_response
+from pmc.client import client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, Role
 from pmc.utils import UserFriendlyTyper, id_or_name
 
@@ -41,10 +41,8 @@ def list(
 ) -> None:
     """List accounts."""
     params: Dict[str, Any] = dict(limit=limit, offset=offset)
-
-    with get_client(ctx.obj) as client:
-        resp = client.get("/accounts/", params=params)
-        handle_response(ctx.obj, resp)
+    resp = client.get("/accounts/", params=params)
+    handle_response(ctx.obj, resp)
 
 
 @app.command()
@@ -61,18 +59,15 @@ def create(
     """Create an account."""
     ld = locals()
     data = {field: ld[field] for field in ACCOUNT_FIELDS if field in ld}
-
-    with get_client(ctx.obj) as client:
-        resp = client.post("/accounts/", json=data)
-        handle_response(ctx.obj, resp)
+    resp = client.post("/accounts/", json=data)
+    handle_response(ctx.obj, resp)
 
 
 @app.command()
 def show(ctx: typer.Context, id: str = id_or_name("accounts", ID_ARG)) -> None:
     """Show details for a particular account."""
-    with get_client(ctx.obj) as client:
-        resp = client.get(f"/accounts/{id}/")
-        handle_response(ctx.obj, resp)
+    resp = client.get(f"/accounts/{id}/")
+    handle_response(ctx.obj, resp)
 
 
 @app.command()
@@ -90,15 +85,12 @@ def update(
     """Update an account."""
     ld = locals()
     data = {field: ld[field] for field in ACCOUNT_FIELDS if ld[field] is not None}
-
-    with get_client(ctx.obj) as client:
-        resp = client.patch(f"/accounts/{id}/", json=data)
-        handle_response(ctx.obj, resp)
+    resp = client.patch(f"/accounts/{id}/", json=data)
+    handle_response(ctx.obj, resp)
 
 
 @app.command()
 def delete(ctx: typer.Context, id: str = id_or_name("accounts", ID_ARG)) -> None:
     """Delete an account."""
-    with get_client(ctx.obj) as client:
-        resp = client.delete(f"/accounts/{id}/")
-        handle_response(ctx.obj, resp)
+    resp = client.delete(f"/accounts/{id}/")
+    handle_response(ctx.obj, resp)

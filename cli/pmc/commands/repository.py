@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import typer
 
-from pmc.client import get_client, handle_response, poll_task
+from pmc.client import client, handle_response, poll_task
 from pmc.commands.release import releases
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoSigningService, RepoType
@@ -55,9 +55,8 @@ def list(
     if name_icontains:
         params["name__icontains"] = name_icontains
 
-    with get_client(ctx.obj) as client:
-        resp = client.get("/repositories/", params=params)
-        handle_response(ctx.obj, resp)
+    resp = client.get("/repositories/", params=params)
+    handle_response(ctx.obj, resp)
 
 
 @app.restricted_command()
@@ -107,36 +106,34 @@ def create(
 
         data["signing_service"] = service
 
-    with get_client(ctx.obj) as client:
-        repo_resp = client.post("/repositories/", json=data)
-        handle_response(ctx.obj, repo_resp)
-        repo_id = repo_resp.json()["id"]
+    repo_resp = client.post("/repositories/", json=data)
+    handle_response(ctx.obj, repo_resp)
+    repo_id = repo_resp.json()["id"]
 
-        if releases:
-            for release in releases.split(LIST_SEPARATOR):
-                typer.echo(f"Creating release '{release}'.", err=True)
-                resp = client.post(f"/repositories/{repo_id}/releases/", json={"name": release})
-                poll_task(ctx.obj, resp.json().get("task"))
+    if releases:
+        for release in releases.split(LIST_SEPARATOR):
+            typer.echo(f"Creating release '{release}'.", err=True)
+            resp = client.post(f"/repositories/{repo_id}/releases/", json={"name": release})
+            poll_task(ctx.obj, resp.json().get("task"))
 
-        if paths:
-            for path in paths.split(LIST_SEPARATOR):
-                typer.echo(f"Creating distribution '{path}'.", err=True)
-                distro = {
-                    "repository": repo_id,
-                    "type": repo_type,
-                    "name": path,
-                    "base_path": path,
-                }
-                resp = client.post("/distributions/", json=distro)
-                poll_task(ctx.obj, resp.json().get("task"))
+    if paths:
+        for path in paths.split(LIST_SEPARATOR):
+            typer.echo(f"Creating distribution '{path}'.", err=True)
+            distro = {
+                "repository": repo_id,
+                "type": repo_type,
+                "name": path,
+                "base_path": path,
+            }
+            resp = client.post("/distributions/", json=distro)
+            poll_task(ctx.obj, resp.json().get("task"))
 
 
 @app.command()
 def show(ctx: typer.Context, id: str = id_or_name("repositories")) -> None:
     """Show details for a particular repository."""
-    with get_client(ctx.obj) as client:
-        resp = client.get(f"/repositories/{id}/")
-        handle_response(ctx.obj, resp)
+    resp = client.get(f"/repositories/{id}/")
+    handle_response(ctx.obj, resp)
 
 
 @app.restricted_command()
@@ -154,8 +151,7 @@ def update(
     """Update a repository."""
 
     def show_func(task: Any) -> Any:
-        with get_client(ctx.obj) as client:
-            return client.get(f"/repositories/{id}/")
+        return client.get(f"/repositories/{id}/")
 
     data: Dict[str, Any] = {}
     if name:
@@ -180,17 +176,15 @@ def update(
             except ValueError:
                 raise typer.BadParameter(f"'{retain_repo_versions}' is not a valid integer.")
 
-    with get_client(ctx.obj) as client:
-        resp = client.patch(f"/repositories/{id}/", json=data)
-        handle_response(ctx.obj, resp, task_handler=show_func)
+    resp = client.patch(f"/repositories/{id}/", json=data)
+    handle_response(ctx.obj, resp, task_handler=show_func)
 
 
 @app.restricted_command()
 def delete(ctx: typer.Context, id: str = id_or_name("repositories")) -> None:
     """Delete a repository."""
-    with get_client(ctx.obj) as client:
-        resp = client.delete(f"/repositories/{id}/")
-        handle_response(ctx.obj, resp)
+    resp = client.delete(f"/repositories/{id}/")
+    handle_response(ctx.obj, resp)
 
 
 @app.restricted_command()
@@ -200,9 +194,8 @@ def sync(
     remote: Optional[str] = typer.Option(None, help="Optional remote id to use for sync."),
 ) -> None:
     """Sync a repository."""
-    with get_client(ctx.obj) as client:
-        resp = client.post(f"/repositories/{id}/sync/")
-        handle_response(ctx.obj, resp)
+    resp = client.post(f"/repositories/{id}/sync/")
+    handle_response(ctx.obj, resp)
 
 
 @app.command()
@@ -214,9 +207,8 @@ def publish(
     ),
 ) -> None:
     """Publish a repository making its packages available and updating its metadata."""
-    with get_client(ctx.obj) as client:
-        resp = client.post(f"/repositories/{id}/publish/", json={"force": force})
-        handle_response(ctx.obj, resp)
+    resp = client.post(f"/repositories/{id}/publish/", json={"force": force})
+    handle_response(ctx.obj, resp)
 
 
 @packages.command(name="update")
@@ -240,9 +232,8 @@ def update_packages(
     # if component:
     #    data["component"] = component
 
-    with get_client(ctx.obj) as client:
-        resp = client.patch(f"/repositories/{repo_id}/packages/", json=data)
-        handle_response(ctx.obj, resp)
+    resp = client.patch(f"/repositories/{repo_id}/packages/", json=data)
+    handle_response(ctx.obj, resp)
 
 
 @app.command()
@@ -259,9 +250,8 @@ def purge(
             typer.echo("Not confirmed. Exiting.", err=True)
             return
 
-    with get_client(ctx.obj) as client:
-        params: Dict[str, Any] = {"all": True}
-        if release:
-            params["release"] = release
-        resp = client.patch(f"/repositories/{repo_id}/bulk_delete/", json=params)
-        handle_response(ctx.obj, resp)
+    params: Dict[str, Any] = {"all": True}
+    if release:
+        params["release"] = release
+    resp = client.patch(f"/repositories/{repo_id}/bulk_delete/", json=params)
+    handle_response(ctx.obj, resp)

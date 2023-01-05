@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import typer
 
-from pmc.client import get_client, handle_response
+from pmc.client import client, handle_response
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT
 from pmc.utils import UserFriendlyTyper, id_or_name
@@ -32,9 +32,8 @@ def list(
     if package:
         params["package"] = package
 
-    with get_client(ctx.obj) as client:
-        resp = client.get(f"/repositories/{repo_id}/releases/", params=params)
-        handle_response(ctx.obj, resp)
+    resp = client.get(f"/repositories/{repo_id}/releases/", params=params)
+    handle_response(ctx.obj, resp)
 
 
 @releases.restricted_command()
@@ -59,6 +58,5 @@ def create(
     if architectures:
         data["architectures"] = architectures.split(LIST_SEPARATOR)
 
-    with get_client(ctx.obj) as client:
-        resp = client.post(f"/repositories/{repo_id}/releases/", json=data)
-        handle_response(ctx.obj, resp)
+    resp = client.post(f"/repositories/{repo_id}/releases/", json=data)
+    handle_response(ctx.obj, resp)

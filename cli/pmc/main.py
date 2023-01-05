@@ -10,6 +10,7 @@ from click.exceptions import UsageError
 from pydantic import AnyHttpUrl, ValidationError
 from pydantic.tools import parse_obj_as
 
+from .client import client_context, create_client
 from .commands import access, account
 from .commands import config as config_cmd
 from .commands import distribution, orphan, package, remote, repository, task
@@ -128,7 +129,12 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
     return err
 
 
-@app.callback()
+def process_result(result: Any, **kwargs: Any) -> None:
+    """Execute after the command."""
+    client_context.get().close()
+
+
+@app.callback(result_callback=process_result)
 def main(
     ctx: typer.Context,
     profile: Optional[str] = typer.Option(
@@ -197,6 +203,7 @@ def main(
         config.base_url = parse_obj_as(AnyHttpUrl, base_url)
 
     ctx.obj = PMCContext(config=config, config_path=config_path)
+    client_context.set(create_client(ctx.obj))
 
     if debug:
         typer.echo(f"Generated CID: {ctx.obj.cid.hex}")

@@ -1,8 +1,9 @@
 import json
 import shutil
-from contextlib import contextmanager
+from contextvars import ContextVar
+from functools import partialmethod
 from time import sleep
-from typing import Any, Callable, Generator, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 import click
 import httpx
@@ -27,6 +28,29 @@ else:
 
 
 TaskHandler = Optional[Callable[[str], Any]]
+client_context: ContextVar[httpx.Client] = ContextVar("client")
+
+
+class ApiClient:
+    """Wrapper class that will lazily pull the httpx client from the client contextvar.
+
+    This allows the client variable to be imported from this module once without needing to call a
+    function in each command function to fetch the client from the client_contextvar.
+    """
+
+    def request(self, *args: Any, **kwargs: Any) -> httpx.Response:
+        client = client_context.get()
+        resp = client.request(*args, **kwargs)
+        return resp
+
+    # define some methods that map to request
+    get = partialmethod(request, "get")
+    post = partialmethod(request, "post")
+    patch = partialmethod(request, "patch")
+    delete = partialmethod(request, "delete")
+
+
+client = ApiClient()
 
 
 def _set_auth_header(ctx: PMCContext, request: httpx.Request) -> None:
@@ -55,8 +79,7 @@ def _raise_for_status(response: httpx.Response) -> None:
     response.raise_for_status()
 
 
-@contextmanager
-def get_client(ctx: PMCContext) -> Generator[httpx.Client, None, None]:
+def create_client(ctx: PMCContext) -> httpx.Client:
     def _call_set_auth_header(request: httpx.Request) -> None:
         _set_auth_header(ctx, request)
 
@@ -74,10 +97,7 @@ def get_client(ctx: PMCContext) -> Generator[httpx.Client, None, None]:
         timeout=None,
         verify=ctx.config.ssl_verify,
     )
-    try:
-        yield client
-    finally:
-        client.close()
+    return client
 
 
 def _extract_ids(resp_json: Any) -> Union[str, List[str], None]:
@@ -94,25 +114,24 @@ def _extract_ids(resp_json: Any) -> Union[str, List[str], None]:
 
 
 def poll_task(ctx: PMCContext, task_id: str, task_handler: TaskHandler = None) -> Any:
-    with get_client(ctx) as client:
+    resp = client.get(f"/tasks/{task_id}/")
+    # While waiting for long tasks, we occasionally encounter an issue where our auth token
+    # expires /right after/ we make a request and we get a 401. In that case let's simply try
+    # again one extra time, which should trigger a re-auth and work.
+    if resp.status_code == httpx.codes.UNAUTHORIZED:
         resp = client.get(f"/tasks/{task_id}/")
-        # While waiting for long tasks, we occasionally encounter an issue where our auth token
-        # expires /right after/ we make a request and we get a 401. In that case let's simply try
-        # again one extra time, which should trigger a re-auth and work.
-        if resp.status_code == httpx.codes.UNAUTHORIZED:
-            resp = client.get(f"/tasks/{task_id}/")
 
-        if ctx.config.no_wait:
-            return resp
+    if ctx.config.no_wait:
+        return resp
 
+    task = resp.json()
+    typer.echo(f"Waiting for {task['id']}...", nl=False, err=True)
+
+    while task["state"] not in FINISHED_TASK_STATES:
+        sleep(1)
+        resp = client.get(f"/tasks/{task['id']}/")
         task = resp.json()
-        typer.echo(f"Waiting for {task['id']}...", nl=False, err=True)
-
-        while task["state"] not in FINISHED_TASK_STATES:
-            sleep(1)
-            resp = client.get(f"/tasks/{task['id']}/")
-            task = resp.json()
-            typer.echo(".", err=True, nl=False)
+        typer.echo(".", err=True, nl=False)
 
     typer.echo("", err=True)
 

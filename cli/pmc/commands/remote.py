@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 import httpx
 import typer
 
-from pmc.client import get_client, handle_response
+from pmc.client import client, handle_response
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RemoteType
 from pmc.utils import UserFriendlyTyper, id_or_name
@@ -22,9 +22,8 @@ def list(
     """List remotes."""
     params: Dict[str, Any] = dict(limit=limit, offset=offset)
 
-    with get_client(ctx.obj) as client:
-        resp = client.get("/remotes/", params=params)
-        handle_response(ctx.obj, resp)
+    resp = client.get("/remotes/", params=params)
+    handle_response(ctx.obj, resp)
 
 
 @app.restricted_command()
@@ -42,8 +41,7 @@ def create(
     def show_func(task: Any) -> httpx.Response:
         assert isinstance(task, Dict) and task.get("created_resources")
         new_id = task["created_resources"][0]
-        with get_client(ctx.obj) as client:
-            return client.get(f"/remotes/{new_id}/")
+        return client.get(f"/remotes/{new_id}/")
 
     data: Dict[str, Any] = {
         "name": name,
@@ -57,17 +55,15 @@ def create(
     if architectures:
         data["architectures"] = architectures.split(LIST_SEPARATOR)
 
-    with get_client(ctx.obj) as client:
-        resp = client.post("/remotes/", json=data)
-        handle_response(ctx.obj, resp, task_handler=show_func)
+    resp = client.post("/remotes/", json=data)
+    handle_response(ctx.obj, resp, task_handler=show_func)
 
 
 @app.command()
 def show(ctx: typer.Context, id: str = id_or_name("remotes")) -> None:
     """Show details for a remote."""
-    with get_client(ctx.obj) as client:
-        resp = client.get(f"/remotes/{id}/")
-        handle_response(ctx.obj, resp)
+    resp = client.get(f"/remotes/{id}/")
+    handle_response(ctx.obj, resp)
 
 
 @app.restricted_command()
@@ -83,8 +79,7 @@ def update(
     """Update a remote."""
 
     def show_func(task: Any) -> httpx.Response:
-        with get_client(ctx.obj) as client:
-            return client.get(f"/remotes/{id}/")
+        return client.get(f"/remotes/{id}/")
 
     data: Dict[str, Any] = {}
     if name:
@@ -98,14 +93,12 @@ def update(
     if architectures:
         data["architectures"] = architectures.split(LIST_SEPARATOR)
 
-    with get_client(ctx.obj) as client:
-        resp = client.patch(f"/remotes/{id}/", json=data)
-        handle_response(ctx.obj, resp, task_handler=show_func)
+    resp = client.patch(f"/remotes/{id}/", json=data)
+    handle_response(ctx.obj, resp, task_handler=show_func)
 
 
 @app.restricted_command()
 def delete(ctx: typer.Context, id: str = id_or_name("remotes")) -> None:
     """Delete a remote."""
-    with get_client(ctx.obj) as client:
-        resp = client.delete(f"/remotes/{id}/")
-        handle_response(ctx.obj, resp)
+    resp = client.delete(f"/remotes/{id}/")
+    handle_response(ctx.obj, resp)

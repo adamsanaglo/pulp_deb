@@ -11,7 +11,7 @@ import tomli
 import typer
 from click.exceptions import UsageError
 
-from pmc.client import get_client
+from pmc.client import client
 from pmc.schemas import CONFIG_PATHS, Config
 
 PulpTask = Dict[str, Any]
@@ -117,13 +117,12 @@ def _lookup_id_or_name(
     if not value or re.match(id_regex, value):
         return value
 
-    with get_client(ctx.obj) as client:
-        resp = client.get(url, params={"name": value})
-        results = resp.json()
-        if results["count"] == 1:
-            return str(results["results"][0]["id"])
-        else:
-            raise Exception(f"Could not find resource with name '{value}'.")
+    resp = client.get(url, params={"name": value})
+    results = resp.json()
+    if results["count"] == 1:
+        return str(results["results"][0]["id"])
+    else:
+        raise Exception(f"Could not find resource with name '{value}'.")
 
 
 def id_or_name(

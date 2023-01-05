@@ -1,6 +1,6 @@
 import typer
 
-from pmc.client import get_client, handle_response
+from pmc.client import client, handle_response
 from pmc.constants import LIST_SEPARATOR
 from pmc.utils import UserFriendlyTyper, id_or_name
 
@@ -20,9 +20,8 @@ REPO_CLONE_HELP = "Repository id or name to clone permissions %s"
 @repo.command(name="list")
 def repo_access_list(ctx: typer.Context) -> None:
     """List all repo access records"""
-    with get_client(ctx.obj) as client:
-        resp = client.get("/access/repo/")
-        handle_response(ctx.obj, resp)
+    resp = client.get("/access/repo/")
+    handle_response(ctx.obj, resp)
 
 
 @repo.command(name="grant")
@@ -39,9 +38,8 @@ def repo_access_grant(
     }
     if operator:
         data["operator"] = str(operator)
-    with get_client(ctx.obj) as client:
-        resp = client.post("/access/repo/grant/", json=data)
-        handle_response(ctx.obj, resp)
+    resp = client.post("/access/repo/grant/", json=data)
+    handle_response(ctx.obj, resp)
 
 
 @repo.command(name="revoke")
@@ -52,9 +50,8 @@ def repo_access_revoke(
 ) -> None:
     """Revoke account(s) access to repo(s)"""
     data = {"account_names": account_names.split(LIST_SEPARATOR), "repo_regex": repo_regex}
-    with get_client(ctx.obj) as client:
-        resp = client.post("/access/repo/revoke/", json=data)
-        handle_response(ctx.obj, resp)
+    resp = client.post("/access/repo/revoke/", json=data)
+    handle_response(ctx.obj, resp)
 
 
 @repo.command(name="clone")
@@ -64,17 +61,15 @@ def repo_access_clone(
     old_repo: str = id_or_name("repositories", typer.Argument(..., help=REPO_CLONE_HELP % "from")),
 ) -> None:
     """Additively clone repo access from one repo to another."""
-    with get_client(ctx.obj) as client:
-        resp = client.post(f"/access/repo/{new_repo}/clone_from/{old_repo}/")
-        handle_response(ctx.obj, resp)
+    resp = client.post(f"/access/repo/{new_repo}/clone_from/{old_repo}/")
+    handle_response(ctx.obj, resp)
 
 
 @package.command(name="list")
 def package_ownership_list(ctx: typer.Context) -> None:
     """List all package ownership records"""
-    with get_client(ctx.obj) as client:
-        resp = client.get("/access/package/")
-        handle_response(ctx.obj, resp)
+    resp = client.get("/access/package/")
+    handle_response(ctx.obj, resp)
 
 
 @package.command(name="grant")
@@ -90,9 +85,8 @@ def package_ownership_grant(
         "package_names": package_names.split(LIST_SEPARATOR),
     }
     """Grant account(s) ownership of package(s) in specific repo(s)"""
-    with get_client(ctx.obj) as client:
-        resp = client.post("/access/package/grant/", json=data)
-        handle_response(ctx.obj, resp)
+    resp = client.post("/access/package/grant/", json=data)
+    handle_response(ctx.obj, resp)
 
 
 @package.command(name="revoke")
@@ -108,6 +102,5 @@ def package_ownership_revoke(
         "repo_regex": repo_regex,
         "package_names": package_names.split(LIST_SEPARATOR),
     }
-    with get_client(ctx.obj) as client:
-        resp = client.post("/access/package/revoke/", json=data)
-        handle_response(ctx.obj, resp)
+    resp = client.post("/access/package/revoke/", json=data)
+    handle_response(ctx.obj, resp)

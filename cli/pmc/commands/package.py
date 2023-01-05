@@ -5,7 +5,7 @@ import typer
 from click import BadParameter
 from pydantic import AnyHttpUrl, ValidationError, parse_obj_as
 
-from pmc.client import get_client, handle_response
+from pmc.client import client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, PackageType
 from pmc.utils import UserFriendlyTyper, id_or_name, raise_if_task_failed
 
@@ -42,10 +42,8 @@ def _sha256sum(path: str) -> str:
 def _list(package_type: PackageType, ctx: typer.Context, params: Dict[str, Any]) -> None:
     # filter out null values
     params = {key: val for key, val in params.items() if val is not None}
-
-    with get_client(ctx.obj) as client:
-        resp = client.get(f"/{package_type}/packages/", params=params)
-        handle_response(ctx.obj, resp)
+    resp = client.get(f"/{package_type}/packages/", params=params)
+    handle_response(ctx.obj, resp)
 
 
 @deb.command(name="list")
@@ -187,8 +185,7 @@ def upload(
     def show_func(task: Any) -> Any:
         raise_if_task_failed(task)
         package_id = task["created_resources"][0]
-        with get_client(ctx.obj) as client:
-            return client.get(f"/packages/{package_id}/")
+        return client.get(f"/packages/{package_id}/")
 
     data: Dict[str, Any] = {"ignore_signature": ignore_signature}
     files = None
@@ -206,9 +203,8 @@ def upload(
     if relative_path:
         data["relative_path"] = relative_path
 
-    with get_client(ctx.obj) as client:
-        resp = client.post("/packages/", params=data, files=files)
-        handle_response(ctx.obj, resp, task_handler=show_func)
+    resp = client.post("/packages/", params=data, files=files)
+    handle_response(ctx.obj, resp, task_handler=show_func)
 
 
 @app.command()
@@ -218,6 +214,5 @@ def show(
     details: bool = typer.Option(False, help="Show extra package details"),
 ) -> None:
     """Show details for a particular package."""
-    with get_client(ctx.obj) as client:
-        resp = client.get(f"/packages/{id}/", params={"details": details})
-        handle_response(ctx.obj, resp)
+    resp = client.get(f"/packages/{id}/", params={"details": details})
+    handle_response(ctx.obj, resp)
