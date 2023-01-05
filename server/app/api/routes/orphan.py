@@ -10,5 +10,4 @@ router = APIRouter()
 
 @router.post("/orphans/cleanup/", response_model=TaskResponse)
 async def cleanup_orphans(protection_time: Optional[int] = None) -> Any:
-    async with OrphanApi() as api:
-        return await api.cleanup(protection_time)
+    return await OrphanApi.cleanup(protection_time)

@@ -47,8 +47,7 @@ async def list_repos(
     name__icontains: Optional[str] = None,
 ) -> Any:
     params = {"name": name, "name__contains": name__contains, "name__icontains": name__icontains}
-    async with RepositoryApi() as api:
-        return await api.list(pagination, params=params)
+    return await RepositoryApi.list(pagination, params=params)
 
 
 @router.post(
@@ -57,14 +56,12 @@ async def list_repos(
     dependencies=[Depends(requires_repo_admin)],
 )
 async def create_repository(repo: RepositoryCreate) -> Any:
-    async with RepositoryApi() as api:
-        return await api.create(repo.dict(exclude_unset=True))
+    return await RepositoryApi.create(repo.dict(exclude_unset=True))
 
 
 @router.get("/repositories/{id}/", response_model=Union[RpmRepositoryResponse, RepositoryResponse])
 async def read_repository(id: RepoId) -> Any:
-    async with RepositoryApi() as api:
-        return await api.read(id)
+    return await RepositoryApi.read(id)
 
 
 @router.patch(
@@ -76,16 +73,14 @@ async def update_repository(id: RepoId, repo: RepositoryUpdate) -> Any:
             status_code=422, detail="sqlite_metadata is only permitted for yum repositories."
         )
 
-    async with RepositoryApi() as api:
-        return await api.update(id, repo.dict(exclude_unset=True))
+    return await RepositoryApi.update(id, repo.dict(exclude_unset=True))
 
 
 @router.delete(
     "/repositories/{id}/", response_model=TaskResponse, dependencies=[Depends(requires_repo_admin)]
 )
 async def delete_repository(id: RepoId) -> Any:
-    async with RepositoryApi() as api:
-        return await api.destroy(id)
+    return await RepositoryApi.destroy(id)
 
 
 @router.post(
@@ -94,8 +89,7 @@ async def delete_repository(id: RepoId) -> Any:
     dependencies=[Depends(requires_repo_admin_or_migration)],
 )
 async def sync_repository(id: RepoId, remote: Optional[RemoteId] = None) -> Any:
-    async with RepositoryApi() as api:
-        return await api.sync(id, remote)
+    return await RepositoryApi.sync(id, remote)
 
 
 @router.patch("/repositories/{id}/packages/", response_model=TaskResponse)
@@ -107,10 +101,9 @@ async def update_packages(
 ) -> Any:
     # First we must convert the package *ids* sent to us into *names*.
     add_names, remove_names = set(), set()
-    async with PackageApi() as api:
-        if repo_update.add_packages:
-            for add_id in repo_update.add_packages:
-                add_names.add(await api.get_package_name(add_id))
+    if repo_update.add_packages:
+        for add_id in repo_update.add_packages:
+            add_names.add(await PackageApi.get_package_name(add_id))
     if repo_update.remove_packages:
         packages = await package_lookup(
             repo=id, release=repo_update.release, package_ids=repo_update.remove_packages
@@ -268,31 +261,26 @@ async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = Non
     if not publish:
         publish = PublishRequest()
 
-    async with RepositoryApi() as api:
-        repo = await api.read(id)
+    repo = await RepositoryApi.read(id)
 
-        if not publish.force:
-            # make sure there's not already a publication
-            async with PublicationApi() as pub_api:
-                pub_resp = await pub_api.list(params={"repository_version": repo["latest_version"]})
-                if pub_resp["count"] > 0:
-                    raise HTTPException(
-                        status_code=422,
-                        detail=(
-                            f"{repo['name']} has already published. "
-                            "Use 'force' to publish anyway."
-                        ),
-                    )
-
-        # the sqlite_metadata field on the repo is only used by Pulp when autopublishing but we'll
-        # use it when creating an rpm publication
-        if repo.get("sqlite_metadata", False):
-            logging.warning(
-                f"Warning: generating sqlite metadata for '{repo['name']}'. "
-                "This feature is deprecated in Pulp."
+    if not publish.force:
+        # make sure there's not already a publication
+        pub_resp = await PublicationApi.list(params={"repository_version": repo["latest_version"]})
+        if pub_resp["count"] > 0:
+            raise HTTPException(
+                status_code=422,
+                detail=(f"{repo['name']} has already published. " "Use 'force' to publish anyway."),
             )
-            data = dict(sqlite_metadata=True)
-        else:
-            data = {}
 
-        return await api.publish(id, data)
+    # the sqlite_metadata field on the repo is only used by Pulp when autopublishing but we'll
+    # use it when creating an rpm publication
+    if repo.get("sqlite_metadata", False):
+        logging.warning(
+            f"Warning: generating sqlite metadata for '{repo['name']}'. "
+            "This feature is deprecated in Pulp."
+        )
+        data = dict(sqlite_metadata=True)
+    else:
+        data = {}
+
+    return await RepositoryApi.publish(id, data)

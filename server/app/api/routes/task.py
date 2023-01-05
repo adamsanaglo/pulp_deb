@@ -14,14 +14,12 @@ async def list_tasks(
     params: TaskQuery = Depends(TaskQuery),
     pagination: Pagination = Depends(Pagination),
 ) -> Any:
-    async with TaskApi() as api:
-        return await api.list(pagination, params.dict(exclude_none=True))
+    return await TaskApi.list(pagination, params.dict(exclude_none=True))
 
 
 @router.get("/tasks/{id}/", response_model=TaskReadResponse)
 async def read_task(id: TaskId) -> Any:
-    async with TaskApi() as api:
-        return await api.read(id)
+    return await TaskApi.read(id)
 
 
 @router.patch(
@@ -30,8 +28,7 @@ async def read_task(id: TaskId) -> Any:
     dependencies=[Depends(requires_account_admin)],
 )
 async def cancel_task(id: TaskId) -> Any:
-    async with TaskApi() as api:
-        try:
-            return await api.cancel(id)
-        except TaskCancelException:
-            raise HTTPException(status_code=409, detail=f"Cannot cancel task '{id}'.")
+    try:
+        return await TaskApi.cancel(id)
+    except TaskCancelException:
+        raise HTTPException(status_code=409, detail=f"Cannot cancel task '{id}'.")

@@ -22,16 +22,15 @@ router = APIRouter()
 
 async def _get_matching_repos(name_regex: str) -> List[Any]:
     ret = []
-    async with RepositoryApi() as api:
-        page = Pagination()
-        while True:
-            response = await api.list(page)
-            for repo in response["results"]:
-                if re.match(name_regex, repo["name"]):
-                    ret.append(repo)
-            page.offset += page.limit
-            if page.offset >= response["count"]:
-                break
+    page = Pagination()
+    while True:
+        response = await RepositoryApi.list(page)
+        for repo in response["results"]:
+            if re.match(name_regex, repo["name"]):
+                ret.append(repo)
+        page.offset += page.limit
+        if page.offset >= response["count"]:
+            break
     return ret
 
 

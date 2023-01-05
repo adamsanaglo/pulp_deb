@@ -11,6 +11,8 @@ from fastapi.requests import Request
 from fastapi.responses import RedirectResponse, Response
 from httpx import HTTPStatusError, RequestError
 from sqlalchemy.exc import IntegrityError
+from starlette_context import context
+from starlette_context.middleware import RawContextMiddleware
 
 from app.api.routes.api import router as api_router
 from app.core.config import settings
@@ -61,6 +63,19 @@ async def log_requests(
     return response
 
 
+@app.middleware("http")
+async def close_httpx_client(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    try:
+        return await call_next(request)
+    finally:
+        if client := context.get("httpx_client", None):
+            # If this request called out to pulp then this was created by PulpApi.request
+            logger.debug("Closing Pulp httpx client")
+            await client.aclose()
+
+
 @root_router.get("/", response_class=RedirectResponse, status_code=302)
 def root() -> str:
     logger.info("root request")
@@ -83,6 +98,7 @@ def healthz(request: Request) -> None:
 app.include_router(api_router, prefix=settings.API_PREFIX)
 app.include_router(root_router)
 app.add_middleware(CorrelationIdMiddleware, header_name="X-Correlation-ID")
+app.add_middleware(RawContextMiddleware)
 
 app.add_exception_handler(HTTPStatusError, pulp_exception_handler)
 app.add_exception_handler(RequestError, httpx_exception_handler)

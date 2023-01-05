@@ -21,22 +21,19 @@ router = APIRouter()
 async def list_remotes(
     pagination: Pagination = Depends(Pagination), name: Optional[str] = None
 ) -> Any:
-    async with RemoteApi() as api:
-        return await api.list(pagination, params={"name": name})
+    return await RemoteApi.list(pagination, params={"name": name})
 
 
 @router.post(
     "/remotes/", response_model=RemoteResponse, dependencies=[Depends(requires_repo_admin)]
 )
 async def create_remote(remote: RemoteCreate) -> Any:
-    async with RemoteApi() as api:
-        return await api.create(remote.dict(exclude_unset=True))
+    return await RemoteApi.create(remote.dict(exclude_unset=True))
 
 
 @router.get("/remotes/{id}/", response_model=RemoteResponse)
 async def read_remote(id: RemoteId) -> Any:
-    async with RemoteApi() as api:
-        return await api.read(id)
+    return await RemoteApi.read(id)
 
 
 @router.patch(
@@ -45,13 +42,11 @@ async def read_remote(id: RemoteId) -> Any:
 async def update_remote(id: RemoteId, remote: RemoteUpdate) -> Any:
     data = remote.dict(exclude_unset=True)
 
-    async with RemoteApi() as api:
-        return await api.update(id, data)
+    return await RemoteApi.update(id, data)
 
 
 @router.delete(
     "/remotes/{id}/", response_model=TaskResponse, dependencies=[Depends(requires_repo_admin)]
 )
 async def delete_remote(id: RemoteId) -> Any:
-    async with RemoteApi() as api:
-        return await api.destroy(id)
+    return await RemoteApi.destroy(id)

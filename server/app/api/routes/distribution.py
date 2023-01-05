@@ -25,30 +25,27 @@ async def list_distros(
     base_path: Optional[str] = None,
     base_path__contains: Optional[str] = None,
 ) -> Any:
-    async with DistributionApi() as api:
-        return await api.list(
-            pagination,
-            params={
-                "name": name,
-                "name__contains": name__contains,
-                "base_path": base_path,
-                "base_path__contains": base_path__contains,
-            },
-        )
+    return await DistributionApi.list(
+        pagination,
+        params={
+            "name": name,
+            "name__contains": name__contains,
+            "base_path": base_path,
+            "base_path__contains": base_path__contains,
+        },
+    )
 
 
 @router.post(
     "/distributions/", response_model=TaskResponse, dependencies=[Depends(requires_repo_admin)]
 )
 async def create_distribution(distro: DistributionCreate) -> Any:
-    async with DistributionApi() as api:
-        return await api.create(distro.dict(exclude_unset=True))
+    return await DistributionApi.create(distro.dict(exclude_unset=True))
 
 
 @router.get("/distributions/{id}/", response_model=DistributionResponse)
 async def read_distribution(id: DistroId) -> Any:
-    async with DistributionApi() as api:
-        return await api.read(id)
+    return await DistributionApi.read(id)
 
 
 @router.patch(
@@ -56,14 +53,11 @@ async def read_distribution(id: DistroId) -> Any:
 )
 async def update_distribution(id: DistroId, distro: DistributionUpdate) -> Any:
     data = distro.dict(exclude_unset=True)
-
-    async with DistributionApi() as api:
-        return await api.update(id, data)
+    return await DistributionApi.update(id, data)
 
 
 @router.delete(
     "/distributions/{id}/", response_model=TaskResponse, dependencies=[Depends(requires_repo_admin)]
 )
 async def delete_distribution(id: DistroId) -> Any:
-    async with DistributionApi() as api:
-        return await api.destroy(id)
+    return await DistributionApi.destroy(id)

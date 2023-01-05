@@ -115,28 +115,23 @@ class ContentManager:
         params = {"repository": self.id}
         if not all:
             params["distribution"] = self.release
-        async with ReleaseApi() as release_api:
-            releases = await release_api.list(params=params)
+        releases = await ReleaseApi.list(params=params)
         return [ContentId(x["id"]) for x in releases["results"]]
 
     async def _get_component_ids_in_release(self, release_id: ContentId) -> List[ContentId]:
         """Get list of component ids in this release."""
-        async with ReleaseComponentApi() as component_api:
-            components = await component_api.list(
-                params={"release": id_to_pulp_href(release_id), "component": self.component}
-            )
+        components = await ReleaseComponentApi.list(
+            params={"release": id_to_pulp_href(release_id), "component": self.component}
+        )
         return [ContentId(x["id"]) for x in components["results"]]
 
     @staticmethod
     async def _find_or_create_prc(package_id: ContentId, component_id: ContentId) -> ContentId:
-        async with PackageReleaseComponentApi() as prc_api:
-            return await prc_api.find_or_create(package_id, component_id)
+        return await PackageReleaseComponentApi.find_or_create(package_id, component_id)
 
     @staticmethod
     async def _find_prc(package_id: ContentId, component_id: ContentId) -> Optional[ContentId]:
-        async with PackageReleaseComponentApi() as prc_api:
-            return await prc_api.find(package_id, component_id)
+        return await PackageReleaseComponentApi.find(package_id, component_id)
 
     async def _update_pulp(self) -> Any:
-        async with RepositoryApi() as repo_api:
-            return await repo_api.update_content(self.id, self.add_content, self.remove_content)
+        return await RepositoryApi.update_content(self.id, self.add_content, self.remove_content)

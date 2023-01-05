@@ -1,9 +1,9 @@
 import logging
 from functools import partialmethod
-from types import TracebackType
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import httpx
+from starlette_context import context
 
 from app.core.schemas import (
     ContentId,
@@ -43,32 +43,22 @@ class PulpApi:
     the endpoint() member function.
     """
 
-    client: httpx.AsyncClient
-
-    async def __aenter__(self: T) -> T:
-        """Sets up a client."""
-        self.client = get_client()
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> None:
-        """Closes the client."""
-        await self.client.aclose()
-
-    async def request(self, *args: Any, **kwargs: Any) -> httpx.Response:
+    @staticmethod
+    async def request(*args: Any, **kwargs: Any) -> httpx.Response:
         """Send a request to Pulp."""
         logger.debug(f"Pulp Request {args}: {kwargs}")
 
-        resp = await self.client.request(*args, **kwargs)
+        if not context.get("httpx_client", None):
+            # lazily instantiate the client once
+            logger.debug("Creating Pulp httpx client")
+            context["httpx_client"] = get_client()
+
+        resp = await context["httpx_client"].request(*args, **kwargs)
 
         logger.debug(f"Pulp Response ({resp.status_code}): {resp.text}")
 
         resp.raise_for_status()
-        return resp
+        return resp  # type: ignore
 
     # define some methods that map to request
     get = partialmethod(request, "get")
@@ -76,8 +66,9 @@ class PulpApi:
     patch = partialmethod(request, "patch")
     delete = partialmethod(request, "delete")
 
+    @classmethod
     async def list(
-        self,
+        cls,
         pagination: Optional[Pagination] = None,
         params: Optional[Dict[str, Any]] = None,
         **endpoint_args: Any,
@@ -94,27 +85,31 @@ class PulpApi:
         params["limit"] = pagination.limit
         params["offset"] = pagination.offset
 
-        resp = await self.get(self.endpoint("list", **endpoint_args), params=params)
+        resp = await cls.get(cls.endpoint("list", **endpoint_args), params=params)
         return translate_response(resp.json(), pagination=pagination)
 
-    async def read(self, id: Identifier) -> Any:
+    @classmethod
+    async def read(cls, id: Identifier) -> Any:
         """Call the read endpoint."""
-        resp = await self.get(self.endpoint("read", id=id))
+        resp = await cls.get(cls.endpoint("read", id=id))
         return translate_response(resp.json())
 
-    async def create(self, data: Dict[str, Any]) -> Any:
+    @classmethod
+    async def create(cls, data: Dict[str, Any]) -> Any:
         """Call the create endpoint."""
-        resp = await self.post(self.endpoint("create"), json=data)
+        resp = await cls.post(cls.endpoint("create"), json=data)
         return translate_response(resp.json())
 
-    async def update(self, id: Identifier, data: Dict[str, Any]) -> Any:
+    @classmethod
+    async def update(cls, id: Identifier, data: Dict[str, Any]) -> Any:
         """Call the update endpoint."""
-        resp = await self.patch(self.endpoint("update", id=id), json=data)
+        resp = await cls.patch(cls.endpoint("update", id=id), json=data)
         return translate_response(resp.json())
 
-    async def destroy(self, id: Identifier) -> Any:
+    @classmethod
+    async def destroy(cls, id: Identifier) -> Any:
         """Call the destroy endpoint."""
-        resp = await self.delete(self.endpoint("destroy", id=id))
+        resp = await cls.delete(cls.endpoint("destroy", id=id))
         return translate_response(resp.json())
 
     @staticmethod
@@ -133,8 +128,7 @@ class SigningService(PulpApi):
         the caller doesn't have to know or care that there are really two different "legacy"
         signing services in the backend.
         """
-        async with PulpApi() as pa:
-            resp = (await pa.get("/signing-services/")).json()
+        resp = (await PulpApi.get("/signing-services/")).json()
         ret = {}
         suffix = "_" + repo_type
         for service in resp["results"]:
@@ -146,8 +140,7 @@ class SigningService(PulpApi):
     @memoize
     async def id_to_name() -> Dict[str, str]:
         """Return dict containing id -> service name mapping."""
-        async with PulpApi() as pa:
-            resp = translate_response((await pa.get("/signing-services/")).json())
+        resp = translate_response((await PulpApi.get("/signing-services/")).json())
         ret = {}
         for service in resp["results"]:
             ret[service["id"]] = service["name"].removesuffix("_apt").removesuffix("_yum")
@@ -184,42 +177,47 @@ class RepositoryApi(PulpApi):
         _translate_key(RepositoryApi.SS)
         _translate_key(RepositoryApi.MSS)
 
-    async def create(self, data: Dict[str, Any]) -> Any:
+    @classmethod
+    async def create(cls, data: Dict[str, Any]) -> Any:
         """Call the create endpoint."""
         type = data.pop("type")
         if type in [RepoType.yum, RepoType.apt]:
-            await self._set_gpg_fields(data, type)
+            await cls._set_gpg_fields(data, type)
         if remote := data.get("remote", None):
             data["remote"] = id_to_pulp_href(remote)
-        resp = await self.post(self.endpoint("create", type=type), json=data)
+        resp = await cls.post(cls.endpoint("create", type=type), json=data)
         ret = translate_response(resp.json())
-        await self._translate_signing_service(ret)
+        await cls._translate_signing_service(ret)
         return ret
 
-    async def read(self, id: Identifier) -> Any:
+    @classmethod
+    async def read(cls, id: Identifier) -> Any:
         """Read, translating the signing service"""
         ret = await super().read(id)
-        await self._translate_signing_service(ret)
+        await cls._translate_signing_service(ret)
         return ret
 
-    async def update(self, id: RepoId, data: Dict[str, Any]) -> Any:
-        if self.SS in data:
-            await self._set_gpg_fields(data, id.type)
+    @classmethod
+    async def update(cls, id: RepoId, data: Dict[str, Any]) -> Any:
+        if cls.SS in data:
+            await cls._set_gpg_fields(data, id.type)
         if data.get("remote", False):
             data["remote"] = id_to_pulp_href(data.pop("remote"))
         return await super().update(id, data)
 
-    async def sync(self, id: RepoId, remote: Optional[RemoteId] = None) -> Any:
+    @classmethod
+    async def sync(cls, id: RepoId, remote: Optional[RemoteId] = None) -> Any:
         """Call the sync endpoint."""
         if remote:
             data = {"remote": remote}
         else:
             data = {}
-        resp = await self.post(self.endpoint("sync", id=id), json=data)
+        resp = await cls.post(cls.endpoint("sync", id=id), json=data)
         return translate_response(resp.json())
 
+    @classmethod
     async def update_content(
-        self,
+        cls,
         id: RepoId,
         add_content: Optional[List[ContentId]] = None,
         remove_content: Optional[List[ContentId]] = None,
@@ -235,10 +233,11 @@ class RepositoryApi(PulpApi):
         if remove_content:
             data["remove_content_units"] = _translate_ids(remove_content)
 
-        resp = await self.post(self.endpoint("modify", id=id), json=data)
+        resp = await cls.post(cls.endpoint("modify", id=id), json=data)
         return translate_response(resp.json())
 
-    async def publish(self, id: RepoId, data: Optional[Dict[str, Any]] = None) -> Any:
+    @classmethod
+    async def publish(cls, id: RepoId, data: Optional[Dict[str, Any]] = None) -> Any:
         """Call the publication create endpoint."""
         if not data:
             data = {}
@@ -247,7 +246,7 @@ class RepositoryApi(PulpApi):
         if id.type == RepoType.python:
             path = "/publications/python/pypi/"
         else:
-            path = self._detail_uri(id.type, "publications")
+            path = cls._detail_uri(id.type, "publications")
 
         if id.type == RepoType.apt:
             data["structured"] = True
@@ -255,12 +254,13 @@ class RepositoryApi(PulpApi):
         if id.type == RepoType.file:
             data["manifest"] = "FILE_MANIFEST"
 
-        resp = await self.post(path, json=data)
+        resp = await cls.post(path, json=data)
         return translate_response(resp.json())
 
-    async def latest_version_href(self, repo_id: RepoId) -> str:
+    @classmethod
+    async def latest_version_href(cls, repo_id: RepoId) -> str:
         """Get the latest version href for a repo id."""
-        repo = await self.read(repo_id)
+        repo = await cls.read(repo_id)
         return id_to_pulp_href(RepoVersionId(repo["latest_version"]))
 
     @staticmethod
@@ -295,8 +295,9 @@ class RepositoryApi(PulpApi):
 
 
 class PublicationApi(PulpApi):
+    @classmethod
     async def list(
-        self,
+        cls,
         pagination: Optional[Pagination] = None,
         params: Optional[Dict[str, Any]] = None,
         **endpoint_args: Any,
@@ -327,15 +328,17 @@ class RemoteApi(PulpApi):
                 data[field] = " ".join(val)
         return data
 
-    async def create(self, data: Dict[str, Any]) -> Any:
+    @classmethod
+    async def create(cls, data: Dict[str, Any]) -> Any:
         """Override the distro create method to set repository."""
         type = data.pop("type")
-        data = self._translate_apt_fields(data)
-        resp = await self.post(self.endpoint("create", type=type), json=data)
+        data = cls._translate_apt_fields(data)
+        resp = await cls.post(cls.endpoint("create", type=type), json=data)
         return translate_response(resp.json())
 
-    async def update(self, id: Identifier, data: Dict[str, Any]) -> Any:
-        data = self._translate_apt_fields(data)
+    @classmethod
+    async def update(cls, id: Identifier, data: Dict[str, Any]) -> Any:
+        data = cls._translate_apt_fields(data)
         return await super().update(id, data)
 
     @staticmethod
@@ -364,15 +367,17 @@ class RemoteApi(PulpApi):
 
 
 class DistributionApi(PulpApi):
-    async def create(self, data: Dict[str, Any]) -> Any:
+    @classmethod
+    async def create(cls, data: Dict[str, Any]) -> Any:
         """Override the distro create method to set repository."""
         if "repository" in data:
             data["repository"] = id_to_pulp_href(data["repository"])
         type = data.pop("type")
-        resp = await self.post(self.endpoint("create", type=type), json=data)
+        resp = await cls.post(cls.endpoint("create", type=type), json=data)
         return translate_response(resp.json())
 
-    async def update(self, id: DistroId, data: Dict[str, Any]) -> Any:
+    @classmethod
+    async def update(cls, id: DistroId, data: Dict[str, Any]) -> Any:
         """Override the distro update method to set repository."""
         if "repository" in data:
             data["repository"] = id_to_pulp_href(data["repository"])
@@ -409,22 +414,24 @@ class DistributionApi(PulpApi):
 
 
 class PackageApi(PulpApi):
-    async def create(self, data: Dict[str, Any]) -> Any:
+    @classmethod
+    async def create(cls, data: Dict[str, Any]) -> Any:
         """Call the package create endpoint."""
         file = data.pop("file")
         file_type = data.pop("file_type")
-        path = self.endpoint("create", type=file_type)
+        path = cls.endpoint("create", type=file_type)
 
         if file_type == PackageType.python or (
             file_type == PackageType.file and "relative_path" not in data
         ):
             data["relative_path"] = file.filename
 
-        resp = await self.post(path, files={"file": file.file}, data=data)
+        resp = await cls.post(path, files={"file": file.file}, data=data)
         return translate_response(resp.json())
 
+    @classmethod
     async def list(
-        self,
+        cls,
         pagination: Optional[Pagination] = None,
         params: Optional[Dict[str, Any]] = None,
         **endpoint_args: Any,
@@ -438,8 +445,7 @@ class PackageApi(PulpApi):
             params = params.copy()
             repository = params.pop("repository")
             repo_id = RepoId(repository)
-            async with RepositoryApi() as api:
-                params["repository_version"] = await api.latest_version_href(repo_id)
+            params["repository_version"] = await RepositoryApi.latest_version_href(repo_id)
 
         if endpoint_args["type"] == PackageType.deb and (release := params.get("release", None)):
             if "repository_version" not in params:
@@ -448,9 +454,10 @@ class PackageApi(PulpApi):
 
         return await super().list(pagination, params, **endpoint_args)
 
-    async def get_package_name(self, package_id: PackageId) -> Any:
+    @classmethod
+    async def get_package_name(cls, package_id: PackageId) -> Any:
         """Call PackageApi.read and parse the response to return the name of the package."""
-        response = await self.read(package_id)
+        response = await cls.read(package_id)
         return response[package_id.type.pulp_name_field]
 
     @staticmethod
@@ -486,9 +493,10 @@ class ReleaseComponentApi(PulpApi):
 class PackageReleaseComponentApi(PulpApi):
     """Api for association between packages and release components."""
 
-    async def find(self, package_id: ContentId, comp_id: ContentId) -> Optional[ContentId]:
+    @classmethod
+    async def find(cls, package_id: ContentId, comp_id: ContentId) -> Optional[ContentId]:
         """Find a package release component, if it exists."""
-        resp = await self.list(
+        resp = await cls.list(
             params={
                 "package": id_to_pulp_href(package_id),
                 "release_component": id_to_pulp_href(comp_id),
@@ -498,15 +506,16 @@ class PackageReleaseComponentApi(PulpApi):
             return ContentId(resp["results"][0]["id"])
         return None
 
-    async def find_or_create(self, package_id: ContentId, comp_id: ContentId) -> ContentId:
+    @classmethod
+    async def find_or_create(cls, package_id: ContentId, comp_id: ContentId) -> ContentId:
         """Find or create a package release component."""
-        prc_id = await self.find(package_id, comp_id)
+        prc_id = await cls.find(package_id, comp_id)
         if prc_id:
             return prc_id
 
         package = id_to_pulp_href(package_id)
         comp = id_to_pulp_href(comp_id)
-        prc = await self.create(data={"package": package, "release_component": comp})
+        prc = await cls.create(data={"package": package, "release_component": comp})
         return ContentId(prc["id"])
 
     @staticmethod
@@ -531,17 +540,18 @@ class ReleaseArchitectureApi(PulpApi):
 class ReleaseApi(PulpApi):
     """Api for apt repo releases (aka dists)."""
 
-    async def _get_components(self, release_id: ReleaseId) -> Any:
-        async with ReleaseComponentApi() as api:
-            resp = await api.list(params={"release": id_to_pulp_href(release_id)})
-            return [comp["component"] for comp in resp["results"]]
+    @staticmethod
+    async def _get_components(release_id: ReleaseId) -> Any:
+        resp = await ReleaseComponentApi.list(params={"release": id_to_pulp_href(release_id)})
+        return [comp["component"] for comp in resp["results"]]
 
-    async def _get_architectures(self, release_id: ReleaseId) -> Any:
-        async with ReleaseArchitectureApi() as api:
-            resp = await api.list(params={"release": id_to_pulp_href(release_id)})
-            return [arch["architecture"] for arch in resp["results"]]
+    @staticmethod
+    async def _get_architectures(release_id: ReleaseId) -> Any:
+        resp = await ReleaseArchitectureApi.list(params={"release": id_to_pulp_href(release_id)})
+        return [arch["architecture"] for arch in resp["results"]]
 
-    async def _translate_signing_services(self, release: Dict[str, Any]) -> None:
+    @staticmethod
+    async def _translate_signing_services(release: Dict[str, Any]) -> None:
         services = await SigningService.id_to_name()
 
         def _translate_key(key: str) -> None:
@@ -552,8 +562,9 @@ class ReleaseApi(PulpApi):
 
         _translate_key("signing_service")
 
+    @classmethod
     async def list(
-        self,
+        cls,
         pagination: Optional[Pagination] = None,
         params: Optional[Dict[str, Any]] = None,
         **endpoint_args: Any,
@@ -562,8 +573,7 @@ class ReleaseApi(PulpApi):
         if params and "repository" in params:
             params = params.copy()
             repo_id = DebRepoId(params.pop("repository"))
-            async with RepositoryApi() as api:
-                params["repository_version"] = await api.latest_version_href(repo_id)
+            params["repository_version"] = await RepositoryApi.latest_version_href(repo_id)
             if "package" in params:
                 params["package"] = f"{params['package']},{params['repository_version']}"
 
@@ -572,62 +582,64 @@ class ReleaseApi(PulpApi):
         # add in components and architectures
         for release in releases["results"]:
             release_id = ReleaseId(release["id"])
-            release["components"] = await self._get_components(release_id)
-            release["architectures"] = await self._get_architectures(release_id)
-            await self._translate_signing_services(release)
+            release["components"] = await cls._get_components(release_id)
+            release["architectures"] = await cls._get_architectures(release_id)
+            await cls._translate_signing_services(release)
 
         return releases
 
+    @staticmethod
     async def _add_items(
-        self, api_class: Type[PulpApi], field: str, release: ReleaseId, items: List[str]
+        api_class: Type[PulpApi], field: str, release: ReleaseId, items: List[str]
     ) -> List[ContentId]:
         release_href = id_to_pulp_href(release)
         content = []
 
         for item in items:
-            async with api_class() as api:
-                response = await api.list(params={field: item, "release": release_href})
-                if len(results := response["results"]) > 0:
-                    result = results[0]
-                else:
-                    result = await api.create({field: item, "release": release_href})
-                content_id = ContentId(result["id"])
-                content.append(content_id)
+            response = await api_class.list(params={field: item, "release": release_href})
+            if len(results := response["results"]) > 0:
+                result = results[0]
+            else:
+                result = await api_class.create({field: item, "release": release_href})
+            content_id = ContentId(result["id"])
+            content.append(content_id)
 
         return content
 
-    async def add_components(self, release: ReleaseId, components: List[str]) -> List[ContentId]:
+    @classmethod
+    async def add_components(cls, release: ReleaseId, components: List[str]) -> List[ContentId]:
         """Create a set of components for a release."""
-        return await self._add_items(ReleaseComponentApi, "component", release, components)
+        return await cls._add_items(ReleaseComponentApi, "component", release, components)
 
-    async def add_architectures(self, release: ReleaseId, components: List[str]) -> List[ContentId]:
+    @classmethod
+    async def add_architectures(cls, release: ReleaseId, components: List[str]) -> List[ContentId]:
         """Create a set of architectures for a release."""
-        return await self._add_items(ReleaseArchitectureApi, "architecture", release, components)
+        return await cls._add_items(ReleaseArchitectureApi, "architecture", release, components)
 
-    async def create(self, data: Dict[str, Any]) -> Any:
+    @classmethod
+    async def create(cls, data: Dict[str, Any]) -> Any:
         """Find or create the release and add it to our repo."""
         components = data.pop("components")
         architectures = data.pop("architectures")
 
         # find if the release already exists (eg for another repo)
         repository = data.pop("repository")
-        releases = await self.list(params=data)
+        releases = await cls.list(params=data)
         if len(releases["results"]) > 0:
             release = releases["results"][0]
         else:
             # release doesn't exist, let's create it
-            resp = await self.post(self.endpoint("create"), json=data)
+            resp = await cls.post(cls.endpoint("create"), json=data)
             release = translate_response(resp.json())
 
         # create the release comps and architectures
         release_id = ReleaseId(release["id"])
         content: List[ContentId] = [release_id]
-        content.extend(await self.add_components(release_id, components))
-        content.extend(await self.add_architectures(release_id, architectures))
+        content.extend(await cls.add_components(release_id, components))
+        content.extend(await cls.add_architectures(release_id, architectures))
 
         # add our release with its components and architectures to our repository
-        async with RepositoryApi() as api:
-            return await api.update_content(repository, add_content=content)
+        return await RepositoryApi.update_content(repository, add_content=content)
 
     @staticmethod
     def endpoint(action: str, **kwargs: Any) -> str:
@@ -638,8 +650,9 @@ class ReleaseApi(PulpApi):
 
 
 class TaskApi(PulpApi):
+    @classmethod
     async def list(
-        self,
+        cls,
         pagination: Optional[Pagination] = None,
         params: Optional[Dict[str, Any]] = None,
         **endpoint_args: Any,
@@ -653,11 +666,12 @@ class TaskApi(PulpApi):
                 params["created_resources"] = id_to_pulp_href(params["created_resources"])
         return await super().list(pagination, params, **endpoint_args)
 
-    async def cancel(self, id: TaskId) -> Any:
+    @classmethod
+    async def cancel(cls, id: TaskId) -> Any:
         """Call the task cancel endpoint."""
-        path = self.endpoint("cancel", id=id)
+        path = cls.endpoint("cancel", id=id)
         try:
-            resp = await self.patch(path, data={"state": "canceled"})
+            resp = await cls.patch(path, data={"state": "canceled"})
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 409:
                 raise TaskCancelException(id)
@@ -678,10 +692,11 @@ class TaskApi(PulpApi):
 
 
 class OrphanApi(PulpApi):
-    async def cleanup(self, protection_time: Optional[int] = None) -> Any:
+    @classmethod
+    async def cleanup(cls, protection_time: Optional[int] = None) -> Any:
         """Call the orphan cleanup endpoint."""
         data = {}
         if protection_time is not None:
             data["orphan_protection_time"] = protection_time
-        resp = await self.post("/orphans/cleanup/", data=data)
+        resp = await cls.post("/orphans/cleanup/", data=data)
         return translate_response(resp.json())

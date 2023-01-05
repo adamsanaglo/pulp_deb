@@ -29,13 +29,12 @@ async def list_releases(
     name: Optional[str] = None,
     package: Optional[PackageId] = None,
 ) -> Any:
-    async with ReleaseApi() as api:
-        params: Dict[str, Any] = {"repository": repo_id}
-        if name:
-            params["distribution"] = name
-        if package:
-            params["package"] = package.uuid
-        return await api.list(pagination, params)
+    params: Dict[str, Any] = {"repository": repo_id}
+    if name:
+        params["distribution"] = name
+    if package:
+        params["package"] = package.uuid
+    return await ReleaseApi.list(pagination, params)
 
 
 @router.post(
@@ -48,18 +47,16 @@ async def create_release(repo_id: DebRepoId, release: ReleaseCreate) -> Any:
     params["repository"] = repo_id
 
     # populate origin and label
-    async with RepositoryApi() as api:
-        repo = await api.read(repo_id)
-        repo_name = repo["name"]
+    repo = await RepositoryApi.read(repo_id)
+    repo_name = repo["name"]
     if repo_name.endswith("-apt"):
         repo_name = repo_name[:-4]
     params["origin"] = params["label"] = f"{repo_name} {release.distribution}"
 
-    async with ReleaseApi() as api:
-        # check first if the release already exists
-        search = {k: v for k, v in params.items() if k not in ["components", "architectures"]}
-        releases = await api.list(params=search)
-        if len(releases["results"]) > 0:
-            raise HTTPException(status_code=409, detail="Release already exists.")
+    # check first if the release already exists
+    search = {k: v for k, v in params.items() if k not in ["components", "architectures"]}
+    releases = await ReleaseApi.list(params=search)
+    if len(releases["results"]) > 0:
+        raise HTTPException(status_code=409, detail="Release already exists.")
 
-        return await api.create(params)
+    return await ReleaseApi.create(params)

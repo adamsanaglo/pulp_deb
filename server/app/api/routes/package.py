@@ -48,8 +48,7 @@ async def deb_packages(
 ) -> Any:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(DebPackageResponse)
-    async with PackageApi() as api:
-        return await api.list(pagination, params=params, type=PackageType.deb)
+    return await PackageApi.list(pagination, params=params, type=PackageType.deb)
 
 
 @router.get("/rpm/packages/", response_model=RpmPackageListResponse)
@@ -58,8 +57,7 @@ async def rpm_packages(
 ) -> Any:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(RpmPackageResponse)
-    async with PackageApi() as api:
-        return await api.list(pagination, params=params, type=PackageType.rpm)
+    return await PackageApi.list(pagination, params=params, type=PackageType.rpm)
 
 
 @router.get("/python/packages/", response_model=PythonPackageListResponse)
@@ -68,8 +66,7 @@ async def python_packages(
 ) -> Any:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(PythonPackageResponse)
-    async with PackageApi() as api:
-        return await api.list(pagination, params=params, type=PackageType.python)
+    return await PackageApi.list(pagination, params=params, type=PackageType.python)
 
 
 @router.get("/file/packages/", response_model=FilePackageListResponse)
@@ -78,8 +75,7 @@ async def files(
 ) -> Any:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(FilePackageResponse)
-    async with PackageApi() as api:
-        return await api.list(pagination, params=params, type=PackageType.file)
+    return await PackageApi.list(pagination, params=params, type=PackageType.file)
 
 
 @router.post(
@@ -132,8 +128,7 @@ async def create_package(
             await verify_signature(file)
         except UnsignedPackage as exc:
             raise HTTPException(status_code=422, detail=f"{exc.__class__.__name__}: {exc}")
-    async with PackageApi() as api:
-        return await api.create(data)
+    return await PackageApi.create(data)
 
 
 @router.get(
@@ -151,6 +146,5 @@ async def create_package(
 )
 async def read_package(id: PackageId, details: bool = False) -> Any:
     resp_model = ("Full" if details else "") + id.type.title() + "PackageResponse"
-    async with PackageApi() as api:
-        data = await api.read(id)
-        return globals()[resp_model](**data)
+    data = await PackageApi.read(id)
+    return globals()[resp_model](**data)

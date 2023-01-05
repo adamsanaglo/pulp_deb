@@ -46,9 +46,8 @@ async def remove_vcurrent_packages(
     package_ids: List[PackageId], repo_id: RepoId, task_id: str, release: Optional[str] = None
 ) -> None:
     """Remove a set of packages from vcurrent."""
-    async with RepositoryApi() as api:
-        repo = await api.read(repo_id)
-        repo_name = repo["name"]
+    repo = await RepositoryApi.read(repo_id)
+    repo_name = repo["name"]
 
     data = {
         "repo_name": repo_name,
