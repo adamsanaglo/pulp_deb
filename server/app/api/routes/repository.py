@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Any, MutableSet, Optional, Union
+from typing import Any, List, MutableSet, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -101,6 +101,8 @@ async def update_packages(
 ) -> Any:
     # First we must convert the package *ids* sent to us into *names*.
     add_names, remove_names = set(), set()
+    remove_filenames: List[str] = []  # TODO: [MIGRATE] remove
+    package_type = id.package_type
     if repo_update.add_packages:
         for add_id in repo_update.add_packages:
             add_names.add(await PackageApi.get_package_name(add_id))
@@ -108,9 +110,19 @@ async def update_packages(
         packages = await package_lookup(
             repo=id, release=repo_update.release, package_ids=repo_update.remove_packages
         )
-        remove_names = {x[id.package_type.pulp_name_field] for x in packages}
+        remove_names = {x[package_type.pulp_name_field] for x in packages}
+        # TODO: [MIGRATE] remove
+        remove_filenames = [x[package_type.pulp_filename_field].split("/")[-1] for x in packages]
 
-    return await _update_packages(id, repo_update, account, session, add_names, remove_names)
+    return await _update_packages(
+        id,
+        repo_update,
+        account,
+        session,
+        add_names,
+        remove_names,
+        remove_filenames,
+    )
 
 
 @router.patch("/repositories/{id}/bulk_delete/", response_model=TaskResponse)
@@ -134,10 +146,15 @@ async def bulk_delete(
     # deb repos, which is probably not what the user intends.
 
     packages = await package_lookup(id, delete_cmd.release, package_queries=delete_cmd.packages)
-    ids, names = [], set()
+    ids, names, filenames = [], set(), []
+    name_field = id.package_type.pulp_name_field
+    filename_field = id.package_type.pulp_filename_field
     for package in packages:
         ids.append(package["id"])
-        names.add(package[id.package_type.pulp_name_field])
+        names.add(package[name_field])
+        # TODO: [MIGRATE] remove this
+        filenames.append(package[filename_field].split("/")[-1])
+        # END [MIGRATE]
 
     update_cmd = RepositoryPackageUpdate(
         remove_packages=ids,
@@ -145,7 +162,7 @@ async def bulk_delete(
         component=delete_cmd.component,
         migration=delete_cmd.migration,  # TODO: [MIGRATE] remove this line
     )
-    return await _update_packages(id, update_cmd, account, session, set(), names)
+    return await _update_packages(id, update_cmd, account, session, set(), names, filenames)
 
 
 async def _update_packages(
@@ -155,6 +172,7 @@ async def _update_packages(
     session: AsyncSession,
     add_names: MutableSet[str],
     remove_names: MutableSet[str],
+    remove_filenames: List[str],  # TODO: [MIGRATE] remove
 ) -> Any:
     if id.type == RepoType.yum and repo_update.release:
         raise HTTPException(
@@ -244,9 +262,7 @@ async def _update_packages(
         and repo_update.remove_packages
         and not repo_update.migration
     ):
-        await remove_vcurrent_packages(
-            repo_update.remove_packages, id, resp["task"], repo_update.release
-        )
+        await remove_vcurrent_packages(remove_filenames, id, resp["task"], repo_update.release)
     # END [MIGRATE]
 
     return resp

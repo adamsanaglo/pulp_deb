@@ -52,8 +52,8 @@ async def package_lookup(
     params = {}
     ret = []
     type = repo.package_type
-    # Let's only bother loading the id and identifying fields of the package here.
-    params["fields"] = ",".join(type.natural_key_fields + ["pulp_href"])
+    # Let's only bother loading the id, filename, and identifying fields of the package here.
+    params["fields"] = ",".join(type.natural_key_fields + ["pulp_href", type.pulp_filename_field])
     # Look up the current repo version once so we don't have to do it for each package list page.
     params["repository_version"] = await RepositoryApi.latest_version_href(repo)
     if release:

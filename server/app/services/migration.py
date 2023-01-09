@@ -8,9 +8,8 @@ import httpx
 from asgi_correlation_id.context import correlation_id
 
 from app.core.config import settings
-from app.core.schemas import PackageId, PackageType, RepoId
+from app.core.schemas import RepoId
 from app.services.pulp.api import RepositoryApi
-from app.services.pulp.package_lookup import package_lookup
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,7 @@ async def get_client() -> AsyncGenerator[httpx.AsyncClient, None]:
 
 
 async def remove_vcurrent_packages(
-    package_ids: List[PackageId], repo_id: RepoId, task_id: str, release: Optional[str] = None
+    filenames: List[str], repo_id: RepoId, task_id: str, release: Optional[str] = None
 ) -> None:
     """Remove a set of packages from vcurrent."""
     repo = await RepositoryApi.read(repo_id)
@@ -54,7 +53,7 @@ async def remove_vcurrent_packages(
         "repo_type": repo_id.type,
         "source": "vnext",
         "action_type": "remove",
-        "packages": [],
+        "packages": [{"filename": x} for x in filenames],
         "task_id": task_id,
         "correlation_id": correlation_id.get(),
     }
@@ -63,19 +62,6 @@ async def remove_vcurrent_packages(
         data["release"] = release
 
     async with get_client() as client:
-        packages = await package_lookup(repo=repo_id, release=release, package_ids=package_ids)
-        for resp in packages:
-            package = {
-                "name": resp.get("name") or resp["package"],
-                "version": resp["version"],
-                "arch": resp.get("arch") or resp["architecture"],
-            }
-            if repo_id.package_type == PackageType.rpm:
-                package["release"] = resp["release"]
-                package["epoch"] = resp["epoch"]
-
-            data["packages"].append(package)
-
         logger.info(f"[MIGRATION] Removing {len(data['packages'])} from {repo_name}.")
         response = await client.post("", json=data)
         logger.info(f"[MIGRATION] Received {response.status_code} response: {response}.")

@@ -40,13 +40,17 @@ class RpmPackage(Package):
     release: str
 
 
+class Filename(BaseModel):
+    filename: str
+
+
 class Action(BaseModel):
     action_type: ActionType
     source: SourceType
     repo_name: str
     repo_type: RepoType
     release: Optional[str]
-    packages: Union[List[RpmPackage], List[DebPackage]]
+    packages: Union[List[RpmPackage], List[DebPackage], List[Filename]]
     task: Optional[str]
     # TODO: make correlation_id required once new code has been deployed to vnext/vcurrent
     correlation_id: Optional[UUID]

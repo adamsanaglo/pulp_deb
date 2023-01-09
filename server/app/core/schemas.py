@@ -96,8 +96,8 @@ class RepoSigningService(str, Enum):
 
 class PackageType(str, Enum):
     """
-    Type for a package. In addition to the values evaluating to strings, they also have a
-    "pulp_name_field" and "pulp_identifying_fields" attribute.
+    Type for a package. In addition to the values evaluating to strings, they also have several
+    useful properties.
     """
 
     deb = "deb"
@@ -116,6 +116,16 @@ class PackageType(str, Enum):
             "rpm": ["name", "epoch", "version", "release", "arch"],
             "python": ["name", "filename"],
             "file": ["relative_path"],
+        }
+        return fields[self.value]
+
+    @property
+    def pulp_filename_field(self) -> str:
+        fields = {
+            "deb": "relative_path",
+            "rpm": "location_href",
+            "python": "filename",
+            "file": "relative_path",
         }
         return fields[self.value]
 

@@ -173,8 +173,11 @@ async def test_roles_repository_remove_package(
     repo_id = f"repositories-rpm-rpm-{uuid4()}"
     package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"
+    package_filename = "package-filename-test"
     monkeypatch.setattr(
-        repository_module, "package_lookup", get_async_mock([{"name": package_name}])
+        repository_module,
+        "package_lookup",
+        get_async_mock([{"name": package_name, "location_href": package_filename}]),
     )
     _setup_repo_package(
         package_api, db_session, repo_id, package_name, account, repo_perm, package_perm
@@ -215,6 +218,7 @@ async def test_bulk_delete(
     packages = [gen_package_attrs(package_type) for _ in range(3)]
     expected_ids = [x["id"] for x in packages]
     expected_names = {x[package_type.pulp_name_field] for x in packages}
+    expected_filenames = {x[package_type.pulp_filename_field] for x in packages}
     package_api.list.side_effect = [gen_list_attrs([packages[i]]) for i in range(3)]
     repo_id = gen_repo_id(repo_type)
 
@@ -223,7 +227,8 @@ async def test_bulk_delete(
     )
 
     assert package_api.list.call_count == 3
-    id, update_cmd, _, _, _, names = repository_module._update_packages.call_args.args
+    id, update_cmd, _, _, _, names, filenames = repository_module._update_packages.call_args.args
     assert id == repo_id
     assert names == expected_names
+    assert set(filenames) == expected_filenames
     assert update_cmd.remove_packages == expected_ids

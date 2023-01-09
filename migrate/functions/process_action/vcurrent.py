@@ -2,7 +2,7 @@ import logging
 import os
 
 from process_action.repolib import repolib
-from schemas import RpmPackage
+from schemas import Filename
 
 VCURRENT_SERVER = os.environ["VCURRENT_SERVER"]
 VCURRENT_PORT = os.environ["VCURRENT_PORT"]
@@ -21,6 +21,7 @@ api = repolib(
     AAD_TENANT,
     AAD_AUTHORITY_URL,
     AAD_CLIENT_SECRET,
+    version="v3",
 )
 
 if DISABLE_SSL_VERIFY:
@@ -40,58 +41,21 @@ def _get_repo(name):
     return repos[0]
 
 
-def _compare_epochs(e1, e2):
-    """Returns true if epochs are equivalent."""
-    return (e1 or "0") == (e2 or "0")
-
-
-def _get_packages(repo_id, package):
-    resp = api.list_packages(
-        repositoryId=repo_id,
-        name=package.name,
-        version=package.version,
-        architecture=package.arch,
-    )
-    packages = resp.json()
-
-    if isinstance(package, RpmPackage):
-        # filter rpms by epoch and release
-        packages = [
-            pkg
-            for pkg in packages
-            if _compare_epochs(pkg["epoch"], package.epoch) and pkg["release"] == package.release
-        ]
-
-    if len(packages) == 0:
-        return None
-
-    return packages
-
-
-def remove_vcurrent_package(action):
-    logging.info(f"Removing package from vcurent {action.repo_name} repo: {action.package}.")
+def remove_vcurrent_packages(action):
+    logging.info(f"Removing package from vcurent {action.repo_name} repo: {action.packages}.")
 
     if not (repo := _get_repo(action.repo_name)):
         logging.warn(f"Skipping removal action. Repo '{action.repo_name}' not found.")
         return
 
-    if not (packages := _get_packages(repo["id"], action.package)):
-        logging.warn(f"Skipping removal action. Package not found: {action.package}.")
+    if not action.packages or not isinstance(action.packages[0], Filename):
+        logging.warn("Skipping removal action. Empty or non-filename package list received.")
         return
 
-    errors = []
-    for package in packages:
-        logging.info(f"Removing package with id {package['id']} from vcurrent.")
-        response = api.delete_package_by_id(package["id"])
-
-        if response.status_code != 204:
-            errors.append(
-                f"Failed to delete package {package['id']} ({response.status_code}): "
-                "{response.text}."
-            )
-
-    if errors:
-        [logging.exception(err) for err in errors]
+    names = [x.filename for x in action.packages]
+    response = api.delete_packages_by_name_and_repo_id(names, repo["id"])
+    if response.status_code != 204:
+        logging.exception(f"Failed to delete packages: ({response.status_code}): {response.text}.")
         raise Exception("Failed to delete packages.")
 
-    logging.info(f"Deleted {len(packages)} package(s) from repo {action.repo_name}.")
+    logging.info(f"Deleted {len(action.packages)} package(s) from repo {action.repo_name}.")
