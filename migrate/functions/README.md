@@ -87,7 +87,15 @@ func start
 ```
 
 Grab the url for the queue\_action function (should be something like
-`http://localhost:7071/api/queue_action`) and fill it in for `AF_QUEUE_ACTION_URL` in your vnext
+`http://localhost:7071/api/queue_action`). If you are running your server outside a container, you
+can use localhost but otherwise you'll need to find your hosts' docker ip address:
+
+```
+$ ip addr | grep -P "inet.*docker"
+inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+```
+
+Now fill in your queue action url for `AF_QUEUE_ACTION_URL` in your vnext
 .env file and `afQueueActionUrl` for your vcurrent environment's confg.js file.
 
 You can also debug by making requests directly via httpie:
