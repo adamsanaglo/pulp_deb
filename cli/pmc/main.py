@@ -13,7 +13,7 @@ from pydantic.tools import parse_obj_as
 from .client import client_context, create_client
 from .commands import access, account
 from .commands import config as config_cmd
-from .commands import distribution, orphan, package, remote, repository, task
+from .commands import distribution, orphan, package, publication, remote, repository, task
 from .commands.config import (
     BASE_URL_OPT,
     DEBUG_OPT,
@@ -47,6 +47,7 @@ app.add_typer(remote.app, name="remote")
 app.add_typer(package.app, name="package")
 app.add_typer(repository.app, name="repo")
 app.add_typer(task.app, name="task")
+app.add_restricted_typer(publication.app, name="publication")
 app.add_restricted_typer(account.app, name="account")
 app.add_restricted_typer(access.app, name="access")
 app.add_restricted_typer(orphan.app, name="orphan")

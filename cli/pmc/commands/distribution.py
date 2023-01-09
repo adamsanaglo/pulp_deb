@@ -5,7 +5,7 @@ import typer
 
 from pmc.client import client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, DistroType
-from pmc.utils import UserFriendlyTyper, id_or_name
+from pmc.utils import UserFriendlyTyper, build_params, id_or_name
 
 app = UserFriendlyTyper()
 
@@ -24,20 +24,18 @@ def list(
     base_path_contains: str = typer.Option(
         None, help="Filter distros whose base path contain string"
     ),
-    limit: Optional[int] = LIMIT_OPT,
-    offset: Optional[int] = OFFSET_OPT,
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
 ) -> None:
     """List distributions."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
-
-    if name:
-        params["name"] = name
-    if name_contains:
-        params["name__contains"] = name_contains
-    if base_path:
-        params["base_path"] = base_path
-    if base_path_contains:
-        params["base_path__contains"] = base_path_contains
+    params = build_params(
+        limit,
+        offset,
+        name=name,
+        name__contains=name_contains,
+        base_path=base_path,
+        base_path__contains=base_path_contains,
+    )
 
     resp = client.get("/distributions/", params=params)
     handle_response(ctx.obj, resp)

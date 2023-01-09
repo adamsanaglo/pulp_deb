@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import typer
 
 from pmc.client import client, handle_response
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT
-from pmc.utils import UserFriendlyTyper, id_or_name
+from pmc.utils import UserFriendlyTyper, build_params, id_or_name
 
 releases = UserFriendlyTyper(help="Manage a repo's releases.")
 
@@ -22,15 +22,11 @@ def list(
     package: Optional[str] = typer.Option(
         None, help="PackageId, only list releases that contain this package."
     ),
-    limit: Optional[int] = LIMIT_OPT,
-    offset: Optional[int] = OFFSET_OPT,
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
 ) -> None:
     """List a repository's releases."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
-    if name:
-        params["name"] = name
-    if package:
-        params["package"] = package
+    params = build_params(limit, offset, name=name, package=package)
 
     resp = client.get(f"/repositories/{repo_id}/releases/", params=params)
     handle_response(ctx.obj, resp)

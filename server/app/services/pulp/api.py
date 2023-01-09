@@ -1,6 +1,6 @@
 import logging
 from functools import partialmethod
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import httpx
 from starlette_context import context
@@ -14,6 +14,8 @@ from app.core.schemas import (
     PackageId,
     PackageType,
     Pagination,
+    PublicationId,
+    PublicationType,
     ReleaseId,
     RemoteId,
     RemoteType,
@@ -110,6 +112,8 @@ class PulpApi:
     async def destroy(cls, id: Identifier) -> Any:
         """Call the destroy endpoint."""
         resp = await cls.delete(cls.endpoint("destroy", id=id))
+        if resp.status_code == 204:
+            return None
         return translate_response(resp.json())
 
     @staticmethod
@@ -241,21 +245,8 @@ class RepositoryApi(PulpApi):
         """Call the publication create endpoint."""
         if not data:
             data = {}
-        data["repository"] = id_to_pulp_href(id)
-
-        if id.type == RepoType.python:
-            path = "/publications/python/pypi/"
-        else:
-            path = cls._detail_uri(id.type, "publications")
-
-        if id.type == RepoType.apt:
-            data["structured"] = True
-
-        if id.type == RepoType.file:
-            data["manifest"] = "FILE_MANIFEST"
-
-        resp = await cls.post(path, json=data)
-        return translate_response(resp.json())
+        data["repository"] = id
+        return await PublicationApi.create(data)
 
     @classmethod
     async def latest_version_href(cls, repo_id: RepoId) -> str:
@@ -264,15 +255,15 @@ class RepositoryApi(PulpApi):
         return id_to_pulp_href(RepoVersionId(repo["latest_version"]))
 
     @staticmethod
-    def _detail_uri(type: Any, resource: str = "repositories") -> str:
+    def detail_uri(type: Any) -> str:
         assert isinstance(type, (str, RepoType))
 
         if type == RepoType.apt:
-            return f"/{resource}/deb/apt/"
+            return "/repositories/deb/apt/"
         elif type == RepoType.yum:
-            return f"/{resource}/rpm/rpm/"
+            return "/repositories/rpm/rpm/"
         elif type in [RepoType.python, RepoType.file]:
-            return f"/{resource}/{type}/{type}/"
+            return f"/repositories/{type}/{type}/"
         else:
             raise TypeError(f"Received invalid type: {type}")
 
@@ -283,13 +274,51 @@ class RepositoryApi(PulpApi):
         if action == "list":
             return "/repositories/"
         elif action == "create":
-            return RepositoryApi._detail_uri(kwargs["type"])
+            return RepositoryApi.detail_uri(kwargs["type"])
         elif action in ("read", "destroy", "update"):
             assert isinstance((id := kwargs["id"]), RepoId)
-            return f"{RepositoryApi._detail_uri(id.type)}{id.uuid}/"
+            return f"{RepositoryApi.detail_uri(id.type)}{id.uuid}/"
         elif action in ["modify", "sync"]:
             assert isinstance((id := kwargs["id"]), RepoId)
-            return f"{RepositoryApi._detail_uri(id.type)}{id.uuid}/{action}/"
+            return f"{RepositoryApi.detail_uri(id.type)}{id.uuid}/{action}/"
+        else:
+            raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
+
+
+class RepoVersionApi(PulpApi):
+    @classmethod
+    async def list(
+        cls,
+        pagination: Optional[Pagination] = None,
+        params: Optional[Dict[str, Any]] = None,
+        **endpoint_args: Any,
+    ) -> Any:
+        if not params:
+            params = {}
+
+        if repo_id := params.pop("repository", False):
+            endpoint_args["repository"] = RepoId(repo_id)
+        if content_id := params.pop("content", False):
+            params["content"] = id_to_pulp_href(content_id)
+
+        return await super().list(pagination, params, **endpoint_args)
+
+    @staticmethod
+    def endpoint(action: str, **kwargs: Any) -> str:
+        """Construct a pulp repo uri from action and id."""
+
+        def _versions_endpoint(id: Union[RepoId, RepoVersionId]) -> str:
+            return f"{RepositoryApi.detail_uri(id.type)}{id.uuid}/versions/"
+
+        if action == "list":
+            if repo_id := kwargs.get("repository", False):
+                # there's no repository filter on the repository versions endpoint so we have to use
+                # the /repositories/<type>/<id>/versions/ endpoint instead.
+                return f"{_versions_endpoint(repo_id)}"
+            return "/repository_versions/"
+        elif action in ["read", "destroy"]:
+            assert isinstance((id := kwargs["id"]), RepoVersionId)
+            return f"{_versions_endpoint(id)}{id.number}/"
         else:
             raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
 
@@ -302,12 +331,46 @@ class PublicationApi(PulpApi):
         params: Optional[Dict[str, Any]] = None,
         **endpoint_args: Any,
     ) -> Any:
-        if params and "repository_version" in params:
-            # translate the id to a pulp href
-            params["repository_version"] = id_to_pulp_href(
-                RepoVersionId(params["repository_version"])
-            )
+        if not params:
+            params = {}
+        if repo_version := params.pop("repository_version", False):
+            params["repository_version"] = id_to_pulp_href(RepoVersionId(repo_version))
+        if repo := params.pop("repository", False):
+            params["repository"] = id_to_pulp_href(RepoId(repo))
+        if content := params.pop("content", False):
+            params["content"] = id_to_pulp_href(PackageId(content))
+
         return await super().list(pagination, params, **endpoint_args)
+
+    @classmethod
+    async def create(cls, data: Dict[str, Any]) -> Any:
+        """Call the create endpoint."""
+        repo_id = data.pop("repository")
+        type = RepoId(repo_id).publication_type
+
+        if type == RepoType.apt:
+            data["structured"] = True
+        if type == RepoType.file:
+            data["manifest"] = "FILE_MANIFEST"
+
+        data["repository"] = id_to_pulp_href(repo_id)
+        resp = await cls.post(cls.endpoint("create", type=type), json=data)
+        return translate_response(resp.json())
+
+    @staticmethod
+    def detail_uri(type: Any) -> str:
+        assert isinstance(type, (str, PublicationType))
+
+        if type == PublicationType.apt:
+            return "/publications/deb/apt/"
+        elif type == PublicationType.yum:
+            return "/publications/rpm/rpm/"
+        elif type == PublicationType.python:
+            return "/publications/python/pypi/"
+        elif type == PublicationType.file:
+            return "/publications/file/file/"
+        else:
+            raise TypeError(f"Received invalid type: {type}")
 
     @staticmethod
     def endpoint(action: str, **kwargs: Any) -> str:
@@ -315,6 +378,11 @@ class PublicationApi(PulpApi):
 
         if action == "list":
             return "/publications/"
+        elif action == "create":
+            return PublicationApi.detail_uri(kwargs["type"])
+        elif action in ["destroy", "read"]:
+            assert isinstance((id := kwargs["id"]), PublicationId)
+            return f"{PublicationApi.detail_uri(id.type)}{id.uuid}/"
         else:
             raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
 

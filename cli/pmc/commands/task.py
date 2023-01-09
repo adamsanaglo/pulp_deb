@@ -1,11 +1,9 @@
-from typing import Any, Dict, Optional
-
 import typer
 
 from pmc.client import client, handle_response
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, TaskState
-from pmc.utils import UserFriendlyTyper
+from pmc.utils import UserFriendlyTyper, build_params
 
 app = UserFriendlyTyper()
 
@@ -13,8 +11,8 @@ app = UserFriendlyTyper()
 @app.command()
 def list(
     ctx: typer.Context,
-    limit: Optional[int] = LIMIT_OPT,
-    offset: Optional[int] = OFFSET_OPT,
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
     reserved_resource: str = typer.Option(
         None, help=f"Filter by list of reserved resource records separated by '{LIST_SEPARATOR}'."
     ),
@@ -28,18 +26,15 @@ def list(
     ),
 ) -> None:
     """List tasks."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
-
-    if reserved_resource:
-        params["reserved_resources"] = reserved_resource
-    if state:
-        params["state"] = state
-    if name:
-        params["name"] = name
-    if name_contains:
-        params["name__contains"] = name_contains
-    if created_resource:
-        params["created_resources"] = created_resource
+    params = build_params(
+        limit=limit,
+        offset=offset,
+        reserved_resources=reserved_resource,
+        state=state,
+        name=name,
+        name__contains=name_contains,
+        created_resources=created_resource,
+    )
 
     resp = client.get("/tasks/", params=params)
     handle_response(ctx.obj, resp)

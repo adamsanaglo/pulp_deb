@@ -149,6 +149,15 @@ class RepoType(str, Enum):
         return types[self.value]
 
 
+class PublicationType(str, Enum):
+    """Type for a publication."""
+
+    apt = "apt"
+    yum = "yum"  # maps to 'rpm' in Pulp
+    python = "pypi"
+    file = "file"
+
+
 class TaskState(str, Enum):
     """Options for task state."""
 
@@ -237,11 +246,18 @@ class RepoId(Identifier):
     def package_type(self) -> PackageType:
         return PackageType(self._pieces.group("plugin"))
 
+    @property
+    def publication_type(self) -> PublicationType:
+        if self.type == RepoType.python:
+            return PublicationType.python
+        else:
+            return PublicationType(self.type)
+
 
 class RepoVersionId(Identifier):
     pattern = re.compile(
         rf"^repositories-(?:deb|rpm|python|file)-(?P<type>apt|rpm|python|file)-({uuid_group})-"
-        r"versions-(\d+)"
+        r"versions-(?P<number>\d+)"
     )
     examples = [
         "repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558-versions-0",
@@ -251,6 +267,30 @@ class RepoVersionId(Identifier):
     @property
     def type(self) -> RepoType:
         return RepoType(normalize_type(self._pieces.group("type")))
+
+    @property
+    def repo_id(self) -> RepoId:
+        return RepoId(re.sub(r"-versions-\d+$", "", self))
+
+    @property
+    def number(self) -> int:
+        return int(self._pieces.group("number"))
+
+
+class PublicationId(Identifier):
+    pattern = re.compile(
+        rf"^publications-(?:deb|rpm|python|file)-(?P<type>apt|rpm|pypi|file)-({uuid_group})$"
+    )
+    examples = [
+        "publications-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558",
+        "publications-rpm-rpm-11712ac6-ae6d-43b0-9494-1930337425b4",
+        "publications-python-pypi-9cdb587-1c31-4dbc-9002-267f10379f67",
+        "publications-file-file-5d90abfd-0a58-4ac0-9915-42e201c07155",
+    ]
+
+    @property
+    def type(self) -> PublicationType:
+        return PublicationType(normalize_type(self._pieces.group("type")))
 
 
 class DebRepoId(RepoId):

@@ -7,8 +7,10 @@ from app.api.routes import (
     distribution,
     orphan,
     package,
+    publication,
     release,
     remote,
+    repo_version,
     repository,
     task,
 )
@@ -20,6 +22,14 @@ router.include_router(distribution.router, tags=["distributions"])
 router.include_router(remote.router, tags=["remotes"])
 router.include_router(package.router, tags=["packages"])
 router.include_router(repository.router, tags=["repositories"])
+router.include_router(
+    repo_version.router,
+    tags=["repository_versions"],
+    dependencies=[Depends(auth.requires_repo_admin)],
+)
+router.include_router(
+    publication.router, tags=["publications"], dependencies=[Depends(auth.requires_repo_admin)]
+)
 router.include_router(task.router, tags=["tasks"])
 router.include_router(
     account.router, tags=["accounts"], dependencies=[Depends(auth.requires_account_admin)]

@@ -4,14 +4,16 @@ import typer
 
 from pmc.client import client, handle_response, poll_task
 from pmc.commands.release import releases
+from pmc.commands.repo_version import version
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoSigningService, RepoType
-from pmc.utils import UserFriendlyTyper, id_or_name
+from pmc.utils import UserFriendlyTyper, build_params, id_or_name
 
 app = UserFriendlyTyper()
 packages = UserFriendlyTyper(help="Manage a repo's packages.")
 app.add_typer(packages, name="package")
 app.add_typer(releases, name="release")
+app.add_restricted_typer(version, name="version")
 
 ADD_PACKAGES_HELP = "Semicolon-separated list of package ids to add."
 REMOVE_PACKAGES_HELP = "Semicolon-separated list of package ids to remove."
@@ -36,8 +38,8 @@ sqlite_metadata_option = typer.Option(
 @app.command()
 def list(
     ctx: typer.Context,
-    limit: Optional[int] = LIMIT_OPT,
-    offset: Optional[int] = OFFSET_OPT,
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
     name: Optional[str] = typer.Option(None),
     name_contains: Optional[str] = typer.Option(
         None, help="Filter repos with names that contain string."
@@ -47,13 +49,9 @@ def list(
     ),
 ) -> None:
     """List repositories."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
-    if name:
-        params["name"] = name
-    if name_contains:
-        params["name__contains"] = name_contains
-    if name_icontains:
-        params["name__icontains"] = name_icontains
+    params = build_params(
+        limit, offset, name=name, name__contains=name_contains, name__icontains=name_icontains
+    )
 
     resp = client.get("/repositories/", params=params)
     handle_response(ctx.obj, resp)

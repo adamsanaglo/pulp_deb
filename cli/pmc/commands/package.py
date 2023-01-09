@@ -7,7 +7,7 @@ from pydantic import AnyHttpUrl, ValidationError, parse_obj_as
 
 from pmc.client import client, handle_response
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, PackageType
-from pmc.utils import UserFriendlyTyper, id_or_name, raise_if_task_failed
+from pmc.utils import UserFriendlyTyper, build_params, id_or_name, raise_if_task_failed
 
 app = UserFriendlyTyper()
 deb = UserFriendlyTyper()
@@ -41,7 +41,7 @@ def _sha256sum(path: str) -> str:
 
 def _list(package_type: PackageType, ctx: typer.Context, params: Dict[str, Any]) -> None:
     # filter out null values
-    params = {key: val for key, val in params.items() if val is not None}
+    params = build_params(**params)
     resp = client.get(f"/{package_type}/packages/", params=params)
     handle_response(ctx.obj, resp)
 

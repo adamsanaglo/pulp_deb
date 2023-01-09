@@ -185,6 +185,14 @@ def _parse_restricted_commands() -> bool:
     return True
 
 
+def build_params(limit: int, offset: int, **kwargs: Any) -> Dict[str, Any]:
+    """Build a dictionary of params filtering out params that are None."""
+    kwargs["limit"] = limit
+    kwargs["offset"] = offset
+
+    return {key: val for key, val in kwargs.items() if val is not None}
+
+
 class UserFriendlyTyper(typer.Typer):
     """
     A Typer subclass that allows us to easily hide by default commands that Publishers are not

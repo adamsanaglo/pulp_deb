@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import typer
 
@@ -36,8 +36,8 @@ ACCOUNT_FIELDS = {
 @app.command()
 def list(
     ctx: typer.Context,
-    limit: Optional[int] = LIMIT_OPT,
-    offset: Optional[int] = OFFSET_OPT,
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
 ) -> None:
     """List accounts."""
     params: Dict[str, Any] = dict(limit=limit, offset=offset)

@@ -16,9 +16,7 @@ ARCHITECTURES_HELP = "Semicolon-separated list of architectures."
 
 
 @app.command()
-def list(
-    ctx: typer.Context, limit: Optional[int] = LIMIT_OPT, offset: Optional[int] = OFFSET_OPT
-) -> None:
+def list(ctx: typer.Context, limit: int = LIMIT_OPT, offset: int = OFFSET_OPT) -> None:
     """List remotes."""
     params: Dict[str, Any] = dict(limit=limit, offset=offset)
 
