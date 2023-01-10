@@ -24,7 +24,7 @@ function set_initial_vars() {
     aks="${prefix}-kube-cluster"
     acr="$(echo $prefix | tr -cd '[:alnum:]')acr"  # alphanumeric only
     pg="${prefix}-pg"
-    storageprefix=$(echo $prefix | tr -d [:punct:]) # Storage account names can't include punctuation
+    storageprefix=$(echo $prefix | tr -d '[:punct:]') # Storage account names can't include punctuation
     export bstg="${storageprefix}blobstorage"
     export lstg="${storageprefix}logstorage"
     export esrpAuthCertPath="/mnt/secrets/${esrpAuthCert}"
