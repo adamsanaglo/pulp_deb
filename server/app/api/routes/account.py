@@ -32,7 +32,7 @@ async def _get_list(
     return results, count
 
 
-@router.get("/accounts/", response_model=AccountListResponse)
+@router.get("/accounts/")
 async def list_account(
     pagination: Pagination = Depends(Pagination),
     session: AsyncSession = Depends(get_session),
@@ -45,10 +45,10 @@ async def list_account(
     return AccountListResponse(count=count, results=accounts, **pagination.dict())
 
 
-@router.post("/accounts/", response_model=AccountResponse)
+@router.post("/accounts/")
 async def add_account(
     account_data: AccountCreate, session: AsyncSession = Depends(get_session)
-) -> Account:
+) -> AccountResponse:
     account = Account(**account_data.dict())
     session.add(account)
     await session.commit()
@@ -56,18 +56,18 @@ async def add_account(
     return account
 
 
-@router.get("/accounts/{id}/", response_model=AccountResponse)
-async def read_account(id: UUID, session: AsyncSession = Depends(get_session)) -> Account:
+@router.get("/accounts/{id}/")
+async def read_account(id: UUID, session: AsyncSession = Depends(get_session)) -> AccountResponse:
     account = await session.get(Account, id)
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     return account
 
 
-@router.patch("/accounts/{id}/", response_model=AccountResponse)
+@router.patch("/accounts/{id}/")
 async def update_account(
     id: UUID, account: AccountUpdate, session: AsyncSession = Depends(get_session)
-) -> Account:
+) -> AccountResponse:
     db_account = await session.get(Account, id)
     if not db_account:
         raise HTTPException(status_code=404, detail="Account not found")

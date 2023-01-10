@@ -32,5 +32,5 @@ async def read(id: PublicationId) -> Any:
 
 
 @router.delete("/publications/{id}/", status_code=204)
-async def delete(id: PublicationId) -> Any:
+async def delete(id: PublicationId) -> None:
     await PublicationApi.destroy(id)

@@ -46,7 +46,7 @@ async def _get_named_accounts(session: AsyncSession, account_names: List[str]) -
 
 
 # If you just do a get on /accounts/repo_access/ then it matches list_account and blows up.
-@router.get("/access/repo/", response_model=List[RepoAccessResponse])
+@router.get("/access/repo/")
 async def list_repo_access(
     session: AsyncSession = Depends(get_session),
 ) -> List[RepoAccessResponse]:
@@ -55,12 +55,12 @@ async def list_repo_access(
     return list(results.all())
 
 
-@router.post("/access/repo/{id}/clone_from/{original_id}/", response_model=List[RepoAccessResponse])
+@router.post("/access/repo/{id}/clone_from/{original_id}/")
 async def clone_repo_access_from(
     id: RepoId,
     original_id: RepoId,
     session: AsyncSession = Depends(get_session),
-) -> Any:
+) -> List[RepoAccessResponse]:
     """Additively clone the repo permissions from another repo."""
     statement = select(RepoAccess).where(RepoAccess.repo_id == id)
     current_perms = (await session.exec(statement)).all()
@@ -80,7 +80,7 @@ async def clone_repo_access_from(
     return new_perms
 
 
-@router.post("/access/repo/grant/", response_model=List[RepositoryResponse])
+@router.post("/access/repo/grant/")
 async def grant_repo_access(
     update: AccountRepoPermissionUpdate,
     session: AsyncSession = Depends(get_session),
@@ -102,7 +102,7 @@ async def grant_repo_access(
     return repos
 
 
-@router.post("/access/repo/revoke/", response_model=List[RepositoryResponse])
+@router.post("/access/repo/revoke/")
 async def revoke_repo_access(
     update: AccountRepoPermissionUpdate,
     session: AsyncSession = Depends(get_session),
@@ -122,7 +122,7 @@ async def revoke_repo_access(
 
 
 # If you just do a get on /accounts/package_ownership/ then it matches list_account and blows up.
-@router.get("/access/package/", response_model=List[OwnedPackageResponse])
+@router.get("/access/package/")
 async def list_package_ownership(
     session: AsyncSession = Depends(get_session),
 ) -> List[OwnedPackageResponse]:
@@ -131,7 +131,7 @@ async def list_package_ownership(
     return [x[0] for x in results]
 
 
-@router.post("/access/package/grant/", response_model=List[RepositoryResponse])
+@router.post("/access/package/grant/")
 async def grant_package_ownership(
     update: AccountRepoPackagePermissionUpdate, session: AsyncSession = Depends(get_session)
 ) -> List[RepositoryResponse]:
@@ -156,7 +156,7 @@ async def grant_package_ownership(
     return repos
 
 
-@router.post("/access/package/revoke/", response_model=List[RepositoryResponse])
+@router.post("/access/package/revoke/")
 async def revoke_package_ownership(
     update: AccountRepoPackagePermissionUpdate, session: AsyncSession = Depends(get_session)
 ) -> List[RepositoryResponse]:

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
@@ -42,54 +42,50 @@ def _field_list(response: BasePackageResponse) -> str:
     return (",").join(fields)
 
 
-@router.get("/deb/packages/", response_model=DebPackageListResponse)
+@router.get("/deb/packages/")
 async def deb_packages(
     pagination: Pagination = Depends(Pagination), query: DebPackageQuery = Depends()
-) -> Any:
+) -> DebPackageListResponse:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(DebPackageResponse)
     return await PackageApi.list(pagination, params=params, type=PackageType.deb)
 
 
-@router.get("/rpm/packages/", response_model=RpmPackageListResponse)
+@router.get("/rpm/packages/")
 async def rpm_packages(
     pagination: Pagination = Depends(Pagination), query: RpmPackageQuery = Depends()
-) -> Any:
+) -> RpmPackageListResponse:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(RpmPackageResponse)
     return await PackageApi.list(pagination, params=params, type=PackageType.rpm)
 
 
-@router.get("/python/packages/", response_model=PythonPackageListResponse)
+@router.get("/python/packages/")
 async def python_packages(
     pagination: Pagination = Depends(Pagination), query: PythonPackageQuery = Depends()
-) -> Any:
+) -> PythonPackageListResponse:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(PythonPackageResponse)
     return await PackageApi.list(pagination, params=params, type=PackageType.python)
 
 
-@router.get("/file/packages/", response_model=FilePackageListResponse)
+@router.get("/file/packages/")
 async def files(
     pagination: Pagination = Depends(Pagination), query: FilePackageQuery = Depends()
-) -> Any:
+) -> FilePackageListResponse:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(FilePackageResponse)
     return await PackageApi.list(pagination, params=params, type=PackageType.file)
 
 
-@router.post(
-    "/packages/",
-    response_model=TaskResponse,
-    dependencies=[Depends(requires_package_admin_or_publisher)],
-)
+@router.post("/packages/", dependencies=[Depends(requires_package_admin_or_publisher)])
 async def create_package(
     file: Optional[UploadFile] = None,
     url: Optional[AnyHttpUrl] = None,
     ignore_signature: Optional[bool] = False,
     file_type: Optional[PackageType] = None,
     relative_path: Optional[str] = None,
-) -> Any:
+) -> TaskResponse:
     if not file and not url:
         raise HTTPException(status_code=422, detail="Must upload a file or specify url.")
 
@@ -131,20 +127,19 @@ async def create_package(
     return await PackageApi.create(data)
 
 
-@router.get(
-    "/packages/{id}/",
-    response_model=Union[
-        FullDebPackageResponse,
-        FullRpmPackageResponse,
-        FullPythonPackageResponse,
-        DebPackageResponse,
-        RpmPackageResponse,
-        PythonPackageResponse,
-        FullFilePackageResponse,
-        FilePackageResponse,
-    ],
-)
-async def read_package(id: PackageId, details: bool = False) -> Any:
+@router.get("/packages/{id}/")
+async def read_package(
+    id: PackageId, details: bool = False
+) -> Union[
+    FullDebPackageResponse,
+    FullRpmPackageResponse,
+    FullPythonPackageResponse,
+    DebPackageResponse,
+    RpmPackageResponse,
+    PythonPackageResponse,
+    FullFilePackageResponse,
+    FilePackageResponse,
+]:
     resp_model = ("Full" if details else "") + id.type.title() + "PackageResponse"
     data = await PackageApi.read(id)
     return globals()[resp_model](**data)

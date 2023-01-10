@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Any, List, MutableSet, Optional, Union
+from typing import List, MutableSet, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -37,37 +37,31 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get(
-    "/repositories/", response_model=RepositoryListResponse, response_model_exclude_unset=True
-)
+@router.get("/repositories/", response_model_exclude_unset=True)
 async def list_repos(
     pagination: Pagination = Depends(Pagination),
     name: Optional[str] = None,
     name__contains: Optional[str] = None,
     name__icontains: Optional[str] = None,
-) -> Any:
+) -> RepositoryListResponse:
     params = {"name": name, "name__contains": name__contains, "name__icontains": name__icontains}
     return await RepositoryApi.list(pagination, params=params)
 
 
-@router.post(
-    "/repositories/",
-    response_model=Union[RpmRepositoryResponse, RepositoryResponse],
-    dependencies=[Depends(requires_repo_admin)],
-)
-async def create_repository(repo: RepositoryCreate) -> Any:
+@router.post("/repositories/", dependencies=[Depends(requires_repo_admin)])
+async def create_repository(
+    repo: RepositoryCreate,
+) -> Union[RpmRepositoryResponse, RepositoryResponse]:
     return await RepositoryApi.create(repo.dict(exclude_unset=True))
 
 
-@router.get("/repositories/{id}/", response_model=Union[RpmRepositoryResponse, RepositoryResponse])
-async def read_repository(id: RepoId) -> Any:
+@router.get("/repositories/{id}/")
+async def read_repository(id: RepoId) -> Union[RpmRepositoryResponse, RepositoryResponse]:
     return await RepositoryApi.read(id)
 
 
-@router.patch(
-    "/repositories/{id}/", response_model=TaskResponse, dependencies=[Depends(requires_repo_admin)]
-)
-async def update_repository(id: RepoId, repo: RepositoryUpdate) -> Any:
+@router.patch("/repositories/{id}/", dependencies=[Depends(requires_repo_admin)])
+async def update_repository(id: RepoId, repo: RepositoryUpdate) -> TaskResponse:
     if id.type != RepoType.yum and "sqlite_metadata" in repo.__fields_set__:
         raise HTTPException(
             status_code=422, detail="sqlite_metadata is only permitted for yum repositories."
@@ -76,29 +70,23 @@ async def update_repository(id: RepoId, repo: RepositoryUpdate) -> Any:
     return await RepositoryApi.update(id, repo.dict(exclude_unset=True))
 
 
-@router.delete(
-    "/repositories/{id}/", response_model=TaskResponse, dependencies=[Depends(requires_repo_admin)]
-)
-async def delete_repository(id: RepoId) -> Any:
+@router.delete("/repositories/{id}/", dependencies=[Depends(requires_repo_admin)])
+async def delete_repository(id: RepoId) -> TaskResponse:
     return await RepositoryApi.destroy(id)
 
 
-@router.post(
-    "/repositories/{id}/sync/",
-    response_model=TaskResponse,
-    dependencies=[Depends(requires_repo_admin_or_migration)],
-)
-async def sync_repository(id: RepoId, remote: Optional[RemoteId] = None) -> Any:
+@router.post("/repositories/{id}/sync/", dependencies=[Depends(requires_repo_admin_or_migration)])
+async def sync_repository(id: RepoId, remote: Optional[RemoteId] = None) -> TaskResponse:
     return await RepositoryApi.sync(id, remote)
 
 
-@router.patch("/repositories/{id}/packages/", response_model=TaskResponse)
+@router.patch("/repositories/{id}/packages/")
 async def update_packages(
     id: RepoId,
     repo_update: RepositoryPackageUpdate,
     account: Account = Depends(get_active_account),
     session: AsyncSession = Depends(get_session),
-) -> Any:
+) -> TaskResponse:
     # First we must convert the package *ids* sent to us into *names*.
     add_names, remove_names = set(), set()
     remove_filenames: List[str] = []  # TODO: [MIGRATE] remove
@@ -125,13 +113,13 @@ async def update_packages(
     )
 
 
-@router.patch("/repositories/{id}/bulk_delete/", response_model=TaskResponse)
+@router.patch("/repositories/{id}/bulk_delete/")
 async def bulk_delete(
     id: RepoId,
     delete_cmd: RepositoryBulkDelete,
     account: Account = Depends(get_active_account),
     session: AsyncSession = Depends(get_session),
-) -> Any:
+) -> TaskResponse:
     """
     Essentially the same thing as passing a list of Package IDs to update_packages, except allows
     for a more optimized workflow because the caller does not have to look up the IDs first.
@@ -173,7 +161,7 @@ async def _update_packages(
     add_names: MutableSet[str],
     remove_names: MutableSet[str],
     remove_filenames: List[str],  # TODO: [MIGRATE] remove
-) -> Any:
+) -> TaskResponse:
     if id.type == RepoType.yum and repo_update.release:
         raise HTTPException(
             status_code=422, detail="Release field is not permitted for yum repositories."
@@ -268,12 +256,8 @@ async def _update_packages(
     return resp
 
 
-@router.post(
-    "/repositories/{id}/publish/",
-    response_model=TaskResponse,
-    dependencies=[Depends(requires_repo_permission)],
-)
-async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = None) -> Any:
+@router.post("/repositories/{id}/publish/", dependencies=[Depends(requires_repo_permission)])
+async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = None) -> TaskResponse:
     if not publish:
         publish = PublishRequest()
 
