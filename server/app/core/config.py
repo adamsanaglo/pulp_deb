@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     def db_engine_args(self) -> Dict[str, Any]:
         ret: Dict[str, Any] = {"echo": True, "future": True}
         if not self.DEBUG:
+            ret["echo"] = False
             # Enforce extra tls checks if not in dev environment.
             # Let's validate that the ssl cert the server is providing is actually signed by
             # (a delegate of) DigiCert and actually corresponds to our postgres server's hostname.
