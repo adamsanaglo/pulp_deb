@@ -21,7 +21,7 @@ Tux-dev is only accessible from Corpnet.
 The new CLI is a platform-agnostic Python package which can be installed from tux-dev.
 
 ```bash
-pip install http://tux-devrepo.corp.microsoft.com/pypi/pmc_cli-0.0.2-py3-none-any.whl
+pip install --extra-index-url http://tux-devrepo.corp.microsoft.com/pypi/simple/ --trusted-host tux-devrepo.corp.microsoft.com pmc-cli
 ```
 
 ### **Client Config**
