@@ -92,7 +92,7 @@ RUN mkdir -p /etc/pulp \
 # https://github.com/python-ldap/python-ldap/issues/432#issuecomment-1016756358
 #RUN ln -s /usr/lib64/libldap.so /usr/lib64/libldap_r.so
 
-RUN pip install pulpcore~=3.22.0
+RUN pip install pulpcore==3.22.0  # pin for patches below
 RUN pip install pulp-python~=3.8.0
 RUN pip install pulp-deb==2.20.0  # pin for patches below
 RUN pip install pulp-rpm~=3.18.9
@@ -101,6 +101,11 @@ RUN pip install pulp-file~=1.11.2
 # Enable use of cloud storage using vendored clone of github.com/jasonzio/django_storages
 COPY container-assets/django_storages /tmp/django_storages
 RUN pip install /tmp/django_storages
+
+# Apply our pulpcore patch until pulp_deb orphan cleanup works
+# https://github.com/pulp/pulp_deb/issues/690
+COPY container-assets/pulpcore /tmp/pulpcore
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulpcore/0001-Exclude-pulp_deb-s-ReleaseFile-from-orphan-cleanup.patch
 
 # Apply our pulp_deb patches until upstream accepts/releases our merge requests
 COPY container-assets/pulp_deb /tmp/pulp_deb
