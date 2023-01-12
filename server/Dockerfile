@@ -15,7 +15,7 @@ COPY pyproject.toml .
 COPY poetry.lock .
 COPY alembic.ini .
 COPY README.md .
-COPY deployment/DigiCertGlobalRootCA.crt.pem .
+COPY deployment/root-cert-bundle.pem .
 COPY deployment/entrypoint.sh .
 COPY app app/
 COPY migrations migrations/

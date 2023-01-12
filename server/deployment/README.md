@@ -73,3 +73,22 @@ injected as environment variables or config files for the services to use.
 AKS is set up for secret autorotation, by default it polls for secret changes ever 2 minutes.
 What should happen is that when a secret is rotated in the keyvault, AKS will notice and then will
 do a rolling restart of the containers that use it so that they'll pick up the new secret.
+
+## Pushing A Test Image to PPE
+There are times when you need to test something that is specifically Azure or AKS-related.
+One fairly simple way to do that is to push/deploy images containing your updates to PPE and test
+there.
+Once you have build the new images locally you can push them into the ACR and then update the PPE
+deployment to use them.
+For example, if you wanted to push / test a custom version of the pmcserver container:
+
+1. `source shared.sh`
+1. `set_initial_vars ppe`
+1. `get_az_cli_vars`
+1. `az acr login -n pmcppeacr`
+1. `docker tag pmcserver-api pmcppeacr.azurecr.io/pmcserver_api:test`
+1. `docker push pmcppeacr.azurecr.io/pmcserver_api:test`
+1. Update the pmcserver pod in your local api-pod.yml to use the `pmcserver_api:test` image.
+1. `./update.sh ppe api-pod api-pod.yml`
+1. Test your change.
+1. When you're done revert the image change in api-pod.yml and re-run the update.sh step to reset.

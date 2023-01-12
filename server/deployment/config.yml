@@ -14,7 +14,7 @@ data:
   POSTGRES_DB: "pmcserver"
   PULP_HOST: "http://localhost:24817"  # pmc-server talks to pulp api via in-pod localhost
   POSTGRES_SERVER: $pg_server
-  POSTGRES_SERVER_CA_CERT: "/pmcserver/DigiCertGlobalRootCA.crt.pem"
+  POSTGRES_SERVER_CA_CERT: "/pmcserver/root-cert-bundle.pem"
   SECRETS_MOUNTPOINT: "/mnt/secrets"
 ---
 apiVersion: v1
@@ -44,7 +44,7 @@ data:
   # Long enough to let tasks complete, a little less than AKS terminationGracePeriodSeconds
   PULP_WORKER_TTL: "300"
   PULP_DATABASES__default__OPTIONS__sslmode: "verify-full"
-  PULP_DATABASES__default__OPTIONS__sslrootcert: "/usr/bin/DigiCertGlobalRootCA.crt.pem"
+  PULP_DATABASES__default__OPTIONS__sslrootcert: "/usr/bin/root-cert-bundle.pem"
 ---
 apiVersion: v1
 kind: ConfigMap
