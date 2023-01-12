@@ -75,6 +75,18 @@ def test_rpm_list(rpm_package: Any) -> None:
     _assert_package_list_not_empty("rpm", {"file": "tests/assets/signed-by-us.rpm"})
 
 
+def test_rpm_list_with_ordering(rpm_package: Any, forced_unsigned_package: Any) -> None:
+    response = _list_packages("rpm", {"ordering": "name"})
+    assert len(response["results"]) > 1
+    print(response["results"])
+    assert response["results"][1]["name"] > response["results"][0]["name"]
+
+    response = _list_packages("rpm", {"ordering": "-name"})
+    assert len(response["results"]) > 1
+    print(response["results"])
+    assert response["results"][1]["name"] < response["results"][0]["name"]
+
+
 def test_file_list(file_package: Any) -> None:
     _assert_package_list_not_empty("file")
     _assert_package_list_not_empty("file", {"relative-path": file_package["relative_path"]})

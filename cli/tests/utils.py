@@ -36,10 +36,10 @@ def repo_create_cmd(attrs: Dict[str, str]) -> List[str]:
     return cmd
 
 
-def gen_distro_attrs() -> Dict[str, str]:
+def gen_distro_attrs(pulp_type: DistroType = DistroType.apt) -> Dict[str, str]:
     return dict(
         name=f"pmc_cli_test_distro_{uuid4()}",
-        type=DistroType.apt,
+        type=pulp_type,
         base_path=f"{uuid4()}/{uuid4()}",
     )
 

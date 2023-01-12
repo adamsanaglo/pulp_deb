@@ -1,10 +1,8 @@
-from typing import Any, Dict
-
 import typer
 
 from pmc.client import client, handle_response
-from pmc.schemas import LIMIT_OPT, OFFSET_OPT, Role
-from pmc.utils import UserFriendlyTyper, id_or_name
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, ORDERING_OPT, Role
+from pmc.utils import UserFriendlyTyper, build_params, id_or_name
 
 app = UserFriendlyTyper()
 
@@ -38,9 +36,15 @@ def list(
     ctx: typer.Context,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
+    ordering: str = ORDERING_OPT,
 ) -> None:
     """List accounts."""
-    params: Dict[str, Any] = dict(limit=limit, offset=offset)
+    params = build_params(
+        limit,
+        offset,
+        ordering=ordering,
+    )
+
     resp = client.get("/accounts/", params=params)
     handle_response(ctx.obj, resp)
 

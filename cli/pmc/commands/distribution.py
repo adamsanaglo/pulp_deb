@@ -4,7 +4,7 @@ import httpx
 import typer
 
 from pmc.client import client, handle_response
-from pmc.schemas import LIMIT_OPT, OFFSET_OPT, DistroType
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, ORDERING_OPT, DistroType
 from pmc.utils import UserFriendlyTyper, build_params, id_or_name
 
 app = UserFriendlyTyper()
@@ -24,6 +24,7 @@ def list(
     base_path_contains: str = typer.Option(
         None, help="Filter distros whose base path contain string"
     ),
+    ordering: str = ORDERING_OPT,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
 ) -> None:
@@ -31,6 +32,7 @@ def list(
     params = build_params(
         limit,
         offset,
+        ordering=ordering,
         name=name,
         name__contains=name_contains,
         base_path=base_path,

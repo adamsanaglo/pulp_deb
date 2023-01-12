@@ -37,10 +37,18 @@ async def list_account(
     pagination: Pagination = Depends(Pagination),
     session: AsyncSession = Depends(get_session),
     name: Optional[str] = None,
+    ordering: Optional[str] = None,
 ) -> AccountListResponse:
     query = select(Account)
     if name:
         query = query.where(Account.name == name)
+
+    if ordering:
+        if ordering.startswith("-"):
+            query = query.order_by(getattr(Account, ordering[1:]).desc())
+        else:
+            query = query.order_by(getattr(Account, ordering))
+
     accounts, count = await _get_list(session, query, **pagination.dict())
     return AccountListResponse(count=count, results=accounts, **pagination.dict())
 

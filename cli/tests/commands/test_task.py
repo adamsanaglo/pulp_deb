@@ -16,6 +16,20 @@ def test_list(task: Any) -> None:
     assert len(response) > 0
 
 
+def test_list_with_ordering(task: Any, apt_repo: Any) -> None:
+    result = invoke_command(["task", "list", "--ordering", "started_at"])
+    assert result.exit_code == 0
+    response = json.loads(result.stdout)
+    assert len(response["results"]) > 1
+    assert response["results"][-1]["started_at"] >= response["results"][0]["started_at"]
+
+    result = invoke_command(["task", "list", "--ordering", "-started_at"])
+    assert result.exit_code == 0
+    response = json.loads(result.stdout)
+    assert len(response) > 0
+    assert response["results"][-1]["started_at"] <= response["results"][0]["started_at"]
+
+
 def test_show(task: Any) -> None:
     result = invoke_command(["task", "show", task["id"]])
     assert result.exit_code == 0

@@ -543,6 +543,7 @@ class BasePackageResponse(BaseModel):
 class PackageQuery(BaseModel):
     repository: Optional[RepoId]
     sha256: Optional[str]
+    ordering: Optional[str]
 
 
 class FilePackageResponse(BasePackageResponse):
@@ -784,6 +785,7 @@ class TaskQuery(BaseModel):
     state: Optional[TaskState]
     name: Optional[str]
     name__contains: Optional[str]
+    ordering: Optional[str]
 
 
 class TaskResponse(BaseModel):

@@ -6,7 +6,7 @@ from pmc.client import client, handle_response, poll_task
 from pmc.commands.release import releases
 from pmc.commands.repo_version import version
 from pmc.constants import LIST_SEPARATOR
-from pmc.schemas import LIMIT_OPT, OFFSET_OPT, RepoSigningService, RepoType
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, ORDERING_OPT, RepoSigningService, RepoType
 from pmc.utils import UserFriendlyTyper, build_params, id_or_name
 
 app = UserFriendlyTyper()
@@ -47,10 +47,16 @@ def list(
     name_icontains: Optional[str] = typer.Option(
         None, help="Filter repos with names that contain string (case insensitive)."
     ),
+    ordering: str = ORDERING_OPT,
 ) -> None:
     """List repositories."""
     params = build_params(
-        limit, offset, name=name, name__contains=name_contains, name__icontains=name_icontains
+        limit,
+        offset,
+        name=name,
+        name__contains=name_contains,
+        name__icontains=name_icontains,
+        ordering=ordering,
     )
 
     resp = client.get("/repositories/", params=params)

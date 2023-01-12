@@ -15,6 +15,21 @@ def test_list(account_one: Any, account_two: Any) -> None:
     assert response["offset"] == 0
 
 
+def test_list_with_ordering(account_one: Any, account_two: Any) -> None:
+    result = invoke_command(["account", "list", "--ordering", "name"])
+    assert result.exit_code == 0
+    response = json.loads(result.stdout)
+    assert len(response["results"]) > 0
+    assert response["results"][1]["name"] > response["results"][0]["name"]
+
+    # Descending
+    result = invoke_command(["account", "list", "--ordering", "-name"])
+    assert result.exit_code == 0
+    response = json.loads(result.stdout)
+    assert len(response["results"]) > 0
+    assert response["results"][1]["name"] < response["results"][0]["name"]
+
+
 def test_duplicate_name(account_one: Any) -> None:
     result = invoke_command(account_create_command(name=account_one["name"]))
     response = json.loads(result.stdout)

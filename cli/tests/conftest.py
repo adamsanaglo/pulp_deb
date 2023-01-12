@@ -7,7 +7,7 @@ from typing import Any, Dict, Generator, List, Optional, Union
 import pytest
 import tomli
 
-from pmc.schemas import RepoType, Role
+from pmc.schemas import DistroType, RepoType, Role
 
 from .utils import (
     account_create_command,
@@ -106,6 +106,24 @@ def python_repo() -> Generator[Any, None, None]:
 def distro() -> Generator[Any, None, None]:
     become(Role.Repo_Admin)
     attrs = gen_distro_attrs()
+    cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
+    with _object_manager(cmd, Role.Repo_Admin) as d:
+        yield d
+
+
+@pytest.fixture()
+def apt_distro() -> Generator[Any, None, None]:
+    become(Role.Repo_Admin)
+    attrs = gen_distro_attrs(DistroType.apt)
+    cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
+    with _object_manager(cmd, Role.Repo_Admin) as d:
+        yield d
+
+
+@pytest.fixture()
+def yum_distro() -> Generator[Any, None, None]:
+    become(Role.Repo_Admin)
+    attrs = gen_distro_attrs(DistroType.yum)
     cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
     with _object_manager(cmd, Role.Repo_Admin) as d:
         yield d

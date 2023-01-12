@@ -14,6 +14,13 @@ CONFIG_PATHS = [
 ]
 LIMIT_OPT = typer.Option(100, help="Limit on the number of results that are returned.")
 OFFSET_OPT = typer.Option(0, help="Number of records to skip within set of results.")
+ORDERING_OPT = typer.Option(
+    None,
+    help=(
+        "Provide a field name to order the results in an ascending order by that field. "
+        "Prefix a '-' to invert the order. Not all the fields are supported."
+    ),
+)
 
 
 class NonEmptyStr(StrictStr):

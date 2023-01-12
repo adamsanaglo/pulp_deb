@@ -31,6 +31,20 @@ def test_list(distro: Any) -> None:
     assert response["count"] > 0
 
 
+def test_list_with_ordering(apt_distro: Any, yum_distro: Any) -> None:
+    result = invoke_command(["distro", "list", "--ordering", "name"])
+    assert result.exit_code == 0, f"distro list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) > 1
+    assert response["results"][1]["name"] > response["results"][0]["name"]
+
+    result = invoke_command(["distro", "list", "--ordering", "-name"])
+    assert result.exit_code == 0, f"distro list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) > 1
+    assert response["results"][1]["name"] < response["results"][0]["name"]
+
+
 def test_show(distro: Any) -> None:
     result = invoke_command(["distro", "show", distro["id"]])
     assert result.exit_code == 0

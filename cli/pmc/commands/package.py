@@ -6,7 +6,7 @@ from click import BadParameter
 from pydantic import AnyHttpUrl, ValidationError, parse_obj_as
 
 from pmc.client import client, handle_response
-from pmc.schemas import LIMIT_OPT, OFFSET_OPT, PackageType
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, ORDERING_OPT, PackageType
 from pmc.utils import UserFriendlyTyper, build_params, id_or_name, raise_if_task_failed
 
 app = UserFriendlyTyper()
@@ -61,20 +61,22 @@ def deb_list(
     file: Optional[str] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
+    ordering: str = ORDERING_OPT,
 ) -> None:
     """List deb packages."""
     if file:
         sha256 = _sha256sum(file)
-    params = {
-        "repository": repository,
-        "release": release,
-        "package": name,
-        "version": version,
-        "architecture": arch,
-        "sha256": sha256,
-        "limit": limit,
-        "offset": offset,
-    }
+    params = build_params(
+        limit,
+        offset,
+        ordering=ordering,
+        repository=repository,
+        release=release,
+        package=name,
+        version=version,
+        architecture=arch,
+        sha256=sha256,
+    )
     _list(PackageType.deb, ctx, params)
 
 
@@ -91,21 +93,24 @@ def rpm_list(
     file: Optional[str] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
+    ordering: str = ORDERING_OPT,
 ) -> None:
     """List rpm packages."""
     if file:
         sha256 = _sha256sum(file)
-    params = {
-        "repository": repository,
-        "name": name,
-        "version": version,
-        "arch": arch,
-        "release": release,
-        "epoch": epoch,
-        "sha256": sha256,
-        "limit": limit,
-        "offset": offset,
-    }
+
+    params = build_params(
+        limit,
+        offset,
+        ordering=ordering,
+        repository=repository,
+        release=release,
+        name=name,
+        epoch=epoch,
+        version=version,
+        architecture=arch,
+        sha256=sha256,
+    )
     _list(PackageType.rpm, ctx, params)
 
 
@@ -119,18 +124,20 @@ def python_list(
     file: Optional[str] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
+    ordering: str = ORDERING_OPT,
 ) -> None:
     """List python packages."""
     if file:
         sha256 = _sha256sum(file)
-    params = {
-        "repository": repository,
-        "name": name,
-        "filename": filename,
-        "sha256": sha256,
-        "limit": limit,
-        "offset": offset,
-    }
+
+    params = build_params(
+        limit,
+        offset,
+        ordering=ordering,
+        repository=repository,
+        name=name,
+        sha256=sha256,
+    )
     _list(PackageType.python, ctx, params)
 
 
@@ -143,17 +150,20 @@ def file_list(
     file: Optional[str] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
+    ordering: str = ORDERING_OPT,
 ) -> None:
     """List files."""
     if file:
         sha256 = _sha256sum(file)
-    params = {
-        "repository": repository,
-        "relative_path": relative_path,
-        "sha256": sha256,
-        "limit": limit,
-        "offset": offset,
-    }
+
+    params = build_params(
+        limit,
+        offset,
+        ordering=ordering,
+        repository=repository,
+        relative_path=relative_path,
+        sha256=sha256,
+    )
     _list(PackageType.file, ctx, params)
 
 

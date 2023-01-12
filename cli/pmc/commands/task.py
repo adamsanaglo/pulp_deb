@@ -2,7 +2,7 @@ import typer
 
 from pmc.client import client, handle_response
 from pmc.constants import LIST_SEPARATOR
-from pmc.schemas import LIMIT_OPT, OFFSET_OPT, TaskState
+from pmc.schemas import LIMIT_OPT, OFFSET_OPT, ORDERING_OPT, TaskState
 from pmc.utils import UserFriendlyTyper, build_params
 
 app = UserFriendlyTyper()
@@ -24,11 +24,13 @@ def list(
     created_resource: str = typer.Option(
         None, help="Filter tasks which created a resource with id."
     ),
+    ordering: str = ORDERING_OPT,
 ) -> None:
     """List tasks."""
     params = build_params(
-        limit=limit,
-        offset=offset,
+        limit,
+        offset,
+        ordering=ordering,
         reserved_resources=reserved_resource,
         state=state,
         name=name,

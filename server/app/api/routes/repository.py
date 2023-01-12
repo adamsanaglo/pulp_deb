@@ -43,8 +43,14 @@ async def list_repos(
     name: Optional[str] = None,
     name__contains: Optional[str] = None,
     name__icontains: Optional[str] = None,
+    ordering: Optional[str] = None,
 ) -> RepositoryListResponse:
-    params = {"name": name, "name__contains": name__contains, "name__icontains": name__icontains}
+    params = {
+        "name": name,
+        "name__contains": name__contains,
+        "name__icontains": name__icontains,
+        "ordering": ordering,
+    }
     return await RepositoryApi.list(pagination, params=params)
 
 

@@ -51,6 +51,20 @@ def test_list_with_filters(yum_repo: Any, apt_repo: Any) -> None:
     assert len(response["results"]) == 1
 
 
+def test_list_with_ordering(apt_repo: Any, yum_repo: Any) -> None:
+    result = invoke_command(["repo", "list", "--ordering", "name"])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) > 1
+    assert response["results"][1]["name"] > response["results"][0]["name"]
+
+    result = invoke_command(["repo", "list", "--ordering", "-name"])
+    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) > 1
+    assert response["results"][1]["name"] < response["results"][0]["name"]
+
+
 def test_show(repo: Any) -> None:
     result = invoke_command(["repo", "show", repo["id"]])
     assert result.exit_code == 0, f"repo show {repo['id']} failed: {result.stderr}"

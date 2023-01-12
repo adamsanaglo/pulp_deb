@@ -24,6 +24,7 @@ async def list_distros(
     name__contains: Optional[str] = None,
     base_path: Optional[str] = None,
     base_path__contains: Optional[str] = None,
+    ordering: Optional[str] = None,
 ) -> DistributionListResponse:
     return await DistributionApi.list(
         pagination,
@@ -32,6 +33,7 @@ async def list_distros(
             "name__contains": name__contains,
             "base_path": base_path,
             "base_path__contains": base_path__contains,
+            "ordering": ordering,
         },
     )
 
