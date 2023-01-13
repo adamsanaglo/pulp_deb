@@ -709,6 +709,14 @@ class ReleaseApi(PulpApi):
         # add our release with its components and architectures to our repository
         return await RepositoryApi.update_content(repository, add_content=content)
 
+    @classmethod
+    async def get_repo_release(cls, repo: RepoId, release: str) -> Any:
+        """Find a release for a repo using its name."""
+        resp = await cls.list(params={"repository": repo, "distribution": release})
+        if resp["count"] != 1:
+            raise ValueError(f"Found {resp['count']} releases for '{release}' in repo '{repo}'.")
+        return resp["results"][0]
+
     @staticmethod
     def endpoint(action: str, **kwargs: Any) -> str:
         if action in ["list", "create"]:

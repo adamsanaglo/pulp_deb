@@ -4,13 +4,14 @@ from typing import Any, Dict, List, Optional, Union
 
 from app.core.schemas import (
     PackageId,
+    ReleaseId,
     RepoId,
     StrictDebPackageQuery,
     StrictFilePackageQuery,
     StrictPythonPackageQuery,
     StrictRpmPackageQuery,
 )
-from app.services.pulp.api import PackageApi, RepositoryApi
+from app.services.pulp.api import PackageApi, ReleaseApi, RepositoryApi
 from app.services.pulp.utils import yield_all
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,8 @@ async def package_lookup(
     # Look up the current repo version once so we don't have to do it for each package list page.
     params["repository_version"] = await RepositoryApi.latest_version_href(repo)
     if release:
-        params["release"] = release
+        rel = await ReleaseApi.get_repo_release(repo, release)
+        params["release"] = ReleaseId(rel["id"])
 
     if request_size < 10 and request_size > 0:
         # Do individual lookups.
