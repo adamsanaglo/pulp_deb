@@ -2,7 +2,9 @@ import logging
 
 from app.core.config import settings
 
-FORMAT = "%(asctime)s %(levelname)-7s [%(correlation_id)s]: %(name)s:%(lineno)d - %(message)s"
+FORMAT = (
+    "pmcserver %(asctime)s %(levelname)-7s [%(correlation_id)s]: %(name)s:%(lineno)d - %(message)s"
+)
 LEVEL = logging.DEBUG if settings.DEBUG else logging.INFO
 
 DEFAULT_LOG_CONFIG = {

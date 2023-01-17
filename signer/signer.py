@@ -1,4 +1,3 @@
-import logging
 from abc import abstractmethod
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
@@ -10,10 +9,9 @@ from retrying import retry
 
 import esrp
 import util
-from config import is_valid_keycode, settings
+from config import is_valid_keycode, log, settings
 
 redis = Redis(host="localhost")
-log = logging.getLogger("uvicorn")
 
 
 def get_working_dir_key(task_id: str) -> str:

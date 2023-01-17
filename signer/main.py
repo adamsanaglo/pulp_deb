@@ -1,4 +1,3 @@
-import logging
 from typing import Dict
 from uuid import uuid4
 
@@ -6,10 +5,10 @@ from fastapi import BackgroundTasks, FastAPI, Response, UploadFile
 from redis import Redis
 
 import signer
+from config import log
 
 app = FastAPI()
 redis = Redis(host="localhost")
-log = logging.getLogger("uvicorn")
 PENDING = "Pending"
 DONE = "Done"
 FAILURE = "Failure"
@@ -66,6 +65,7 @@ async def signature(task_id: str, response: Response) -> Response:
         response.status_code = 204
     elif request_status == bytes(DONE, "utf-8"):
         # Done
+        log.info(f"Request {task_id} is done")
         response.status_code = 200
         redis.delete(task_id)
         return signer.get_signature_file(task_id)

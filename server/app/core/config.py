@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_SERVER_CA_CERT: str = ""
     LOGGING_CONFIG: Optional[str]
+    ECHO_SQL: Optional[bool] = False
 
     APP_CLIENT_ID: str = ""
     TENANT_ID: str = ""
@@ -41,9 +42,8 @@ class Settings(BaseSettings):
         )
 
     def db_engine_args(self) -> Dict[str, Any]:
-        ret: Dict[str, Any] = {"echo": True, "future": True}
+        ret: Dict[str, Any] = {"echo": self.ECHO_SQL, "future": True}
         if not self.DEBUG:
-            ret["echo"] = False
             # Enforce extra tls checks if not in dev environment.
             # Let's validate that the ssl cert the server is providing is actually signed by
             # (a delegate of) DigiCert and actually corresponds to our postgres server's hostname.

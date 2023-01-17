@@ -1,4 +1,6 @@
+import logging
 from pydantic import BaseSettings
+import sys
 
 
 class Settings(BaseSettings):
@@ -19,6 +21,12 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
+logging.basicConfig(
+    level=logging.INFO, format="signer %(asctime)s %(levelname)s: %(message)s", stream=sys.stdout
+)
+log = logging.getLogger("signer")
+
+
 def is_valid_keycode(key_id: str) -> bool:
-    key_codes = settings.KEY_CODES.split(';')
+    key_codes = settings.KEY_CODES.split(";")
     return key_id in key_codes

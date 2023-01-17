@@ -17,4 +17,5 @@ exec gunicorn pulpcore.content:server \
 --worker-class 'aiohttp.GunicornWebWorker' \
 --timeout "${PULP_GUNICORN_TIMEOUT}" \
 --workers "${PULP_CONTENT_WORKERS}" \
---access-logfile -
+--access-logfile - --error-logfile - \
+--config /gunicorn_access_filter.conf.py

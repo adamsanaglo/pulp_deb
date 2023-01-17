@@ -21,7 +21,7 @@ wait_for_idle () {
 trap 'wait_for_idle; kill "${uvicorn_pid}"; wait "${uvicorn_pid}"' SIGINT SIGTERM
 
 /usr/bin/redis-server &
-/usr/bin/uvicorn --workers 4 --host 0.0.0.0 --port 8888 main:app 2>&1 &
+/usr/bin/uvicorn --no-access-log --workers 4 --host 0.0.0.0 --port 8888 main:app 2>&1 &
 
 uvicorn_pid="$!"
 wait "${uvicorn_pid}"

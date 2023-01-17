@@ -1,14 +1,12 @@
 import json
-import logging
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Dict
 
 import util
-from config import Settings, settings
+from config import Settings, log, settings
 
-log = logging.getLogger("uvicorn")
 esrp_config_files = {}
 azlogin_timeout = timedelta(hours=1)
 azlogin_expiration = datetime.min

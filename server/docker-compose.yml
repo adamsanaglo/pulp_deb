@@ -161,6 +161,11 @@ services:
       depends_on:
         db:
           condition: service_healthy
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:24816/"]
+        interval: 10s
+        timeout: 1s
+        retries: 5
       ports:
         - "8081:24816"
       volumes:
@@ -173,6 +178,28 @@ services:
       env_file:
         - .env
         - .env.storage
+
+    # You do not normally need an nginx container in your dev environment. However if you are
+    # testing a scenario where things need to look a _little_ _bit_ more like prod, then you can
+    # add it in. `docker compose --profile nginx up -d`
+    nginx:
+      profiles: ['nginx']
+      image: mcr.microsoft.com/cbl-mariner/base/nginx:1
+      container_name: nginx
+      ports:
+        - "8082:8082"  # api
+        - "8083:8083"  # content
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8082/nginx_status"]
+        interval: 5s
+        timeout: 1s
+        retries: 5
+      volumes:
+        - dev_assets/nginx.conf:/etc/nginx/nginx.conf.default
+      devices:
+        - /dev/fuse
+      depends_on:
+        - api
 
 volumes:
   pulp_storage:
