@@ -150,6 +150,9 @@ async def bulk_delete(
         filenames.append(package[filename_field].split("/")[-1])
         # END [MIGRATE]
 
+    if not ids:
+        raise HTTPException(status_code=422, detail="There were no packages found to delete.")
+
     update_cmd = RepositoryPackageUpdate(
         remove_packages=ids,
         release=delete_cmd.release,
