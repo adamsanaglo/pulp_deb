@@ -53,3 +53,51 @@ Yes; that's what the "tuxdev" environment provides.
 ### Can I publish to a repository only visible to my ADO CI/CD pipeline?
 
 Not at this time. This is a subset of the more general "can I restrict access to packages or repos" question, above.
+
+## Packages Built With OSS Components
+
+There are two cases where PMC packages might use open source:
+
+1. A simple repackage of an upstream OSS project (with our without Microsoft modifications).
+1. Use of an open source component as part of a closed-source Microsoft package.
+
+CELA has different license requirements for each; those requirements depend on whether you're building an rpm or deb package.
+
+### What requirements apply when I package an upstream open source codebase into an rpm?
+
+Following community convention, when Microsoft repackages an upstream open source codebase the source to rebuild the package (including Microsoft's modifications) must be made available.
+If you have made modifications to the upstream source code you believe cannot be shared, contact [OSS CELA](mailto:OSSStandardsLegal@service.microsoft.com).
+
+1. Build and publish (via PMC) an "srpm" (source rpm) package at the same time you build and publish the matching rpm package.
+1. Ensure that the package [SPEC file](https://rpm-packaging-guide.github.io/#what-is-a-spec-file) contains the short form of the license for the source code.
+1. Ensure that a copy of the source code license is present in the LICENSE file following [rpm packaging conventions](https://rpm-packaging-guide.github.io/#preparing-source-code-for-packaging).
+1. Make sure some human-readable file in your rpm tells the reader how to acquire the corresponding srpm. You can install that file under `/usr/share/doc/_packagename_/` if your package doesn't otherwise create a folder which could be used for this purpose.
+1. If the source of your package is maintained in a publicly visible location (e.g. public github repo), the same human-readable document mentioned above (which points to your srpm) should also point to that location (your github repo).
+
+### What requirements apply when I package an upstream open source codebase into a deb?
+
+Following community convention, when Microsoft repackages an upstream open source codebase the source to rebuild the package (including Microsoft's modifications) must be made available.
+If you have made modifications to the upstream source code you believe cannot be shared, contact [OSS CELA](mailto:OSSStandardsLegal@service.microsoft.com).
+
+The PMC publishing tools do not yet support building or publishing a "source deb" package.
+We expect to deliver this capability in the first quarter of CY2023.
+
+1. Build the source package (source deb) at the same time you build and publish the matching deb package. Make the source deb file visible on the internet, using an Azure storage account or some other mechanism for hosting static content.
+1. Ensure that the `debian/copyright` file in your package metadata contains the short form of the license for the source code (see [section 5.9 of the debmake documentation](https://www.debian.org/doc/manuals/debmake-doc/ch05.en.html#copyright)).
+1. Ensure that a copy of the source code license is present following [Debian packaging policy](https://www.debian.org/doc/debian-policy/ch-source.html).
+1. Your binary package must install a human-readable file in `/usr/share/doc/_packagename_/` which tells the reader how to acquire the corresponding source deb package. Work with your CELA contact to develop the text.
+1. If the source of your package is maintained in a public github repo, the same human-readable document mentioned above (which points to your source deb package) should also point to your github repo.
+1. Once support for "source deb" packages is added to PMC, publish your source deb package and revise the file(s) in your deb package with updated information about how to install the source deb.
+
+### What requirements apply when I use open source components in closed-source Microsoft packages?
+
+A closed-source Microsoft binary published on PMC will often include or depend on open source components. Take the following steps to ensure license compliance in these instances.
+
+1. Follow the standard Microsoft process to [register all dependences of your package](https://docs.opensource.microsoft.com/using/guidance-for-open-source-usage/registering-open-source-usage/) (including dependences on other deb or rpm packages) in component governance.
+1. Resolve all of your legal alerts in [Component Governance](https://docs.opensource.microsoft.com/tools/cg/).
+1. In resolving legal alerts, work with OSS CELA to determine whether the code you use requires you to provide any source code and how you should provide that source.
+1. Use Component Governance to generate a [NOTICE file](https://docs.opensource.microsoft.com/using/guidance-for-open-source-usage/required-notice-template/) for your Microsoft package.
+1. Your package must install that notice file as `/usr/share/doc/_packagename_/NOTICE`.
+1. Ensure that your package has the relevant End User License Agreement for the closed-source Microsoft packages in the standard metadata location for your package type.
+    - For **rpm** packages, that standard location is the [SPEC file](https://rpm-packaging-guide.github.io/#what-is-a-spec-file).
+    - For **deb** packages, that standard location is the `debian/copyright` file.
