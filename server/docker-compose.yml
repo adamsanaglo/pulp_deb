@@ -195,7 +195,7 @@ services:
         timeout: 1s
         retries: 5
       volumes:
-        - dev_assets/nginx.conf:/etc/nginx/nginx.conf.default
+        - ./dev_assets/nginx.conf:/etc/nginx/nginx.conf.default
       devices:
         - /dev/fuse
       depends_on:
