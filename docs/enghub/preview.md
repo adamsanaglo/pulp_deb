@@ -44,4 +44,4 @@ msal_authority = "https://login.microsoftonline.com/Microsoft.onmicrosoft.com"
 
 ## PMC Client
 
-References for using the new PMC client are located [here](../pmctool/index.md)
+References for using the new PMC client are located [here](pmctool/index.md)

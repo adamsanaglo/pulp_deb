@@ -1,4 +1,2 @@
-- name: Kusto samples
-  href: kusto.md
-- name: Scripts
-  href: scripts/
+- name: PMC Logs index
+  href: index.md

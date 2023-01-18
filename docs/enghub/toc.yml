@@ -3,12 +3,12 @@
 - name: v4 Preview
   href: preview.md
 - name: Onboarding
-  href: onboard
+  href: onboard/
 - name: Publishing
-  href: publish
+  href: publish/
 - name: pmc CLI
-  href: pmctool
+  href: pmctool/
 - name: Logging and Analytics
-  href: logs
+  href: logs/
 - name: Frequenty Asked Questions (FAQ)
   href: faq.md
