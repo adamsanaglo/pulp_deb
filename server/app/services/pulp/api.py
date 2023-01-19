@@ -475,8 +475,7 @@ class DistributionApi(PulpApi):
             return DistributionApi._detail_uri(kwargs["type"])
         elif action in ("read", "destroy", "update"):
             assert isinstance((id := kwargs["id"]), DistroId)
-            uuid = id.uuid
-            return f"{DistributionApi._detail_uri(id.type)}{uuid}/"
+            return f"{DistributionApi._detail_uri(id.type)}{id.uuid}/"
         else:
             raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
 

@@ -4,7 +4,6 @@ import re
 from collections import defaultdict
 from typing import Any, Dict, List, Union
 
-from asgi_correlation_id.context import correlation_id
 from fastapi.exceptions import RequestValidationError as ValidationError
 from httpx import HTTPStatusError, RequestError
 from sqlalchemy.exc import IntegrityError
@@ -105,12 +104,6 @@ async def exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Generic exception handler for all other exceptions."""
     logger.exception(exc)
 
-    response = _exception_response(
+    return _exception_response(
         request, f"Unexpected exception {type(exc).__name__}.", detail=str(exc)
     )
-
-    # for generic exceptions, middleware is bypassed so manually add correlation id headers
-    response.headers.append("X-Correlation-ID", correlation_id.get() or "")
-    response.headers.append("Access-Control-Expose-Headers", "X-Correlation-ID")
-
-    return response

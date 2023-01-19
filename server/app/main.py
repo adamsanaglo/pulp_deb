@@ -11,6 +11,7 @@ from fastapi.requests import Request
 from fastapi.responses import RedirectResponse, Response
 from httpx import HTTPStatusError, RequestError
 from sqlalchemy.exc import IntegrityError
+from starlette.middleware.exceptions import ExceptionMiddleware
 from starlette_context import context
 from starlette_context.middleware import RawContextMiddleware
 
@@ -38,6 +39,12 @@ logger = logging.getLogger(__name__)
 root_router = APIRouter()
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
 fastapi_microsoft_identity.initialize(settings.TENANT_ID, settings.APP_CLIENT_ID)
+
+# This is essentially the same thing that starlette does for you if you add an exception handler,
+# except that it behaves differently by default if you add one for Exception.
+# Add it early so that it runs before other middleware.
+# See discussion in https://msazure.visualstudio.com/One/_workitems/edit/16819067
+app.add_middleware(ExceptionMiddleware, handlers={Exception: exception_handler})
 
 
 @app.middleware("http")
@@ -104,7 +111,6 @@ app.add_exception_handler(HTTPStatusError, pulp_exception_handler)
 app.add_exception_handler(RequestError, httpx_exception_handler)
 app.add_exception_handler(ValidationError, validation_exception_handler)
 app.add_exception_handler(IntegrityError, integrity_error_handler)
-app.add_exception_handler(Exception, exception_handler)
 
 if __name__ == "__main__":
     # Use this for debugging purposes only
