@@ -348,6 +348,10 @@ class repolib:
 
     def delete_packages_by_name_and_repo_id(self, names, repositoryId):
         data = {'names': names, 'repositoryId': repositoryId}
+
+        # set migration param to true to prevent callbacks from vcurrent
+        data["migration"] = True
+
         # print('deleting multiple packages {0} for repo {1}'.format(names, repositoryId))
         return self._delete_url('packages', data=data)
 
