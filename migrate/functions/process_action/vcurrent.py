@@ -54,8 +54,11 @@ def remove_vcurrent_packages(action):
 
     names = [x.filename for x in action.packages]
     response = api.delete_packages_by_name_and_repo_id(names, repo["id"])
-    if response.status_code != 204:
+    if response.status_code == 204:
+        logging.info(f"Removed packages from repo {action.repo_name}.")
+    elif response.status_code == 404:
+        # we don't push package uploaded in vnext back to vcurrent so a 404 is possible
+        logging.info("No packages found for removal from repo {action.repo_name]}.")
+    else:
         logging.exception(f"Failed to delete packages: ({response.status_code}): {response.text}.")
         raise Exception("Failed to delete packages.")
-
-    logging.info(f"Deleted {len(action.packages)} package(s) from repo {action.repo_name}.")
