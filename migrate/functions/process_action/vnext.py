@@ -92,7 +92,9 @@ def _set_auth_header(request: httpx.Request) -> None:
         )
         token = auth.acquire_token()
     except Exception as e:
-        raise Exception(f"Failed to retrieve AAD token: {e}")
+        message = f"Failed to retrieve AAD token: {e}"
+        logging.error(message)
+        raise Exception(message) from e
     request.headers["Authorization"] = f"Bearer {token}"
 
 
