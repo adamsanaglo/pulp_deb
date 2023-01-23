@@ -65,6 +65,18 @@ az aks create -g $rg -n $aks --enable-addons monitoring --location $region \
     --node-vm-size standard_d4ds_v4 --vnet-subnet-id $aks_sub_id --zones 1 2 3 --attach-acr $acr \
     --enable-cluster-autoscaler --min-count 2 --max-count 6
 az aks enable-addons -g $rg --name $aks --addons=azure-keyvault-secrets-provider --enable-secret-rotation
+
+# We need to enable azSecPack on our vms to comply with MS security requirements. The docs say that
+# if you add a tag to the nodepool then that's _supposed_ to propagate to the VMSS and VMs:
+az aks nodepool update -g $rg --cluster $aks -n nodepool1 --tags AzSecPackAutoConfigReady=true
+# However in our case this errored in Prod and did not propagate. If so you have to go a more
+# complicated route to add it to the VMSS directly. AKS creates a new RG that it hides some internal
+# implementation details in, including the VMSS, so we have to look it up, look up the VMSS, and
+# then modify it.
+# nrg=$(az aks show -g $rg -n $aks --query nodeResourceGroup | tr -d '"')
+# vmss_name=$(az vmss list -g $nrg --query '[0].name' | tr -d '"')
+# az vmss update -g $nrg -n $vmss_name --set tags.AzSecPackAutoConfigReady=true
+
 get_az_cli_vars
 
 az keyvault set-policy -n $kv --key-permissions get --spn $CLIENT_ID
