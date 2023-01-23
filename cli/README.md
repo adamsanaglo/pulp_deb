@@ -35,4 +35,4 @@ msal_client_id|--msal-client-id| Application ID for the Service Principal that w
 msal_cert_path|--msal-cert-path| Path to a cert that will authenticate the Service Principal
 msal_SNIAuth  |--msal-sniauth  | Use Subject Name Issuer Authentication (to enable certificate autorotation)
 msal_authority|--msal-authority| The AAD authority from which a token will be requested (i.e. https://login.microsoftonline.com/...)
-msal_scope    |--msal-scope    | The scope for which a token will be requested (i.e. api://1ce02e3e...)
+msal_scope    |--msal-scope    | The scope for which a token will be requested (i.e. api://13ab6030 ...)

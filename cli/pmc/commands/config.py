@@ -27,7 +27,7 @@ MSAL_CLIENT_ID_OPT = typer.Option(
 MSAL_SCOPE_OPT = typer.Option(
     None,
     "--msal-scope",
-    help="Scope for authentication (i.e. api://1ce02e3e...)",
+    help="Scope for authentication (i.e. api://13ab6030...)",
 )
 MSAL_CERT_PATH_OPT = typer.Option(
     None, "--msal-cert-path", help="Path to authentication cert for account's Service Principal"
