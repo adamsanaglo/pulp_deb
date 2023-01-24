@@ -105,7 +105,8 @@ RUN pip install /tmp/django_storages
 # Apply our pulpcore patch until pulp_deb orphan cleanup works
 # https://github.com/pulp/pulp_deb/issues/690
 COPY container-assets/pulpcore /tmp/pulpcore
-RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulpcore/0001-Exclude-pulp_deb-s-ReleaseFile-from-orphan-cleanup.patch
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulpcore/0001-Exclude-pulp_deb-s-ReleaseFile-from-orphan-cleanup.patch # https://github.com/pulp/pulp_deb/issues/690
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulpcore/0002-Pass-correlation-id-to-signing-script-through-ENV-va.patch # https://github.com/pulp/pulpcore/issues/3522
 
 # Apply our pulp_deb patches until upstream accepts/releases our merge requests
 COPY container-assets/pulp_deb /tmp/pulp_deb

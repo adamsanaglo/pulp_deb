@@ -4,6 +4,7 @@ import json
 import sys
 import time
 from functools import wraps
+import os
 from tempfile import mkdtemp
 from typing import Dict, List
 
@@ -16,6 +17,8 @@ sign_port = "8888"
 sign_endpoint = "sign"
 signature_endpoint = "signature"
 key_ids = {"esrp_test": "CP-450778-Pgp", "esrp_prod": "CP-450779-Pgp", "legacy": "legacy"}
+
+correlation_id = os.getenv("CORRELATION_ID")
 
 
 def _bail(msg: str) -> None:
@@ -89,7 +92,13 @@ def _post_sign(params: dict, file_data: bytes) -> str:
     """
     url = f"http://{sign_ip}:{sign_port}/{sign_endpoint}"
     # Let exception filter up to trigger retry logic
-    resp = requests.post(url, stream=False, params=params, files={"file": file_data})
+    resp = requests.post(
+        url,
+        stream=False,
+        headers={"X-CORRELATION-ID": correlation_id},
+        params=params,
+        files={"file": file_data},
+    )
     if resp.status_code != 200:
         raise RetriableException(
             f"Unrecognized status code received from {url}: {resp.status_code}"
@@ -110,7 +119,7 @@ def _get_signature(task_id: str, apt: bool) -> str:
     params = {"task_id": task_id}
 
     # Let exception filter up to trigger retry logic
-    resp = requests.get(url, params=params)
+    resp = requests.get(url, headers={"X-CORRELATION-ID": correlation_id}, params=params)
     if resp.status_code == 400:
         # Task ID is unrecognized
         _bail(f"Unrecognized task id [{task_id}]: {resp.status_code}")

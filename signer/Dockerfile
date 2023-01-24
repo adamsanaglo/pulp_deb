@@ -8,7 +8,7 @@ FROM mcr.microsoft.com/cbl-mariner/base/python:3.9
 RUN tdnf install -y openssl-devel python3-pip redis
 
 RUN pip install --upgrade pip && \
-    pip install setuptools==57.5 retrying fastapi[all] redis azure-keyvault-secrets azure-identity pydantic[dotenv] && \
+    pip install setuptools==57.5 retrying fastapi[all] redis azure-keyvault-secrets azure-identity pydantic[dotenv] asgi-correlation-id==3.1.0 && \
     pip install azure-cli==2.20.0
 
 COPY . /signer

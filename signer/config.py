@@ -2,6 +2,8 @@ import logging
 from pydantic import BaseSettings
 import sys
 
+from asgi_correlation_id import CorrelationIdFilter
+
 
 class Settings(BaseSettings):
     KEYVAULT: str
@@ -21,10 +23,12 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
-logging.basicConfig(
-    level=logging.INFO, format="signer %(asctime)s %(levelname)s: %(message)s", stream=sys.stdout
+FORMAT = (
+    "signer %(asctime)s %(levelname)-7s [%(correlation_id)s]: %(name)s:%(lineno)d - %(message)s"
 )
+logging.basicConfig(level=logging.INFO, format=FORMAT, stream=sys.stdout)
 log = logging.getLogger("signer")
+log.addFilter(CorrelationIdFilter("correlation_id", 32))
 
 
 def is_valid_keycode(key_id: str) -> bool:

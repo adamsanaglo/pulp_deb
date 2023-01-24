@@ -1,6 +1,7 @@
 from typing import Dict
 from uuid import uuid4
 
+from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import BackgroundTasks, FastAPI, Response, UploadFile
 from redis import Redis
 
@@ -8,6 +9,7 @@ import signer
 from config import log
 
 app = FastAPI()
+app.add_middleware(CorrelationIdMiddleware, header_name="X-Correlation-ID")
 redis = Redis(host="localhost")
 PENDING = "Pending"
 DONE = "Done"
