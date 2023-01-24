@@ -17,7 +17,7 @@ pushd oci_env
 pip3 install -e client
 
 cat <<EOF > compose.env
-DEV_SOURCE_PATH=pulpcore:pulp_rpm:pulp_deb:pulp_python:pulp_file:pulp-openapi-generator
+DEV_SOURCE_PATH=pulpcore:pulp_rpm:pulp_deb:pulp_python:pulp_file
 COMPOSE_BINARY=docker
 EOF
 
