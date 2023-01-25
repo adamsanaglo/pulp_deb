@@ -13,19 +13,32 @@ else
     exit 1
 fi
 nginx -s reload
+sleep 3
+
+function testPkgUrl() {
+    path=${1}
+    msg=${2}
+    pmc="packages.microsoft.com"
+    if ! curl --fail --head --silent --output /dev/null --resolve "${pmc}:443:127.0.0.1" --resolve "${pmc}:80:127.0.0.1" -L https://${pmc}/${path}; then
+        echo "Warning: downloading ${msg} failed sanity check!"
+    else
+        echo "OK: downloaded ${msg} successfully"
+    fi
+}
 
 # Sanity tests
 # 1) Should be able to download an "old path" rpm, validating ssl.
-curl --head --silent --output /tmp/myfile --resolve 'packages.microsoft.com:443:127.0.0.1' --resolve 'packages.microsoft.com:80:127.0.0.1' -L https://packages.microsoft.com/yumrepos/amlfs-el7/amlfs-lustre-client-2.15.1_24_gbaa21ca-3.10.0.1160.41.1.el7-1.noarch.rpm
-if [ "$?" = "0" ]; then
-  echo "Warning: downloading old-path rpm failed sanity check!"
+testPkgUrl "yumrepos/amlfs-el7/amlfs-lustre-client-2.15.1_24_gbaa21ca-3.10.0.1160.41.1.el7-1.noarch.rpm" "old-path-rpm"
+
+# 2) Folder urls without trailing slash should result in a 301/redirect
+if ! curl -s --head http://127.0.0.1/yumrepos | grep -q "^HTTP/1.1 301"; then
+    echo "Warning: folder redirects (301) aren't being handled properly!"
+else
+    echo "OK: folder redirects handled properly"
 fi
 
-# 2) If we enabled vnext we should be able to download a "new path" rpm, validating ssl.
+# 3) If we enabled vnext we should be able to download a "new path" rpm, validating ssl.
 if [ "$goal" = "vnext" ]; then
-  curl --head --silent --output /tmp/myfile --resolve 'packages.microsoft.com:443:127.0.0.1' --resolve 'packages.microsoft.com:80:127.0.0.1' -L https://packages.microsoft.com/yumrepos/amlfs-el7/Packages/a/amlfs-lustre-client-2.15.1_24_gbaa21ca-3.10.0.1160.41.1.el7-1.noarch.rpm
-  if [ "$?" = "0" ]; then
-    echo "Warning: downloading new-path rpm failed sanity check!"
-  fi
+    testPkgUrl "yumrepos/amlfs-el7/Packages/a/amlfs-lustre-client-2.15.1_24_gbaa21ca-3.10.0.1160.41.1.el7-1.noarch.rpm" "new-path-rpm"
 fi
-rm /tmp/myfile
+
