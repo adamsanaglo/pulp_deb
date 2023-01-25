@@ -1,0 +1,8 @@
+oci_env/
+pulp-oci-images/
+pulp-openapi-generator/
+pulp_deb/
+pulp_file/
+pulp_python/
+pulp_rpm/
+pulpcore/

@@ -1,7 +1,8 @@
 #!/usr/bin/bash
 
-if [ -n "$1" ]; then
+if [ -z "$1" ]; then
     echo "Usage: ./clone-repos.sh <github_username>"
+    exit
 fi
 
 for repo in 'pulpcore' 'pulp_deb' 'pulp_rpm' 'pulp_python' 'pulp_file' 'pulp-oci-images' \
