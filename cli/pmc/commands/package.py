@@ -136,6 +136,7 @@ def python_list(
         ordering=ordering,
         repository=repository,
         name=name,
+        filename=filename,
         sha256=sha256,
     )
     _list(PackageType.python, ctx, params)
