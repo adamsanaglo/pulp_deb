@@ -119,7 +119,41 @@ def test_unsigned_package(package: str) -> None:
     cmd = package_upload_command(package)
     result = invoke_command(cmd)
     assert result.exit_code != 0
-    assert "UnsignedPackage" in result.stdout
+    assert "PackageSignatureError" in result.stdout
+
+
+def test_invalid_rpm_package_upload() -> None:
+    """Test uploading a text file as an rpm package."""
+    become(Role.Package_Admin)
+
+    path = str(Path.cwd() / "tests" / "assets" / "invalid.rpm")
+
+    # package signature verification fails
+    result = invoke_command(["package", "upload", path])
+    assert result.exit_code != 0
+    assert "PackageSignatureError" in result.stdout
+
+    # pulp fails to parse the package
+    result = invoke_command(["package", "upload", "--ignore-signature", path])
+    assert result.exit_code != 0
+    assert "RPM file cannot be parsed for metadata" in result.stdout
+
+
+def test_invalid_deb_package_upload() -> None:
+    """Test uploading a text file as a deb package."""
+    become(Role.Package_Admin)
+
+    path = str(Path.cwd() / "tests" / "assets" / "invalid.deb")
+
+    # package signature verification fails
+    result = invoke_command(["package", "upload", path])
+    assert result.exit_code != 0
+    assert "PackageSignatureError" in result.stdout
+
+    # pulp fails to parse the package
+    result = invoke_command(["package", "upload", "--ignore-signature", path])
+    assert result.exit_code != 0
+    assert "Unable to find global header" in result.stdout
 
 
 def test_ignore_signature(forced_unsigned_package: Any) -> None:
