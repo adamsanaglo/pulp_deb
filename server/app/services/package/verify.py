@@ -6,6 +6,8 @@ from typing import Optional
 
 from fastapi import UploadFile
 
+from app.core.schemas import PackageType
+
 
 class UnsupportedFiletype(Exception):
     pass
@@ -32,10 +34,10 @@ subprocess.run(gpg_cmd + ["--import", str(keys_dir / "microsoft.asc")], check=Tr
 subprocess.run(rpm_cmd + ["--import", str(keys_dir / "microsoft.asc")], check=True)
 
 
-async def verify_signature(file: UploadFile) -> None:
-    if file.filename.endswith(".rpm"):
+async def verify_signature(file: UploadFile, file_type: PackageType) -> None:
+    if file_type == PackageType.rpm:
         _verify_rpm_signature(file)
-    elif file.filename.endswith(".deb"):
+    elif file_type == PackageType.deb:
         _verify_deb_signature(file)
     else:
         raise UnsupportedFiletype(
