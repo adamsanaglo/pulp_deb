@@ -152,6 +152,8 @@ def handle_response(
 
     if isinstance(resp.json(), dict) and (task_id := resp.json().get("task")):
         resp = poll_task(ctx, task_id, task_handler)
+    else:
+        task_id = None
 
     if ctx.config.id_only and (id := _extract_ids(resp.json())):
         typer.echo(id, nl=ctx.isatty)
