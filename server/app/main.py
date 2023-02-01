@@ -8,7 +8,7 @@ from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError as ValidationError
 from fastapi.requests import Request
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from httpx import HTTPStatusError, RequestError
 from sqlalchemy.exc import IntegrityError
 from starlette.middleware.exceptions import ExceptionMiddleware
@@ -97,9 +97,9 @@ def api(request: Request) -> Dict[str, Any]:
     }
 
 
-@root_router.get("/healthz/", status_code=204)
-def healthz(request: Request) -> None:
-    return
+@root_router.get("/healthz/")
+def healthz(request: Request) -> JSONResponse:
+    return JSONResponse(content={"status": "ok"})
 
 
 app.include_router(api_router, prefix=settings.API_PREFIX)
