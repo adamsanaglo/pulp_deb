@@ -21,13 +21,13 @@ There are many ways to generate a certificate.
 OneCert handles creating client authentication certificates in KeyVault which it will automatically rotate.
 A publishing pipeline or tool would retrieve the current certificate, including the private key, from KeyVault to be used with the pmcclient CLI.
 
-Documentation for OneCert can be found on [eng.ms](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/onecert-customer-guide/docs) and in [ADO](https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/67233/Configure-ServicePrincipal-with-auto-rotated-cert).
+Documentation for OneCert can be found on [eng.ms](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/key-vault-dsms/onecert/docs) and in [ADO](https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/67233/Configure-ServicePrincipal-with-auto-rotated-cert).
 
 - Register a domain for the client authentication certificate.
   - The domain name will not be exported and should not end in .net, .com, etc.
   - Select AME as the Private Issuer (V2).
   - Set your Service Tree ID to the one associated with your [IcM incident queue](#creating-an-icm-incident-queue).
-- Associate the OneCert issuer with your KeyVault [(example)](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/onecert-customer-guide/docs/requesting-a-onecert-certificate-with-keyvault). Tied to that association is a policy governing rotation for certificates imported from that issuer.
+- Associate the OneCert issuer with your KeyVault [(example)](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/key-vault-dsms/onecert/docs/requesting-a-onecert-certificate-with-keyvault). Tied to that association is a policy governing rotation for certificates imported from that issuer.
 - Enroll the desired cert in KeyVault against that policy. KeyVault uses OneCert to (re)generate the cert. Repeat this step to create multiple certificates from the same issuer (and thus in the same domain).
 
 The domain name should be chosen to collect authentication certificates in buckets tied to their purpose.
