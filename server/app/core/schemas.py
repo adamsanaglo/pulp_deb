@@ -807,6 +807,17 @@ class TaskReadResponse(BaseModel):
     reserved_resources_record: List[str]
 
 
+NoOpTask = TaskReadResponse(
+    id="tasks-00000000-0000-0000-0000-000000000000",
+    pulp_created=datetime.now(),
+    state="completed",
+    name="No-Op Task",
+    logging_cid="",
+    created_resources=[],
+    reserved_resources_record=[],
+)
+
+
 class TaskListResponse(ListResponse):
     results: List[TaskReadResponse]
 

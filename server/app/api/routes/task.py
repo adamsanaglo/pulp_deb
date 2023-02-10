@@ -1,7 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.auth import requires_account_admin
-from app.core.schemas import Pagination, TaskId, TaskListResponse, TaskQuery, TaskReadResponse
+from app.core.schemas import (
+    NoOpTask,
+    Pagination,
+    TaskId,
+    TaskListResponse,
+    TaskQuery,
+    TaskReadResponse,
+)
 from app.services.pulp.api import TaskApi, TaskCancelException
 
 router = APIRouter()
@@ -17,6 +24,8 @@ async def list_tasks(
 
 @router.get("/tasks/{id}/")
 async def read_task(id: TaskId) -> TaskReadResponse:
+    if id == NoOpTask.id:
+        return NoOpTask
     return await TaskApi.read(id)
 
 

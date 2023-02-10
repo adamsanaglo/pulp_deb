@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.core.db import AsyncSession, get_session
 from app.core.models import Account, OwnedPackage, RepoAccess, Role
 from app.core.schemas import (
+    NoOpTask,
     Pagination,
     PublishRequest,
     RemoteId,
@@ -151,7 +152,9 @@ async def bulk_delete(
         # END [MIGRATE]
 
     if not ids:
-        raise HTTPException(status_code=422, detail="There were no packages found to delete.")
+        # Nothing to delete found, probably previous request succeeded.
+        # Return success for idempotence.
+        return TaskResponse(task=NoOpTask.id)
 
     update_cmd = RepositoryPackageUpdate(
         remove_packages=ids,

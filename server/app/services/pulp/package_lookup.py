@@ -113,11 +113,16 @@ async def package_lookup(
                             found_names.add(potential_match[type.pulp_name_field])
                             break
 
+        missing_packages = []
         for name in packages_by_name.keys():
             if name not in found_names:
-                logger.warning(f"package_lookup included {name}, but was not found for {params}!")
+                missing_packages.append(name)
         for id in ids:
             if id not in found_ids:
-                logger.warning(f"package_lookup included {id}, but was not found for {params}!")
+                missing_packages.append(id)
+        if missing_packages:
+            logger.warning(
+                f"package_lookup included {missing_packages}, but was not found for {params}!"
+            )
 
     return ret
