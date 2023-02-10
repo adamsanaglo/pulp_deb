@@ -2,13 +2,22 @@
 # Creates the resources used by the status monitor, and deploys
 # the Azure Function code to run in Azure.
 
-resourceGroup=statusmonitor
+if [[ ! "$1" =~ ^(create|rotate_sas)$ ]]; then
+  echo 'usage: deploy.sh "create|rotate_sas" [name_suffix]'
+  echo
+  echo 'Create or rotate the SAS Key for an existing deployment.'
+  echo 'The optional [name_suffix] arg is useed for creating/running against test environments.'
+  exit
+fi
+
+operation="$1"
+suffix="$2"
+resourceGroup=statusmonitor${suffix}
 resourceGroupPremiumAppService=${resourceGroup}-premium
 location=centralus
-storageAccount=pmcstatus
+storageAccount=pmcstatus${suffix}
 consumption=consumption # Low-cost Azure Function offering
 premium=premium         # Upper tier Azure Function offering
-appPlans=(${consumption} ${premium} ${consumption})
 dirNames=("pmc_scan_mirrors" "pmc_scan_repos" "pmc_status_delivery")
 skuStoragePrimary="Standard_RAGRS"
 skuStorageSecondary="Standard_LRS"
@@ -76,7 +85,7 @@ function checkDirName() {
 function createFunction() {
     dirName="${1}"
     checkDirName "${dirName}"
-    shortName=$(echo "${dirName}" | tr -d '_')
+    shortName=$(echo "${dirName}" | tr -d '_')${suffix}
 
     # Create Storage account for this function
     az storage account create -n ${shortName} -g ${resourceGroup} -l ${location} --sku Standard_LRS
@@ -90,15 +99,12 @@ function createFunction() {
     fi
     az functionapp create -s ${shortName} -g ${resourceGroup} -n ${shortName} ${planParam} --functions-version 4 --os-type linux --runtime python --runtime-version 3.9
 
-    # Configure storage account, which is present on all functions
-    az functionapp config appsettings set --name $shortName --resource-group $resourceGroup --settings "pmcstatusprimary_CONNECTION=$primarystorage_connectionstring"
-
     # Configure settings specific to the "pmc_status_delivery" function
     if [[ "${dirName}" == "pmc_status_delivery" ]]; then
-        az functionapp config appsettings set --name $functionApp --resource-group $resourceGroup --settings "JsonContainerName=dynamic-public-data"
-        az functionapp config appsettings set --name $functionApp --resource-group $resourceGroup --settings "JsonBlobName=repository_status.json"
-        az functionapp config appsettings set --name $functionApp --resource-group $resourceGroup --settings "ResultsQueueName=results-queue"
-        az resource update --resource-type Microsoft.Web/sites -g $resourceGroup -n $functionApp/config/web --set properties.functionAppScaleLimit=1
+        az functionapp config appsettings set --name $shortName --resource-group $resourceGroup --settings "JsonContainerName=dynamic-public-data"
+        az functionapp config appsettings set --name $shortName --resource-group $resourceGroup --settings "JsonBlobName=repository_status.json"
+        az functionapp config appsettings set --name $shortName --resource-group $resourceGroup --settings "ResultsQueueName=results-queue"
+        az resource update --resource-type Microsoft.Web/sites -g $resourceGroup -n $shortName/config/web --set properties.functionAppScaleLimit=1
     fi
 }
 
@@ -106,7 +112,7 @@ function deployFunction() {
     # Deploy the Azure Function in the specified folder to its place in Azure
     dirName="${1}"
     checkDirName "${dirName}"
-    shortName=$(echo "${dirName}" | tr -d '_')
+    shortName=$(echo "${dirName}" | tr -d '_')${suffix}
     pushd "${dirName}" > /dev/null
     func azure functionapp publish ${shortName} --python --build remote
     popd > /dev/null
@@ -114,22 +120,61 @@ function deployFunction() {
 
 function createFunctions() {
     # Create the resources in which our function code will run
-    for (( n=0; n<${#appPlans[@]}; n++ )); do
-        createFunction ${dirNames[${n}]} ${appPlans[${n}]}
+    pushd functions/ > /dev/null
+    for dirName in ${dirNames[@]}; do
+        createFunction ${dirName}
     done
+    popd > /dev/null
 }
 
 function deployFunctions() {
     # Deploy function code to run in Azure
+    pushd functions/ > /dev/null
     for dirName in ${dirNames[@]}; do
         deployFunction ${dirName}
     done
+    popd > /dev/null
 }
 
-createResourceGroups
-createPrimaryStorage
-primarystorage_connectionstring=$(az storage account show-connection-string --name $primarystorage --resource-group $resourceGroup --query "connectionString" -o tsv)
-configurePrimaryStorage
-createAppServicePlan
-createFunctions
-deployFunctions
+function generateConnectionString() {
+    # Sets primarystroage_connectionstring with a new SAS key that expires in 100 days
+    # Don't ask me why I have to manually construct my own connection string, but I didn't see
+    # a way to tell it to construct one with a SAS key but no AccountKey.
+    saskey=$(az storage account generate-sas --account-name $storageAccount --https-only --resource-types sco --service bq --permissions acdfilprtuwxy --expiry $(date -d "+1 year" +"%Y-%m-%dT%H:%MZ") | tr -d '"')
+    primarystorage_connectionstring="BlobEndpoint=https://${storageAccount}.blob.core.windows.net/;QueueEndpoint=https://${storageAccount}.queue.core.windows.net/;SharedAccessSignature=${saskey}"
+}
+
+function setFunctionsConnectionString() {
+    # Set the connection string for the functions
+    pushd functions/ > /dev/null
+    for dirName in ${dirNames[@]}; do
+        checkDirName "${dirName}"
+        shortName=$(echo "${dirName}" | tr -d '_')${suffix}
+        az functionapp config appsettings set --name $shortName --resource-group $resourceGroup --settings "pmcstatusprimary_CONNECTION=$primarystorage_connectionstring"
+    done
+    popd > /dev/null
+}
+
+set -x  # echo commands as they are executed.
+if [ "$operation" = "create" ]; then
+    createResourceGroups
+    createPrimaryStorage
+    generateConnectionString
+    configurePrimaryStorage
+    createAppServicePlan
+    createFunctions
+    setFunctionsConnectionString
+    deployFunctions
+elif [ "$operation" = "rotate_sas" ]; then
+    generateConnectionString
+    setFunctionsConnectionString
+fi
+set +x
+
+if [ ! -z "$suffix" ]; then
+    echo
+    echo "We probably don't need to keep testing envs around for this app long-term."
+    echo "When done testing delete the resource groups to reduce spend:"
+    echo "az group delete --no-wait --yes --name $resourceGroup"
+    echo "az group delete --no-wait --yes --name $resourceGroupPremiumAppService"
+fi
