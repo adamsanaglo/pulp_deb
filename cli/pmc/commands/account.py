@@ -9,7 +9,7 @@ from pmc.utils import UserFriendlyTyper, build_params, id_or_name
 app = UserFriendlyTyper()
 
 
-ID_ARG = typer.Argument(..., help="The random UUID for this account.")
+ID_OR_NAME_ARG = typer.Argument(..., help="The name or PMC UUID for this account.")
 OID_HELP = (
     "The Azure Active Directory 'oid' of the principal / account being created. "
     "https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens#payload-claims"
@@ -80,7 +80,7 @@ def create(
 
 
 @app.command()
-def show(ctx: typer.Context, id: str = id_or_name("accounts", ID_ARG)) -> None:
+def show(ctx: typer.Context, id: str = id_or_name("accounts", ID_OR_NAME_ARG)) -> None:
     """Show details for a particular account."""
     resp = client.get(f"/accounts/{id}/")
     handle_response(ctx.obj, resp)
@@ -89,7 +89,7 @@ def show(ctx: typer.Context, id: str = id_or_name("accounts", ID_ARG)) -> None:
 @app.command()
 def update(
     ctx: typer.Context,
-    id: str = id_or_name("accounts", ID_ARG),
+    id: str = id_or_name("accounts", ID_OR_NAME_ARG),
     oid: str = typer.Option(None, help=OID_HELP),
     name: str = typer.Option(None, help=NAME_HELP),
     is_enabled: bool = typer.Option(None, "--enabled/--disabled", help=ENABLED_HELP),
@@ -106,7 +106,7 @@ def update(
 
 
 @app.command()
-def delete(ctx: typer.Context, id: str = id_or_name("accounts", ID_ARG)) -> None:
+def delete(ctx: typer.Context, id: str = id_or_name("accounts", ID_OR_NAME_ARG)) -> None:
     """Delete an account."""
     resp = client.delete(f"/accounts/{id}/")
     handle_response(ctx.obj, resp)
