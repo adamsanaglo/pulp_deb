@@ -6,7 +6,14 @@ from pmc.client import client, handle_response, poll_task
 from pmc.commands.release import releases
 from pmc.commands.repo_version import version
 from pmc.constants import LIST_SEPARATOR
-from pmc.schemas import LIMIT_OPT, OFFSET_OPT, ORDERING_OPT, RepoSigningService, RepoType
+from pmc.schemas import (
+    LIMIT_OPT,
+    OFFSET_OPT,
+    ORDERING_OPT,
+    DistroType,
+    RepoSigningService,
+    RepoType,
+)
 from pmc.utils import UserFriendlyTyper, build_params, id_or_name
 
 app = UserFriendlyTyper()
@@ -125,7 +132,7 @@ def create(
             typer.echo(f"Creating distribution '{path}'.", err=True)
             distro = {
                 "repository": repo_id,
-                "type": repo_type,
+                "type": DistroType[repo_type],
                 "name": path,
                 "base_path": path,
             }
