@@ -37,11 +37,17 @@ async def list_account(
     pagination: Pagination = Depends(Pagination),
     session: AsyncSession = Depends(get_session),
     name: Optional[str] = None,
+    name__contains: Optional[str] = None,
+    name__icontains: Optional[str] = None,
     ordering: Optional[str] = None,
 ) -> AccountListResponse:
     query = select(Account)
     if name:
         query = query.where(Account.name == name)
+    if name__contains:
+        query = query.where(Account.name.contains(name__contains))
+    if name__icontains:
+        query = query.where(Account.name.ilike(f"%{name__icontains}%"))
 
     if ordering:
         if ordering.startswith("-"):

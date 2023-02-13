@@ -1,3 +1,5 @@
+from typing import Optional
+
 import typer
 
 from pmc.client import client, handle_response
@@ -34,6 +36,13 @@ ACCOUNT_FIELDS = {
 @app.command()
 def list(
     ctx: typer.Context,
+    name: Optional[str] = typer.Option(None),
+    name_contains: Optional[str] = typer.Option(
+        None, help="Filter accounts with names that contain string."
+    ),
+    name_icontains: Optional[str] = typer.Option(
+        None, help="Filter accounts with names that contain string (case insensitive)."
+    ),
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
     ordering: str = ORDERING_OPT,
@@ -42,6 +51,9 @@ def list(
     params = build_params(
         limit,
         offset,
+        name=name,
+        name__contains=name_contains,
+        name__icontains=name_icontains,
         ordering=ordering,
     )
 
