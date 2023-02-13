@@ -1,5 +1,6 @@
 import re
-from typing import Any, List
+from typing import Any, List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from sqlmodel import select
@@ -49,8 +50,11 @@ async def _get_named_accounts(session: AsyncSession, account_names: List[str]) -
 @router.get("/access/repo/")
 async def list_repo_access(
     session: AsyncSession = Depends(get_session),
+    account: Optional[UUID] = None,
 ) -> List[RepoAccessResponse]:
     statement = select(RepoAccess)
+    if account:
+        statement = statement.where(RepoAccess.account_id == account)
     results = await session.exec(statement)
     return list(results.all())
 
@@ -124,9 +128,11 @@ async def revoke_repo_access(
 # If you just do a get on /accounts/package_ownership/ then it matches list_account and blows up.
 @router.get("/access/package/")
 async def list_package_ownership(
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = Depends(get_session), account: Optional[UUID] = None
 ) -> List[OwnedPackageResponse]:
     statement = select(OwnedPackage)
+    if account:
+        statement = statement.where(OwnedPackage.account_id == account)
     results = (await session.execute(statement)).all()
     return [x[0] for x in results]
 

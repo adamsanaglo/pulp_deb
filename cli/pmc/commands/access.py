@@ -1,3 +1,5 @@
+from typing import Optional
+
 import typer
 
 from pmc.client import client, handle_response
@@ -17,10 +19,21 @@ PACKAGE_NAMES_HELP = "Semicolon-separated list of package names you want to oper
 REPO_CLONE_HELP = "Repository id or name to clone permissions %s"
 
 
+account_filter_option = id_or_name(
+    "accounts", typer.Option(None, help="Filter by account id or name.")
+)
+
+
 @repo.command(name="list")
-def repo_access_list(ctx: typer.Context) -> None:
+def repo_access_list(
+    ctx: typer.Context,
+    account: Optional[str] = account_filter_option,
+) -> None:
     """List all repo access records"""
-    resp = client.get("/access/repo/")
+    params = {}
+    if account:
+        params["account"] = account
+    resp = client.get("/access/repo/", params=params)
     handle_response(ctx.obj, resp)
 
 
@@ -66,9 +79,15 @@ def repo_access_clone(
 
 
 @package.command(name="list")
-def package_ownership_list(ctx: typer.Context) -> None:
+def package_ownership_list(
+    ctx: typer.Context,
+    account: Optional[str] = account_filter_option,
+) -> None:
     """List all package ownership records"""
-    resp = client.get("/access/package/")
+    params = {}
+    if account:
+        params["account"] = account
+    resp = client.get("/access/package/", params=params)
     handle_response(ctx.obj, resp)
 
 
