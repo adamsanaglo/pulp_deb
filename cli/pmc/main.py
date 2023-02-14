@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import httpx
+import pkg_resources
 import typer
 from click.exceptions import UsageError
 from pydantic import AnyHttpUrl, ValidationError
@@ -135,9 +136,18 @@ def process_result(result: Any, **kwargs: Any) -> None:
     client_context.get().close()
 
 
+def version_callback(value: bool) -> None:
+    if value:
+        # note that in a dev env, this will sometimes return the wrong version as it checks the
+        # version of the installed pmc-cli package
+        print(pkg_resources.get_distribution("pmc-cli").version)
+        raise typer.Exit()
+
+
 @app.callback(result_callback=process_result)
 def main(
     ctx: typer.Context,
+    version: Optional[bool] = typer.Option(None, "--version", callback=version_callback),
     profile: Optional[str] = typer.Option(
         None,
         "--profile",
