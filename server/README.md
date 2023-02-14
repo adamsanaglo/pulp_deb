@@ -8,9 +8,7 @@ use the following steps to get started.
 To manually generate an env file, you can run:
 
 ```
-make regen_test_key
 make .env
-make register_signing_service
 ```
 
 

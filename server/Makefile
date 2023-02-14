@@ -18,7 +18,7 @@ LEGACY_KEY_THUMBPRINT = $(shell base64 -d .test.key | gpg --show-keys - | head -
 
 default: help
 
-.env::			## generate an .env file from .env.example
+.env: .test.key		## generate an .env file from .env.example
 	@echo "Creating .env file"
 	@echo ${PULP_SYMMETRIC_KEY} > ../pulp/.pulp_symmetric_key
 	@./setvalues.py -s .env.example .env PULP_ADMIN_PASSWORD "${PULP_ADMIN_PASSWORD}" \
@@ -45,9 +45,14 @@ rebuild_env:		## wipe and rebuild the env
 	@make .env
 
 regen_test_key:		## wipe and regenerate the test keys used to do legacy signing in dev
-	-rm .test.keys
+	-rm .test.key
 	-rm .test.pub
-	mkdir gpg_home
+	-rm -rf gpg_home
+	@make .test.key
+
+.test.key .test.pub:	## generate .test.key and .test.pub
+	@echo "Creating .test.key and .test.pub"
+	mkdir -p gpg_home
 	gpg --homedir gpg_home --batch --generate-key .test_key_config
 	gpg --homedir gpg_home --armor --export > .test.pub
 	gpg --homedir gpg_home --armor --export-secret-keys | base64 -w 0 > .test.key
