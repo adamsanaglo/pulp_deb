@@ -32,6 +32,7 @@ rpm_cmd = ["/usr/bin/rpmkeys", "--dbpath", str(keys_dir)]
 # 2) It fails to import into some versions of RPM for some unknown reason.
 subprocess.run(gpg_cmd + ["--import", str(keys_dir / "microsoft.asc")], check=True)
 subprocess.run(rpm_cmd + ["--import", str(keys_dir / "microsoft.asc")], check=True)
+subprocess.run(rpm_cmd + ["--import", str(keys_dir / "mariner.asc")], check=True)
 
 
 async def verify_signature(file: UploadFile, file_type: PackageType) -> None:

@@ -122,6 +122,14 @@ def test_unsigned_package(package: str) -> None:
     assert "PackageSignatureError" in result.stdout
 
 
+def test_mariner_package(orphan_cleanup: None) -> None:
+    become(Role.Package_Admin)
+    cmd = package_upload_command("signed-by-mariner.rpm")
+    result = invoke_command(cmd)
+    assert result.exit_code == 0
+    assert "PackageSignatureError" not in result.stdout
+
+
 def test_invalid_rpm_package_upload() -> None:
     """Test uploading a text file as an rpm package."""
     become(Role.Package_Admin)
