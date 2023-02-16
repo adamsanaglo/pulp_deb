@@ -23,4 +23,5 @@ function env_overrides() {
     export content_cert_name="pmcDistroTLS"
     export min_pulp_workers="10"
     export min_pulp_content="4"
+    export pg_size="Standard_D4s_v3"
 }

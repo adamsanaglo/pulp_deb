@@ -25,6 +25,7 @@ function set_initial_vars() {
     acr="$(echo $prefix | tr -cd '[:alnum:]')acr"  # alphanumeric only
     pg="${prefix}-pg"
     storageprefix=$(echo $prefix | tr -d '[:punct:]') # Storage account names can't include punctuation
+    export pg_size="Standard_D2s_v3"
     export bstg="${storageprefix}blobstorage"
     export lstg="${storageprefix}logstorage"
     export esrpAuthCertPath="/mnt/secrets/${esrpAuthCert}"

@@ -57,7 +57,7 @@ az acr create -g $rg --name $acr --sku Standard --location $region --admin-enabl
 # Push images into the ACR via the pipeline job
 
 # ... create postgres server
-az postgres flexible-server create -g $rg -n $pg --version 13 --high-availability Enabled --vnet $vnet --subnet $pg_subnet --admin-user pmcserver --admin-password $PMC_POSTGRES_PASSWORD
+az postgres flexible-server create -g $rg -n $pg --version 13 --high-availability Enabled --vnet $vnet --subnet $pg_subnet --admin-user pmcserver --admin-password $PMC_POSTGRES_PASSWORD --sku-name $pg_size
 
 # ... create kubernetes cluster, attach to keyvault, grab credentials for kubectl
 # Will have to JIT to "Owner" of the subscription to perform this operation, both for creating the necessary vnet roles and for attaching the acr.
