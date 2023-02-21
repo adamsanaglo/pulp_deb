@@ -17,8 +17,8 @@ file = UserFriendlyTyper()
 
 app.add_typer(deb, name="deb", help="Manage deb packages")
 app.add_typer(rpm, name="rpm", help="Manage rpm packages")
-app.add_typer(python, name="python", help="Manage python packages")
-app.add_typer(file, name="file", help="Manage files")
+app.add_restricted_typer(python, name="python", help="Manage python packages")
+app.add_restricted_typer(file, name="file", help="Manage files")
 
 name_option = typer.Option(None, help="Name of the packages.")
 repo_option = typer.Option(
