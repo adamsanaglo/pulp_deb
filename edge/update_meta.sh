@@ -1,5 +1,5 @@
 #!/bin/bash
-runfile=/var/run/update_meta
+runfile=/var/run/lock/update_meta
 pockets=/var/pmc/apt-repos.txt
 max_jobs=4
 
