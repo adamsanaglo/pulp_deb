@@ -14,7 +14,7 @@ if [ -e $runfile ]; then
         exit 0      # Still running
     fi
 fi
-echo $$ | sudo tee $runfile >/dev/null    # Our turn
+echo $$ > $runfile  # Our turn
 log "Starting updates"
 
 if [ -e "$pockets" ]; then
@@ -33,4 +33,4 @@ done
 wait
 
 log "Completed updates"
-sudo rm $runfile
+rm $runfile
