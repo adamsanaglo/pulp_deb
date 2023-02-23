@@ -8,6 +8,7 @@ services:
         args:
           - uid=${UID}
           - gid=${GID}
+          - dev=1
       container_name: pmcserver-migrate
       command: migrate
       user: "${UID}:${GID}"
@@ -28,6 +29,7 @@ services:
         args:
           - uid=${UID}
           - gid=${GID}
+          - dev=1
       container_name: pmcserver
       user: "${UID}:${GID}"
       depends_on:
