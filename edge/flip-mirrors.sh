@@ -49,7 +49,7 @@ fi
 
 if [ -z "$target" ]; then
     usage
-elseif [ "$target" == "all" ]; then
+elif [ "$target" == "all" ]; then
     for r in $regions; do
         switch_mirrors $mode $r
     done
