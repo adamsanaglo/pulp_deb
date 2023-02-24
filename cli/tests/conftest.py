@@ -181,22 +181,26 @@ def account_two() -> Generator[Any, None, None]:
 
 
 @pytest.fixture()
-def repo_access(account_one: Dict[str, Any]) -> Generator[Any, None, None]:
+def repo_access(
+    account_one: Dict[str, Any], apt_repo: Dict[str, Any]
+) -> Generator[Any, None, None]:
     """Generate a repo access perm for account_one."""
 
     def _my_cmd(action: str) -> List[str]:
-        return ["access", "repo", action, account_one["name"], "'.*'"]
+        return ["access", "repo", action, account_one["name"], apt_repo["name"]]
 
     with _object_manager(_my_cmd("grant"), Role.Account_Admin, cleanup_cmd=_my_cmd("revoke")) as o:
         yield o
 
 
 @pytest.fixture()
-def package_access(account_one: Dict[str, Any]) -> Generator[Any, None, None]:
+def package_access(
+    account_one: Dict[str, Any], apt_repo: Dict[str, Any]
+) -> Generator[Any, None, None]:
     """Generate a package access perm for account_one."""
 
     def _my_cmd(action: str) -> List[str]:
-        return ["access", "package", action, account_one["name"], "'.*'", "vim"]
+        return ["access", "package", action, account_one["name"], apt_repo["name"], "vim"]
 
     with _object_manager(_my_cmd("grant"), Role.Account_Admin, cleanup_cmd=_my_cmd("revoke")) as o:
         yield o

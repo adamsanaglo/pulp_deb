@@ -2,7 +2,7 @@ import re
 from typing import Any, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
 
 from app.core.db import AsyncSession, get_session
@@ -32,18 +32,22 @@ async def _get_matching_repos(name_regex: str) -> List[Any]:
         page.offset += page.limit
         if page.offset >= response["count"]:
             break
+
+    if len(ret) < 1:
+        raise HTTPException(404, detail=f"Could not find repo(s) matching '{name_regex}'")
+
     return ret
 
 
 async def _get_named_accounts(session: AsyncSession, account_names: List[str]) -> List[Account]:
-    # This helper function can be replaced by a "where in" sql query if we want to sidestep SqlModel
-    ret = []
-    for name in account_names:
-        statement = select(Account).where(Account.name == name)
-        results = await session.exec(statement)
-        account = results.one()
-        ret.append(account)
-    return ret
+    statement = select(Account).where(Account.name.in_(account_names))
+    results = await session.exec(statement)
+    accounts = list(results.all())
+    if len(accounts) < 1:
+        raise HTTPException(
+            404, detail=f"Could not find account(s) matching '{(';').join(account_names)}'"
+        )
+    return accounts
 
 
 # If you just do a get on /accounts/repo_access/ then it matches list_account and blows up.
