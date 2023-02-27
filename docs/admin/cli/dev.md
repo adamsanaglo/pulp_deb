@@ -46,6 +46,29 @@ A default Service Principal is available to simplify your dev environment
   - `./update_role.sh Repo_Admin --create`
   - You can call this script again any time you wish to change roles (`./update_role.sh Account_Admin`)
 
+## Testing
+
+In order to run the tests, you'll need to set up a settings.toml for the test environment. From your
+cli directory, run the following command. Then open the tests/settings.toml file to make any
+necessary changes based on your setup.
+
+```
+make tests/settings.toml
+```
+
+After that, you can run all your tests or lint the code:
+
+```
+make test
+make lint
+```
+
+You can also run an individual test with pytest:
+
+```
+pytest tests/commands/test_package.py::test_invalid_deb_package_upload
+```
+
 ## Workflows
 
 Once you've set up the server and CLI, view the `docs/admin/workflows.md` file for some example
