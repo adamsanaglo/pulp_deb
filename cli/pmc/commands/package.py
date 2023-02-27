@@ -1,4 +1,5 @@
 import hashlib
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import typer
@@ -171,7 +172,9 @@ def file_list(
 @app.command()
 def upload(
     ctx: typer.Context,
-    package: str = typer.Argument(..., help="Path or url to package"),
+    package: str = typer.Argument(
+        ..., help="URL to a package, path to a package, or path to a directory of packages."
+    ),
     ignore_signature: bool = typer.Option(
         False,
         "--ignore-signature",
@@ -198,24 +201,43 @@ def upload(
         package_id = task["created_resources"][0]
         return client.get(f"/packages/{package_id}/")
 
-    data: Dict[str, Any] = {"ignore_signature": ignore_signature}
-    files = None
+    def upload_package(data: Dict[str, Any], path: Optional[Path] = None) -> None:
+        if path:
+            files = {"file": open(path, "rb")}
+        else:
+            files = None
+        resp = client.post("/packages/", params=data, files=files)
+        handle_response(ctx.obj, resp, task_handler=show_func)
 
-    try:
-        data["url"] = parse_obj_as(AnyHttpUrl, package)
-    except ValidationError:
-        try:
-            files = {"file": open(package, "rb")}
-        except FileNotFoundError:
-            raise BadParameter("Invalid path/url for package argument.")
+    data: Dict[str, Any] = {"ignore_signature": ignore_signature}
 
     if file_type:
         data["file_type"] = file_type
     if relative_path:
         data["relative_path"] = relative_path
 
-    resp = client.post("/packages/", params=data, files=files)
-    handle_response(ctx.obj, resp, task_handler=show_func)
+    try:
+        data["url"] = parse_obj_as(AnyHttpUrl, package)
+        upload_package(data)
+        return
+    except ValidationError:
+        # it's not a url, treat it like a file path
+        pass
+
+    try:
+        path = Path(package)
+    except FileNotFoundError:
+        raise BadParameter("Invalid path/url for package.")
+
+    if path.is_dir():
+        if relative_path:
+            raise BadParameter("Cannot supply relative path with directory of packages.")
+
+        # handle directory
+        for pkg in path.glob("*"):
+            upload_package(data, pkg)
+    else:
+        upload_package(data, path)
 
 
 @app.command()

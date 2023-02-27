@@ -1,5 +1,7 @@
 import json
+import re
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Dict, Optional
 
 import pytest
@@ -180,4 +182,23 @@ def test_package_upload_by_url(orphan_cleanup: None) -> None:
     assert "Could not determine package type" in result.stdout
 
     result = invoke_command(["package", "upload", "--type", "file", FILE_URL])
+    assert result.exit_code == 0
+
+
+def test_package_directory_upload(orphan_cleanup: None) -> None:
+    package_names = ["hello.txt", "test.txt"]
+    package_dir = TemporaryDirectory()
+
+    for file in package_names:
+        with open(f"{package_dir.name}/{file}", "w") as f:
+            f.write(file)
+
+    become(Role.Package_Admin)
+    result = invoke_command(["package", "upload", "--type", "file", package_dir.name])
+
+    # TODO: improve the package upload response for multiple packages
+    # currently, we just return a package json objects separated by newlines
+    packages = [json.loads(pkg) for pkg in re.findall(r"\{[\s\S]*?\}", result.stdout)]
+    assert sorted([pkg["relative_path"] for pkg in packages]) == sorted(package_names)
+
     assert result.exit_code == 0
