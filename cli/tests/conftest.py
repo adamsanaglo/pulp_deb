@@ -25,6 +25,7 @@ def config_file() -> Path:
     config_path = Path.cwd() / "tests" / "settings.toml"
     assert config_path.is_file(), f"Could not find {settings}."
     os.environ["PMC_CLI_CONFIG"] = str(config_path)
+    os.environ["PMC_CLI_PROFILE"] = "cli"
     return config_path
 
 
