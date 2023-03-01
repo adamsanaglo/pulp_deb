@@ -1,11 +1,30 @@
 # Publisher Onboarding
-This document explains how to onboard publishers with the vNext API. This focuses on publishers who are already onboarded with vCurrent, but may be used for general onboarding.
-
+- [Background/Context](#backgroundcontext)
 - [Prerequisites](#prerequisites)
 - [Request Validation](#request-validation)
 - [Configure/Enable the Publisher Account](#configureenable-the-publisher-account)
 - [Create a New Account](#create-a-new-account)
 - [Notification/Documentation](#notificationdocumentation)
+
+## Background/Context
+This document explains how to onboard publishers with the vNext API. This focuses on publishers who are already onboarded with vCurrent, but may be used for general onboarding.
+
+Note that his guide refers to multiple types of "ID's". For clarity, the table below explains each type of ID.
+
+|Type|Description|
+|----|-----------|
+|ApplicationID (AppID)|This is an ID associated with an Application or Service Principal in Azure Active Directory (AAD). The publisher will configure this ID in the `msal_client_id` field of their config.|
+|ObjectID (oid)|This is a different type of ID associated with an Application/Service Principal. In some cases, a Service Principal can exist in multiple [tenants](https://learn.microsoft.com/en-us/microsoft-365/education/deploy/intro-azure-active-directory). The Application ID will be differ in each tenant, but the Object ID will stay the same. The Object ID is set in our database for authentication purposes.|
+|Account ID (ID)|In our database, each account gets an ID. This is distinct from the OID (above). If a publisher gets a new Service Principal for publishing, we can update their OID in the database, but their account ID stays the same. The account ID is primarily for tracking account permissions. The account *name* may be used during API calls, but the **account ID** is what's stored in the database.|
+
+See below for a brief outline of how each ID is used in a given request.
+1. Prior to contacting our API, the publisher first sends an authentication request to AAD. This request uses their **AppID** and Certificate.
+2. If authentication is successful, AAD returns a [bearer token](https://swagger.io/docs/specification/authentication/bearer-authentication/) to the requester.
+3. The requester then submits their request to the PMC API along with the bearer token.
+4. When the PMC API receives this request, the token is validated for authenticity, and if it's valid, the **OID** is parsed from the token (AuthN).
+5. The PMC API then queries the database using the **OID** to identify the **Account ID**.
+6. The database is then queried using the **Account ID** to determine if the requestor has permission to perform the desired action (AuthZ).
+7. Assuming the above steps are successful, the request is then queued for action by a pulp-worker.
 
 ## Prerequisites
 - A Work Item filed by the publisher with the following details
