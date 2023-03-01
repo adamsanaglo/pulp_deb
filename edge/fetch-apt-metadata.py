@@ -222,17 +222,23 @@ def download_file_to_staging(pocket: str, filename: str, staging: str) -> str:
 
 def fetch_metadata(pocket: str) -> None:
     """Fetch the metadata from the upstream distribution point."""
+
+    renames: Dict[str, Path] = {}
+
     with tempfile.TemporaryDirectory(dir=www_root) as staging:
-        renames: Dict[str, Path] = {}
 
-        release_file = download_file_to_staging(pocket, "Release", staging)
-        renames[release_file] = local_name_in_pocket(pocket, "Release")
-
-        release = Release.from_path(release_file)
-
-        for filename in release.filenames:
+        def stage_file(filename: str) -> str:
             f = download_file_to_staging(pocket, filename, staging)
             renames[f] = local_name_in_pocket(pocket, filename)
+            return f
+
+        release_file = stage_file("Release")
+        stage_file("Release.gpg")
+        stage_file("InRelease")
+
+        release = Release.from_path(release_file)
+        for filename in release.filenames:
+            stage_file(filename)
 
         for source, target in renames.items():
             target.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
@@ -261,7 +267,10 @@ def main(
         logger.setLevel(logging.DEBUG)
     if force or is_outdated(pocket):
         logger.info(f"Fetching metadata for {pocket} (force={force})")
-        fetch_metadata(pocket)
+        try:
+            fetch_metadata(pocket)
+        except Exception as ex:
+            logger.exception(f"Exception while fetching {pocket}")
         note.flush_to_log()
         logger.info(f"Done fetching metadata for {pocket}")
     else:

@@ -78,3 +78,5 @@ else
     echo Unrecognized target $target
     usage
 fi
+
+sha256sum $path
