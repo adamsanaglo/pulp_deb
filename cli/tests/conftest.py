@@ -234,37 +234,37 @@ def _package_manager(
 @pytest.fixture()
 def deb_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("signed-by-us.deb") as p:
-        yield p
+        yield p[0]
 
 
 @pytest.fixture()
 def zst_deb_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("signed-by-us-zst-compressed.deb") as p:
-        yield p
+        yield p[0]
 
 
 @pytest.fixture()
 def rpm_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("signed-by-us.rpm") as p:
-        yield p
+        yield p[0]
 
 
 @pytest.fixture()
 def file_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("hello.txt", file_type="file") as p:
-        yield p
+        yield p[0]
 
 
 @pytest.fixture()
 def python_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("helloworld-0.0.1-py3-none-any.whl") as p:
-        yield p
+        yield p[0]
 
 
 @pytest.fixture()
 def forced_unsigned_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("unsigned.rpm", unsigned=True) as p:
-        yield p
+        yield p[0]
 
 
 @pytest.fixture()

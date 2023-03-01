@@ -143,6 +143,26 @@ def poll_task(ctx: PMCContext, task_id: str, task_handler: TaskHandler = None) -
     return resp
 
 
+def output_json(ctx: PMCContext, output: Any, suppress_pager: bool = False) -> None:
+    if ctx.config.id_only and (id := _extract_ids(output)):
+        typer.echo(id, nl=ctx.isatty)
+    else:
+        json_output = json.dumps(output, indent=3)
+
+        if PYGMENTS and not ctx.config.no_color:
+            formatter = Terminal256Formatter(style=PYGMENTS_STYLE)
+            json_output = highlight(json_output, JsonLexer(), formatter)
+
+        if (
+            ctx.config.pager
+            and not suppress_pager
+            and json_output.count("\n") > shutil.get_terminal_size().lines - 3
+        ):
+            click.echo_via_pager(json_output)
+        else:
+            typer.echo(json_output)
+
+
 def handle_response(
     ctx: PMCContext, resp: httpx.Response, task_handler: TaskHandler = None
 ) -> None:
@@ -155,18 +175,4 @@ def handle_response(
     else:
         task_id = None
 
-    if ctx.config.id_only and (id := _extract_ids(resp.json())):
-        typer.echo(id, nl=ctx.isatty)
-    else:
-        output = json.dumps(resp.json(), indent=3)
-        if PYGMENTS and not ctx.config.no_color:
-            formatter = Terminal256Formatter(style=PYGMENTS_STYLE)
-            output = highlight(output, JsonLexer(), formatter)
-        if (
-            ctx.config.pager
-            and not task_id  # don't show pager for polled task
-            and output.count("\n") > shutil.get_terminal_size().lines - 3
-        ):
-            click.echo_via_pager(output)
-        else:
-            typer.echo(output)
+    output_json(ctx, resp.json(), task_id is not None)
