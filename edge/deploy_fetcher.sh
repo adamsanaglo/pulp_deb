@@ -25,11 +25,11 @@ function act_on_host {
         do_on_host "sudo find /usr/local/lib/python3.6/dist-packages -type d | xargs sudo chmod o+rx"
         do_on_host "sudo find /usr/local/lib/python3.6/dist-packages -type f | xargs sudo chmod o+r"
     fi
-    copy_to_host update_meta.sh fetch-apt-metadata.py crontab config-activate.sh
+    copy_to_host update_meta.sh fetch-apt-metadata.py crontab config-activate.sh watch.sh
     do_on_host sudo install -o $user -g $user -m 755 update_meta.sh /var/pmc
     do_on_host sudo install -o root -g root -m 555 ~/fetch-apt-metadata.py /usr/local/bin/fetch-apt-metadata
     do_on_host sudo install -o root -g root -m 644 ~/crontab /etc/cron.d/update_meta
-    # leave config-activate.sh in ~apt-automation
+    # leave config-activate.sh and watch.sh in ~apt-automation
 }
 
 function act_on_region {

@@ -12,7 +12,7 @@ import typer
 from dateutil.parser import parse as parsedate
 
 # See https://wiki.debian.org/SecureApt
-apt_hash_names = ["MD5", "SHA1", "SHA256", "SHA512", "SHA3-256", "SHA3-512"]
+apt_hash_names = ["MD5", "MD5Sum", "SHA1", "SHA256", "SHA512", "SHA3-256", "SHA3-512"]
 
 upstream_url = "https://pmc-distro.trafficmanager.net"
 www_root = Path("/var/pmc/www")

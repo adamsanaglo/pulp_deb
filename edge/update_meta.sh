@@ -41,7 +41,14 @@ if [ -e $runfile ]; then
 fi
 
 echo $$ > $runfile  # Our turn
-log "Starting updates"
+
+if [ -f $force_flag ]; then
+    force="--force"
+    log "Starting updates (forced)"
+else
+    force=""
+    log "Starting updates"
+fi
 
 if [ -e "$pockets" ]; then
     opts="-z $pockets"
@@ -50,12 +57,6 @@ else
 fi
 curl -s -L -o $pockets $opts https://pmc-distro.trafficmanager.net/info/apt-repos.txt
 
-if [ -f $force_flag ]; then
-    force="--force"
-else
-    force=""
-fi
-
 for pocket in $(cat $pockets); do
     block_job_count_ge $max_jobs
     /usr/local/bin/fetch-apt-metadata $force $pocket &
@@ -63,5 +64,7 @@ done
 block_job_count_ge 1
 
 log "Completed updates"
-rm -f $force_flag
+if [ -n "$force" ]; then
+    rm -f $force_flag
+fi
 rm $runfile

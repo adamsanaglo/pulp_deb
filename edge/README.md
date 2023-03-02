@@ -50,10 +50,11 @@ Set a flag on the target such that the next APT metadata update cycle will do a 
 
 ## Edge scripts
 
-Scripts on edge servers fall in two buckets:
+Scripts on edge servers fall in three buckets:
 
 1) Scripts invoked by tools running on the jumpbox
 1) Scripts triggered by cron jobs
+1) Monitoring scripts to be run on the server or from the jumpbox remotely
 
 ### Remotely invoked scripts (installed in ~apt-automation)
 
@@ -65,6 +66,19 @@ Scripts on edge servers fall in two buckets:
 - crontab is deployed to /etc/cron.d/update_meta. It invokes update_meta.sh as user www-data every 5 minutes.
 - update_meta.sh is deployed to /var/pmc. It refreshes /var/pmc/apt-repos.txt, then invokes fetch-apt-metadata.py on each pocket.
 - fetch-apt-metadata.py updates the locally-cached metadata for a pocket.
+
+### Monitoring scripts
+
+```bash
+watch.sh 404|access|dist|fetch
+```
+
+Watches log files in realtime for particular events.
+
+- `404` watches the nginx access log for 404 replies (filtering out obviously bad requests). This is pretty noisy.
+- `access` watches the nginx access log without any filtering
+- `dist` watches the nginx access log for non-successful requests for APT metadata (not in 200, 206, 304).
+- `fetch` watches syslog for messages emitted by the APT metadata fetcher.
 
 ## Log analysis via log-analyze
 

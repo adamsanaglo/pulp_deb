@@ -47,6 +47,23 @@ function testPkgUrl() {
 }
 
 # Sanity tests
+
+# 0) Every APT /dists/ folder should have an InRelease file
+if [ "$goal" = "vnext" ]; then
+    errors=0
+    for dir in $(cat /var/pmc/apt-repos.txt); do
+        if [[ ! -f /var/pmc/www/${dir}/InRelease ]]; then
+            echo "Warning: missing ${dir}/InRelease"
+            errors=$((errors + 1))
+        fi
+    done
+    if [[ errors -eq 0 ]]; then
+        echo "OK: All APT pockets have InRelease"
+    else
+        echo "Warning: $errors pocket(s) are missing InRelease"
+    fi
+fi
+
 # 1) Should be able to download an "old path" rpm, validating ssl.
 testPkgUrl "yumrepos/amlfs-el7/amlfs-lustre-client-2.15.1_24_gbaa21ca-3.10.0.1160.41.1.el7-1.noarch.rpm" "old-path-rpm"
 
