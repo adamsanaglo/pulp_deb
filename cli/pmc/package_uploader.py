@@ -60,7 +60,7 @@ class PackageUploader:
 
         # upload and poll the task
         resp = client.post("/packages/", params=data, files=files)
-        task_resp = poll_task(self.context, resp.json().get("task"))
+        task_resp = poll_task(resp.json().get("task"))
         task = task_resp.json()
         raise_if_task_failed(task)
 

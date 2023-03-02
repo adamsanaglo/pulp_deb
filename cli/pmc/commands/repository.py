@@ -125,7 +125,7 @@ def create(
         for release in releases.split(LIST_SEPARATOR):
             typer.echo(f"Creating release '{release}'.", err=True)
             resp = client.post(f"/repositories/{repo_id}/releases/", json={"name": release})
-            poll_task(ctx.obj, resp.json().get("task"))
+            poll_task(resp.json().get("task"))
 
     if paths:
         for path in paths.split(LIST_SEPARATOR):
@@ -137,7 +137,7 @@ def create(
                 "base_path": path,
             }
             resp = client.post("/distributions/", json=distro)
-            poll_task(ctx.obj, resp.json().get("task"))
+            poll_task(resp.json().get("task"))
 
 
 @app.command()
