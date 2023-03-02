@@ -4,7 +4,19 @@ Publishers operate on PMC repos via the `pmc` client CLI.
 
 ## Installing the pmc client
 
-The pmc client is a python package. This package is not published externally; it can only be installed from within corpnet.
+The pmc client is a python package.
+
+If you are not using a VM or container, consider [setting up a Python virtual
+environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
+or using [pipx](https://pypa.github.io/pipx/):
+
+```bash
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+pipx install --index-url https://packages.microsoft.com/pmc-cli/simple/ "pmc-cli>=0.1.0"
+```
+
+If you want to just install the CLI without a virtual environment:
 
 ```bash
 pip install --extra-index-url https://packages.microsoft.com/pmc-cli/simple/ "pmc-cli>=0.1.0"
