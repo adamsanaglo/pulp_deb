@@ -23,9 +23,29 @@ pmc repo create pmc-cli-python python
 pmc distro create pmc-cli pypi pmc-cli --repository pmc-cli-python
 ```
 
+### CLI setup
+
+First, download the prod-publisher.pem cert from the production keyvault and then set up the following
+profile in your settings.toml:
+
+```
+[prod-publisher]
+base_url = "https://pmc-ingest.trafficmanager.net/api/v4"
+msal_client_id = "bfdb84f5-ca97-4f33-8b09-ea99412763de"
+msal_scope = "api://d48bb382-20ec-41b9-a0ea-07758a21ccd0/.default"
+msal_cert_path = "~/.config/pmc/prod-publisher.pem"
+msal_authority = "https://login.microsoftonline.com/MSAzureCloud.onmicrosoft.com"
+```
+
+Then you can either set `--profile prod-publisher` with each cli command or you can run:
+
+```
+export PMC_CLI_PROFILE="prod-publisher"
+```
+
 ### Packaging and Uploading
 
-These steps assume you have your pmc cli set up using the pmc publisher account in production.
+After you've set up your CLI:
 
 1. First, identify the version you want to publish and export it (`export VERSION="x.x.x"`)
 1. Open up pyproject.toml file and update the version field if necessary.
