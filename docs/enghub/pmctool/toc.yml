@@ -1,2 +1,5 @@
-- name: PMC CLI
+- name: Installation and usage
   href: index.md
+- name: Changelog
+  href: CHANGELOG.md
+

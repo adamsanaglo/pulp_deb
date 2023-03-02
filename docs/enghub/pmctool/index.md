@@ -1,4 +1,4 @@
-# pmc CLI Documentation
+# pmc CLI installation and usage
 
 Publishers operate on PMC repos via the `pmc` client CLI.
 

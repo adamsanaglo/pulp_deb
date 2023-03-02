@@ -27,14 +27,14 @@ pmc distro create pmc-cli pypi pmc-cli --repository pmc-cli-python
 
 These steps assume you have your pmc cli set up using the pmc publisher account in production.
 
-1. Open up pyproject.toml file and confirm that the version field is correct.
-1. If it's not correct, update it and open a new PR with your change.
+1. First, identify the version you want to publish and export it (`export VERSION="x.x.x"`)
+1. Open up pyproject.toml file and update the version field if necessary.
+1. Next, update the change log with `towncrier build --yes --version $VERSION`.
+1. Open a PR with your changes and get it merged.
 1. Once the PR is merged, create a new cli-x.x.x tag at <https://msazure.visualstudio.com/One/_git/Compute-PMC/tags>
-1. Next run the following commands from your cli directory replacing x.x.x with your new version.
+1. Next run the following commands from your cli directory
 
 ```
-export VERSION="x.x.x"
-
 git fetch -t
 git checkout cli-$VERSION
 
