@@ -286,3 +286,6 @@ tags
 # The test keys used to do "legacy signing" in dev environements should never get checked in.
 server/.test.key
 server/.test.pub
+
+# ignore generated _site
+docs/enghub/_site
