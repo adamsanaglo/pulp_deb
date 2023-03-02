@@ -3,6 +3,7 @@ runfile=/var/run/lock/update_meta
 pockets=/var/pmc/apt-repos.txt
 force_flag=/var/pmc/force-update
 max_jobs=4
+max_runtime=2700    # seconds
 
 function log {
     logger -p local3.info -t Fetch $@
@@ -15,13 +16,30 @@ function block_job_count_ge {
     done
 }
 
+function process_age {
+    target=$1
+    hz=$(getconf CLK_TCK)
+    uptime=$(awk '{print int($1)}' /proc/uptime)
+    start_delta=$(awk "{print int(\$22 / $hz)}" /proc/$target/stat)
+    echo $((uptime - start_delta))
+}
+
 if [ -e $runfile ]; then
     pid=$(cat $runfile)
-    if [ -e /proc/$pid ]; then
-        log "Previous cron invocation still running - skip"
-        exit 0      # Still running
+    if [ -n "$pid" -a -d /proc/$pid ]; then
+        age=$(process_age $pid)
+        if [ $age -le $max_runtime ]; then
+            log "Previous invocation pid $pid age ${age}s - skip"
+            exit 0      # Still running
+        fi
+        now=$(date +%s)
+        then=$((now - age))
+        datetime=$(date --iso-8601=seconds --date @$then)
+        log "Previous invocation [pid $pid age ${age}s started at $datetime] hung; killing it"
+        kill $target
     fi
 fi
+
 echo $$ > $runfile  # Our turn
 log "Starting updates"
 
