@@ -1,10 +1,11 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from click import BadParameter
 from pydantic import AnyHttpUrl, ValidationError, parse_obj_as
 
-from pmc.client import client, poll_task
+from pmc.client import client, client_context, create_client, poll_task
 from pmc.context import PMCContext
 from pmc.schemas import PackageType
 from pmc.utils import raise_if_task_failed
@@ -52,7 +53,7 @@ class PackageUploader:
 
         return data
 
-    def _package_upload(self, data: Dict[str, Any], path: Optional[Path] = None) -> Any:
+    def _upload_package(self, data: Dict[str, Any], path: Optional[Path] = None) -> Any:
         if path:
             files = {"file": open(path, "rb")}
         else:
@@ -69,20 +70,28 @@ class PackageUploader:
         package_resp = client.get(f"/packages/{package_id}/")
         return package_resp.json()
 
+    def _upload_packages(
+        self, data: Dict[str, Any], paths: Iterable[Path] = []
+    ) -> List[Dict[str, Any]]:
+        def set_context(context: PMCContext) -> None:
+            client_context.set(create_client(context))
+
+        packages = []
+        with ThreadPoolExecutor(
+            max_workers=5, initializer=set_context, initargs=(self.context,)
+        ) as executor:
+            futures = [executor.submit(self._upload_package, data, path) for path in paths]
+            for future in as_completed(futures):
+                packages.append(future.result())
+        return packages
+
     def upload(self) -> List[Dict[str, Any]]:
         """Perform the upload."""
         data = self._build_data()
-        packages = []
 
         if self.url:
-            package = self._package_upload(data)
-            return [package]
-
-        if self.path.is_dir():
-            # handle directory
-            for pkg in self.path.glob("*"):
-                packages.append(self._package_upload(data, pkg))
+            return [self._upload_package(data)]
+        elif self.path.is_dir():
+            return self._upload_packages(data, self.path.glob("*"))
         else:
-            packages = [self._package_upload(data, self.path)]
-
-        return packages
+            return [self._upload_package(data, self.path)]
