@@ -1,6 +1,7 @@
 import json
 import sys
 import traceback
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -133,7 +134,8 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
 
 def process_result(result: Any, **kwargs: Any) -> None:
     """Execute after the command."""
-    client_context.get().close()
+    with suppress(LookupError):
+        client_context.get().close()
 
 
 def version_callback(value: bool) -> None:
