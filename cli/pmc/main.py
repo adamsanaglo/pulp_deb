@@ -28,6 +28,7 @@ from .commands.config import (
     NO_COLOR_OPT,
     NO_WAIT_OPT,
     PAGER_OPT,
+    QUIET_OPT,
     RESP_FORMAT_OPT,
     SSL_VERIFY_OPT,
 )
@@ -171,6 +172,7 @@ def main(
     pager: bool = PAGER_OPT,
     id_only: bool = ID_ONLY_OPT,
     debug: bool = DEBUG_OPT,
+    quiet: bool = QUIET_OPT,
     ssl_verify: bool = SSL_VERIFY_OPT,
     resp_format: Format = RESP_FORMAT_OPT,
     base_url: str = BASE_URL_OPT,
@@ -204,6 +206,7 @@ def main(
         pager=pager,
         id_only=id_only,
         debug=debug,
+        quiet=quiet,
         ssl_verify=ssl_verify,
         resp_format=resp_format,
         msal_client_id=msal_client_id,  # pyright: ignore

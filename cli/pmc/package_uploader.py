@@ -95,7 +95,7 @@ class PackageUploader:
 
         # upload and poll the task
         resp = client.post("/packages/", params=data, files=files)
-        task_resp = poll_task(resp.json().get("task"))
+        task_resp = poll_task(resp.json().get("task"), quiet=self.context.config.quiet)
         task = task_resp.json()
 
         try:

@@ -111,6 +111,7 @@ class Config(BaseModel):
     id_only: bool = False
     resp_format: Format = Format.json
     debug: bool = False
+    quiet: bool = False
     ssl_verify: bool = True
     base_url: AnyHttpUrl = parse_obj_as(AnyHttpUrl, "http://localhost:8000/api/v4")
     hide_restricted_commands: bool = True

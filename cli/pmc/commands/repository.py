@@ -123,13 +123,15 @@ def create(
 
     if releases:
         for release in releases.split(LIST_SEPARATOR):
-            typer.echo(f"Creating release '{release}'.", err=True)
+            if not ctx.obj.config.quiet:
+                typer.echo(f"Creating release '{release}'.", err=True)
             resp = client.post(f"/repositories/{repo_id}/releases/", json={"name": release})
-            poll_task(resp.json().get("task"))
+            poll_task(resp.json().get("task"), quiet=ctx.obj.quiet)
 
     if paths:
         for path in paths.split(LIST_SEPARATOR):
-            typer.echo(f"Creating distribution '{path}'.", err=True)
+            if not ctx.obj.config.quiet:
+                typer.echo(f"Creating distribution '{path}'.", err=True)
             distro = {
                 "repository": repo_id,
                 "type": DistroType[repo_type],
@@ -137,7 +139,7 @@ def create(
                 "base_path": path,
             }
             resp = client.post("/distributions/", json=distro)
-            poll_task(resp.json().get("task"))
+            poll_task(resp.json().get("task"), quiet=ctx.obj.quiet)
 
 
 @app.command()
