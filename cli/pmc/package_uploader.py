@@ -1,3 +1,4 @@
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -8,7 +9,24 @@ from pydantic import AnyHttpUrl, ValidationError, parse_obj_as
 from pmc.client import client, client_context, create_client, poll_task
 from pmc.context import PMCContext
 from pmc.schemas import PackageType
-from pmc.utils import raise_if_task_failed
+from pmc.utils import PulpTaskFailure, raise_if_task_failed
+
+SHA256_REGEX = r"?P<sha256>[a-fA-F0-9]{64}"
+PACKAGE_EXISTS_ERRORS = {
+    PackageType.file: (
+        r"There is already a file content with relative path '(?P<relative_path>\S+?)' "
+        rf"and digest '({SHA256_REGEX})'"
+    ),
+    PackageType.deb: (
+        r"There is already a deb package with relative path '(?P<relative_path>\S+?)' "
+        rf"and sha256 '({SHA256_REGEX})'"
+    ),
+    PackageType.rpm: (
+        r"There is already a package with: arch=(?P<arch>\S+?), checksum_type=sha256, "
+        rf"epoch=(?P<epoch>\S+?), name=(?P<name>\S+?), pkgId=({SHA256_REGEX}), "
+        r"release=(?P<release>\S+?), version=(?P<version>\S+)\."
+    ),
+}
 
 
 class PackageUploader:
@@ -53,6 +71,22 @@ class PackageUploader:
 
         return data
 
+    def _find_existing_package(self, task: Any) -> Any:
+        """Attempt to find the existing package if it exists"""
+        # TODO: handle python packages. Unlike the other package types, the python package error
+        # message doesn't return uniquely identifying information. But we should be able to get the
+        # sha256 digest from the package and look it up in the api.
+        error = task.get("error")
+
+        for package_type, err_search in PACKAGE_EXISTS_ERRORS.items():
+            if match := re.search(err_search, error["description"]):
+                resp = client.get(f"/{package_type}/packages/", params=match.groupdict())
+                results = resp.json()["results"]
+                if len(results) == 1:
+                    return results[0]
+
+        return False
+
     def _upload_package(self, data: Dict[str, Any], path: Optional[Path] = None) -> Any:
         if path:
             files = {"file": open(path, "rb")}
@@ -63,7 +97,15 @@ class PackageUploader:
         resp = client.post("/packages/", params=data, files=files)
         task_resp = poll_task(resp.json().get("task"))
         task = task_resp.json()
-        raise_if_task_failed(task)
+
+        try:
+            raise_if_task_failed(task)
+        except PulpTaskFailure:
+            package = self._find_existing_package(task)
+            if not package:
+                # we're not dealing with a failure due to an existing package
+                raise
+            return package
 
         # grab the package json
         package_id = task["created_resources"][0]

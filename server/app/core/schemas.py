@@ -618,6 +618,7 @@ class StrictDebPackageQuery(PackageQuery):
 
 class DebPackageQuery(StrictDebPackageQuery, metaclass=OptionalFieldsMeta):
     release: Optional[ReleaseId]
+    relative_path: Optional[str]
 
 
 class DebPackageListResponse(ListResponse):

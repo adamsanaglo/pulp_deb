@@ -199,3 +199,24 @@ def test_package_directory_upload(orphan_cleanup: None) -> None:
     assert sorted([pkg["relative_path"] for pkg in packages]) == sorted(package_names)
 
     assert result.exit_code == 0
+
+
+def test_duplicate_deb_package(deb_package: Any) -> None:
+    become(Role.Package_Admin)
+    result = invoke_command(package_upload_command("signed-by-us.deb"))
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)[0]["id"] == deb_package["id"]
+
+
+def test_duplicate_rpm_package(deb_package: Any) -> None:
+    become(Role.Package_Admin)
+    result = invoke_command(package_upload_command("signed-by-us.deb"))
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)[0]["id"] == deb_package["id"]
+
+
+def test_duplicate_file_package(deb_package: Any) -> None:
+    become(Role.Package_Admin)
+    result = invoke_command(package_upload_command("signed-by-us.deb"))
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)[0]["id"] == deb_package["id"]

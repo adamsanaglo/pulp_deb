@@ -57,6 +57,7 @@ def deb_list(
     version: Optional[str] = typer.Option(None),
     arch: Optional[str] = typer.Option(None),
     sha256: Optional[str] = sha256_option,
+    relative_path: Optional[str] = typer.Option(None),
     file: Optional[str] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
@@ -75,6 +76,7 @@ def deb_list(
         version=version,
         architecture=arch,
         sha256=sha256,
+        relative_path=relative_path,
     )
     _list(PackageType.deb, ctx, params)
 
