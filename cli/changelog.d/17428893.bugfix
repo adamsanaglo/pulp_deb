@@ -1,2 +1,0 @@
-Fixed a bug where an error was incorrectly raised if a required setting was supplied as an option
-but not in the settings file.

@@ -1,1 +1,0 @@
-The package upload command now returns a list of packages instead of a single package json.
