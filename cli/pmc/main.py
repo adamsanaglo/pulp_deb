@@ -40,7 +40,7 @@ from .utils import (
     UserFriendlyTyper,
     parse_config,
     resolve_config_path,
-    validate_config,
+    validate_config_file,
 )
 
 app = UserFriendlyTyper()
@@ -193,7 +193,7 @@ def main(
         return
 
     if config_path:
-        validate_config(config_path, profile)
+        validate_config_file(config_path, profile)
     else:
         typer.echo(
             "Warning: no config file. One can be generated with 'pmc config create'.", err=True

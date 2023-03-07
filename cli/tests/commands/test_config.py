@@ -57,3 +57,54 @@ def test_profiles(settings: Any, repo: Any) -> None:
         )
         search(r"file.*does not exist", result.stdout)
         assert result.exit_code != 0
+
+
+def test_partial_config(settings: Any, repo: Any) -> None:
+    """Test a config with only some values defined."""
+    with tempfile.NamedTemporaryFile(mode="w+", suffix=".toml") as config:
+        config.write(tomli_w.dumps({"cli": {"no_wait": True}}))
+        config.flush()
+
+        result = invoke_command(
+            [
+                "--config",
+                config.name,
+                "--msal-client-id",
+                settings["msal_client_id"],
+                "--msal-scope",
+                settings["msal_scope"],
+                "--msal-cert-path",
+                settings["msal_cert_path"],
+                "--msal-authority",
+                settings["msal_authority"],
+                "repo",
+                "show",
+                repo["id"],
+            ]
+        )
+        assert result.exit_code == 0
+        assert "id" in result.stdout
+
+
+def test_config_override(settings: Any, repo: Any) -> None:
+    """Test that command line options will override the config."""
+    result = invoke_command(
+        [
+            "--msal-client-id",
+            "bad_client_id",
+            "repo",
+            "show",
+            repo["id"],
+        ]
+    )
+    assert result.exit_code != 0
+    assert "AuthenticationError" in result.stdout
+
+
+def test_invalid_toml() -> None:
+    with tempfile.NamedTemporaryFile(mode="w+", suffix=".toml") as config:
+        config.write("Hello World")
+        config.flush()
+        result = invoke_command(["--config", config.name, "repo", "list"])
+        assert result.exit_code != 0
+        assert "DecodeError: Parse error" in result.stdout

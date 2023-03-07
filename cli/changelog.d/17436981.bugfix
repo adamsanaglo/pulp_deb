@@ -1,0 +1,2 @@
+Fixed bug where parse errors and stacktrace were being emitted rather than a user friendly error
+when the settings file had invalid toml/json.

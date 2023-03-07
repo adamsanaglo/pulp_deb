@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 import click
 import typer
 from pydantic import AnyHttpUrl, BaseModel, FilePath, StrictStr, validator
+from pydantic.main import ModelMetaclass
 from pydantic.tools import parse_obj_as
 
 FINISHED_TASK_STATES = ("skipped", "completed", "failed", "canceled")
@@ -31,6 +32,24 @@ class StringEnum(str, Enum):
     def __str__(self) -> str:
         """Return value as the string representation."""
         return str(self.value)
+
+
+class OptionalFieldsMeta(ModelMetaclass):
+    """
+    Allows you to inherit all the attributes from another pydantic model but make them all optional.
+    Must be used like this: "class NewClass(<InheritsFromBaseModel>, metaclass=OptionalFieldsMeta):"
+    https://stackoverflow.com/questions/67699451/make-every-fields-as-optional-with-pydantic
+    """
+
+    def __new__(self, name, bases, namespaces, **kwargs):  # type: ignore
+        annotations = namespaces.get("__annotations__", {})
+        for base in bases:
+            annotations.update(base.__annotations__)
+        for field in annotations:
+            if not field.startswith("__"):
+                annotations[field] = Optional[annotations[field]]
+        namespaces["__annotations__"] = annotations
+        return super().__new__(self, name, bases, namespaces, **kwargs)
 
 
 class Role(StringEnum):
@@ -135,3 +154,14 @@ class Config(BaseModel):
 
     def auth_fields(self) -> Dict[str, Any]:
         return {k: v for k, v in self.dict().items() if k.startswith("msal_")}
+
+
+class FileConfig(Config, metaclass=OptionalFieldsMeta):
+    """
+    Represents a config from the settings file.
+
+    This differs from a Config in that required options do not need to be set as they may be passed
+    in as options (e.g. --msal-client-id).
+    """
+
+    pass

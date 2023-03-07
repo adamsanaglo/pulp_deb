@@ -12,7 +12,7 @@ import typer
 from click.exceptions import UsageError
 
 from pmc.client import client
-from pmc.schemas import CONFIG_PATHS, Config
+from pmc.schemas import CONFIG_PATHS, FileConfig
 
 PulpTask = Dict[str, Any]
 ParamType = Union[typer.core.TyperOption, typer.core.TyperArgument]
@@ -79,17 +79,17 @@ def _raw_config(path: Path, profile: Optional[str]) -> Dict[str, Any]:
     return settings
 
 
-def parse_config(path: Path, profile: Optional[str]) -> Config:
+def parse_config(path: Path, profile: Optional[str]) -> FileConfig:
     """
-    Parse a config file at path and return Config.
+    Parse a config file at path and return FileConfig.
 
     This function could raise UnsupportedFileType, JSONDecodeError, TOMLDecodeError, or a
     ValidationError.
     """
-    return Config(**_raw_config(path, profile))
+    return FileConfig(**_raw_config(path, profile))
 
 
-def validate_config(path: Path, profile: Optional[str]) -> None:
+def validate_config_file(path: Path, profile: Optional[str]) -> None:
     """Validate config at path and handle any problems."""
     try:
         parse_config(path, profile)
@@ -178,7 +178,7 @@ def _parse_restricted_commands() -> bool:
     path = resolve_config_path(path)
 
     if path:
-        with suppress(UsageError):
+        with suppress(UsageError, json.decoder.JSONDecodeError, tomli.TOMLDecodeError):
             config = _raw_config(path, profile)
             return config.get("hide_restricted_commands", True)
 
