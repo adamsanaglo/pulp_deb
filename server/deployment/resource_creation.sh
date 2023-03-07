@@ -63,7 +63,7 @@ az postgres flexible-server create -g $rg -n $pg --version 13 --high-availabilit
 # Will have to JIT to "Owner" of the subscription to perform this operation, both for creating the necessary vnet roles and for attaching the acr.
 az aks create -g $rg -n $aks --enable-addons monitoring --location $region \
     --node-vm-size standard_d4ds_v4 --vnet-subnet-id $aks_sub_id --zones 1 2 3 --attach-acr $acr \
-    --enable-cluster-autoscaler --min-count 2 --max-count 6
+    --enable-cluster-autoscaler --min-count 2 --max-count 6 --auto-upgrade-channel $aks_upgrade_policy
 az aks enable-addons -g $rg --name $aks --addons=azure-keyvault-secrets-provider --enable-secret-rotation
 
 # We need to enable azSecPack on our vms to comply with MS security requirements. The docs say that

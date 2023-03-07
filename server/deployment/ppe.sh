@@ -17,4 +17,5 @@ function env_overrides() {
     export kv="${prefix}-keyvault-51689"
     export api_cert_name="apt-ppe-api-ssl"  # name of the tls certificate in the keyvault
     export content_cert_name="apt-ppe-ssl-new"
+    export aks_upgrade_policy="rapid"
 }

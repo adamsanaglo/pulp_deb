@@ -33,6 +33,7 @@ function set_initial_vars() {
     export content_cert_name="content-cert"
     export min_pulp_workers="2"
     export min_pulp_content="2"
+    export aks_upgrade_policy="stable"
     env_overrides
 }
 
