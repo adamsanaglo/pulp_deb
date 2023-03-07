@@ -16,6 +16,7 @@ from app.core.db import AsyncSession, async_session, get_session
 from app.core.models import Account, Role
 from app.core.schemas import RepoType
 from app.main import app as fastapi_app
+from app.services import migration as migration_module
 from app.services.pulp import api as pulp_service_api
 from app.services.pulp import content_manager as content_manager_module
 
@@ -244,3 +245,8 @@ def content_manager(monkeypatch) -> Type[content_manager_module.ContentManager]:
     ):
         monkeypatch.setattr(content_manager_module.ContentManager, method, get_async_mock())
     return content_manager_module.ContentManager
+
+
+@pytest.fixture(autouse=True)
+def migration(monkeypatch) -> None:
+    monkeypatch.setattr(migration_module, "remove_vcurrent_packages", get_async_mock())

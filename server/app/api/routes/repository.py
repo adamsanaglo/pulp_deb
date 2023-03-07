@@ -30,7 +30,7 @@ from app.core.schemas import (
     RpmRepositoryResponse,
     TaskResponse,
 )
-from app.services.pulp.api import PackageApi, PublicationApi, RepositoryApi
+from app.services.pulp.api import PublicationApi, RepositoryApi
 from app.services.pulp.content_manager import ContentManager
 from app.services.pulp.package_lookup import package_lookup
 
@@ -99,15 +99,32 @@ async def update_packages(
     remove_filenames: List[str] = []  # TODO: [MIGRATE] remove
     package_type = id.package_type
     if repo_update.add_packages:
-        for add_id in repo_update.add_packages:
-            add_names.add(await PackageApi.get_package_name(add_id))
+        packages = await package_lookup(
+            repo=id, release=repo_update.release, package_ids=repo_update.add_packages
+        )
+        add_names = {x[package_type.pulp_name_field] for x in packages}
+        # TODO: [MIGRATE] remove
+        # If someone is manipulating repo package associations in vNext we always want to remove the
+        # packages in vCurrent. If we're removing packages from a repo then obviously we want to
+        # mirror that change in vCurrent. However even if we're adding packages in vNext we want to
+        # remove in vCurrent; this is because the package being added in vNext might be a different
+        # build from the one in vCurrent but have the same NVA / NEVRA, and we don't want a future
+        # sync to overwrite the copy that the Publisher explicitly added to the repo. Once
+        # Publishers migrate to the vNext api / cli they should continue to use it, not switch back
+        # and forth.
+        remove_filenames.extend(
+            [x[package_type.pulp_filename_field].split("/")[-1] for x in packages]
+        )
+        # END [MIGRATE]
     if repo_update.remove_packages:
         packages = await package_lookup(
             repo=id, release=repo_update.release, package_ids=repo_update.remove_packages
         )
         remove_names = {x[package_type.pulp_name_field] for x in packages}
         # TODO: [MIGRATE] remove
-        remove_filenames = [x[package_type.pulp_filename_field].split("/")[-1] for x in packages]
+        remove_filenames.extend(
+            [x[package_type.pulp_filename_field].split("/")[-1] for x in packages]
+        )
 
     return await _update_packages(
         id,
@@ -259,7 +276,6 @@ async def _update_packages(
     if (
         id.type in (RepoType.apt, RepoType.yum)
         and settings.AF_QUEUE_ACTION_URL
-        and repo_update.remove_packages
         and not repo_update.migration
     ):
         await remove_vcurrent_packages(remove_filenames, id, resp["task"], repo_update.release)

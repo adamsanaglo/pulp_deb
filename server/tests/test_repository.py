@@ -72,7 +72,14 @@ async def test_roles_repository_publish(
 
 
 def _setup_repo_package(
-    package_api, db_session, repo_id, package_name, account, repo_perm, package_perm
+    monkeypatch,
+    db_session,
+    repo_id,
+    package_name,
+    account,
+    repo_perm,
+    package_perm,
+    package_filename,
 ):
     """
     Set up the appropriate database state given the desired repo and package permissions and
@@ -94,7 +101,11 @@ def _setup_repo_package(
         perm = OwnedPackage(account_id=account.id, repo_id=repo_id, package_name=package_name)
         db_session.add(perm)
 
-    package_api.get_package_name.return_value = package_name
+    monkeypatch.setattr(
+        repository_module,
+        "package_lookup",
+        get_async_mock([{"name": package_name, "location_href": package_filename}]),
+    )
 
 
 @pytest.mark.parametrize("repo_perm, package_perm", product((True, False), ("none", "other", "me")))
@@ -104,7 +115,6 @@ async def test_roles_repository_add_package(
     account,
     repo_perm,
     package_perm,
-    package_api,
     content_manager,
     monkeypatch,
 ):
@@ -119,8 +129,16 @@ async def test_roles_repository_add_package(
     repo_id = f"repositories-rpm-rpm-{uuid4()}"
     package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"
+    package_filename = "package-filename-test"
     _setup_repo_package(
-        package_api, db_session, repo_id, package_name, account, repo_perm, package_perm
+        monkeypatch,
+        db_session,
+        repo_id,
+        package_name,
+        account,
+        repo_perm,
+        package_perm,
+        package_filename,
     )
 
     # try it
@@ -157,7 +175,6 @@ async def test_roles_repository_remove_package(
     account,
     repo_perm,
     package_perm,
-    package_api,
     content_manager,
     monkeypatch,
 ):
@@ -174,13 +191,15 @@ async def test_roles_repository_remove_package(
     package_id = f"content-rpm-packages-{uuid4()}"
     package_name = "package-name-test"
     package_filename = "package-filename-test"
-    monkeypatch.setattr(
-        repository_module,
-        "package_lookup",
-        get_async_mock([{"name": package_name, "location_href": package_filename}]),
-    )
     _setup_repo_package(
-        package_api, db_session, repo_id, package_name, account, repo_perm, package_perm
+        monkeypatch,
+        db_session,
+        repo_id,
+        package_name,
+        account,
+        repo_perm,
+        package_perm,
+        package_filename,
     )
 
     # try it
