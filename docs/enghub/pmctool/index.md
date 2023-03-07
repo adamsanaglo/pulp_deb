@@ -13,10 +13,10 @@ or using [pipx](https://pypa.github.io/pipx/):
 ```bash
 python3 -m pip install --user pipx
 python3 -m pipx ensurepath
-pipx install --index-url https://packages.microsoft.com/pmc-cli/simple/ "pmc-cli>=0.1.0"
+pipx install --pip-args="--extra-index-url=https://packages.microsoft.com/pmc-cli/simple/" "pmc-cli>=0.1.0"
 ```
 
-If you want to just install the CLI without a virtual environment:
+If you want to just install the CLI without a Python virtual environment:
 
 ```bash
 pip install --extra-index-url https://packages.microsoft.com/pmc-cli/simple/ "pmc-cli>=0.1.0"
