@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [0.2.0](https://msazure.visualstudio.com/One/_git/Compute-PMC?version=GTcli-0.2.0) - 2023-03-07
 
 
+### Breaking changes
+
+- The package upload command now returns a list of packages instead of a single package json. [#17315271](https://msazure.visualstudio.com/One/_workitems/edit/17315271)
+
+
 ### Features
 
 - Added feature to allow users to upload multiple packages in a directory. [#17315271](https://msazure.visualstudio.com/One/_workitems/edit/17315271)
@@ -25,8 +30,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   but not in the settings file. [#17428893](https://msazure.visualstudio.com/One/_workitems/edit/17428893)
 - Fixed bug where parse errors and stacktrace were being emitted rather than a user friendly error
   when the settings file had invalid toml/json. [#17436981](https://msazure.visualstudio.com/One/_workitems/edit/17436981)
-
-
-### Breaking changes
-
-- The package upload command now returns a list of packages instead of a single package json. [#17315271](https://msazure.visualstudio.com/One/_workitems/edit/17315271)

@@ -52,6 +52,11 @@ title_format = "## [{version}](https://msazure.visualstudio.com/One/_git/Compute
 issue_format = "[#{issue}](https://msazure.visualstudio.com/One/_workitems/edit/{issue})"
 
     [[tool.towncrier.type]]
+    directory = "breaking"
+    name = "Breaking changes"
+    showcontent = true
+
+    [[tool.towncrier.type]]
     directory = "feature"
     name = "Features"
     showcontent = true
@@ -59,9 +64,4 @@ issue_format = "[#{issue}](https://msazure.visualstudio.com/One/_workitems/edit/
     [[tool.towncrier.type]]
     directory = "bugfix"
     name = "Bug fixes"
-    showcontent = true
-
-    [[tool.towncrier.type]]
-    directory = "breaking"
-    name = "Breaking changes"
     showcontent = true
