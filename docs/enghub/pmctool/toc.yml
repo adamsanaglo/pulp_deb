@@ -1,5 +1,6 @@
 - name: Installation and usage
   href: index.md
+- name: CLI Docker container
+  href: docker.md
 - name: Changelog
   href: CHANGELOG.md
-
