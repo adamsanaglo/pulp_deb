@@ -14,6 +14,10 @@ function copy_to_host {
 
 function act_on_host {
     host=$1
+    systemd_dropins="restart.conf override.conf"
+    varpmc_scripts="update_meta.sh restart-nginx.sh"
+    local_scripts="config-activate.sh watch.sh"
+    other_files="fetch-apt-metadata.py crontab pmc-restart.service"
 
     if [ $do_prereqs = "yes" ]; then
         do_on_host sudo install -o $user -g $user -m 755 -d /var/pmc /var/pmc/www
@@ -25,11 +29,16 @@ function act_on_host {
         do_on_host "sudo find /usr/local/lib/python3.6/dist-packages -type d | xargs sudo chmod o+rx"
         do_on_host "sudo find /usr/local/lib/python3.6/dist-packages -type f | xargs sudo chmod o+r"
     fi
-    copy_to_host update_meta.sh fetch-apt-metadata.py crontab config-activate.sh watch.sh
-    do_on_host sudo install -o $user -g $user -m 755 update_meta.sh /var/pmc
+    copy_to_host $systemd_dropins $varpmc_scripts $local_scripts $other_files
+    do_on_host sudo install -o $user -g $user -m 755 -t /var/pmc $varpmc_scripts
     do_on_host sudo install -o root -g root -m 555 ~/fetch-apt-metadata.py /usr/local/bin/fetch-apt-metadata
     do_on_host sudo install -o root -g root -m 644 ~/crontab /etc/cron.d/update_meta
-    # leave config-activate.sh and watch.sh in ~apt-automation
+    do_on_host sudo install -o root -g root -m 755 -d /etc/systemd/system/nginx.service.d
+    do_on_host sudo install -o root -g root -m 644 -t /etc/systemd/system/nginx.service.d $systemd_dropins
+    do_on_host sudo install -o root -g root -m 644 -t /etc/systemd/system pmc-restart.service
+    do_on_host sudo systemctl daemon-reload
+    do_on_host rm $systemd_dropins $varpmc_scripts $other_files
+    do_on_host chmod 755 $local_scripts     # ...and leave them here
 }
 
 function act_on_region {

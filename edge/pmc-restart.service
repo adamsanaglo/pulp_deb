@@ -1,0 +1,7 @@
+# Restart the PMC edge nginx server if it's failed.
+[Unit]
+Description=PMC restart
+
+[Service]
+Type=oneshot
+ExecStart=/var/pmc/restart-nginx.sh

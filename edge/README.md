@@ -48,12 +48,12 @@ force-meta-update.sh target
 
 Set a flag on the target such that the next APT metadata update cycle will do a "--force" update, pulling all metadata files whether the origin metadata is newer or not.
 
-## Edge scripts
+## Edge files
 
-Scripts on edge servers fall in three buckets:
+Files installed on edge servers fall in three buckets:
 
 1) Scripts invoked by tools running on the jumpbox
-1) Scripts triggered by cron jobs
+1) Scripts triggered by cron jobs or systemd
 1) Monitoring scripts to be run on the server or from the jumpbox remotely
 
 ### Remotely invoked scripts (installed in ~apt-automation)
@@ -61,11 +61,14 @@ Scripts on edge servers fall in three buckets:
 - `config-activate.sh` changes the enabled nginx config and restarts nginx.
 - `config-install.sh` is obsolete; it was used for initial deployment of the vNext config on the edge mirrors.
 
-### Scripts triggered by cron
+### Scripts triggered by cron or systemd
 
-- crontab is deployed to /etc/cron.d/update_meta. It invokes update_meta.sh as user www-data every 5 minutes.
-- update_meta.sh is deployed to /var/pmc. It refreshes /var/pmc/apt-repos.txt, then invokes fetch-apt-metadata.py on each pocket.
+- crontab (deployed to /etc/cron.d/update_meta) invokes update_meta.sh as user www-data every 5 minutes.
+- update_meta.sh refreshes /var/pmc/apt-repos.txt, and then it invokes fetch-apt-metadata.py on each pocket.
 - fetch-apt-metadata.py updates the locally-cached metadata for a pocket.
+- restart.conf is a systemd "drop-in" file applied to the nginx.service unit; it enables autorestart of nginx.
+- pmc-restart.service is a systemd unit file for a oneshot service invoked if nginx fails too often in a small window of time.
+- restart-nginx.sh is invoked by the pmc-restart oneshot service. It logs the fact that multiple restarts were required, resets the nginx service, and triggers a new restart cycle of the nginx service.
 
 ### Monitoring scripts
 
