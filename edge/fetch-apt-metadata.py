@@ -1,11 +1,14 @@
 #!/usr/bin/python3
 
+import base64
 import datetime
+import hashlib
 import logging
+import os
 import tempfile
 from logging.handlers import SysLogHandler as SysLogHandler
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import requests
 import typer
@@ -24,6 +27,10 @@ logger.setLevel(logging.INFO)
 handler = SysLogHandler(address="/dev/log", facility=SysLogHandler.LOG_LOCAL3)
 handler.setFormatter(logging.Formatter("Fetch: %(message)s"))
 logger.addHandler(handler)
+
+
+class HashMismatch(Exception):
+    pass
 
 
 class Notes:
@@ -191,6 +198,15 @@ def upstream_url_in_pocket(pocket: str, name: str) -> str:
     return f"{upstream_url}/{pocket}/{name}"
 
 
+def get_last_modified(response: requests.Response) -> float:
+    LM = "Last-Modified"
+    if LM in response.headers:
+        remote_mtime = response.headers[LM]
+        return parsedate(remote_mtime).timestamp()
+    else:
+        return 0.0
+
+
 def is_outdated(pocket: str) -> bool:
     """Check if the local metadata is older than the upstream copy."""
     local = local_name_in_pocket(pocket, "Release")
@@ -201,23 +217,32 @@ def is_outdated(pocket: str) -> bool:
     remote = upstream_url_in_pocket(pocket, "Release")
     result = requests.head(remote, allow_redirects=True)
     if result.status_code != 200:
-        note.error(
-            "HEADfailure", f"HEAD request for {remote} status {result.status_code}"
-        )
+        note.error("HEADfailure", f"HEAD request for {remote} status {result.status_code}")
         return False
-    remote_mtime = result.headers["Last-Modified"]
-    remote_mtime = parsedate(remote_mtime).timestamp()
+    remote_mtime = get_last_modified(result)
     return remote_mtime > local_mtime
 
 
-def download_file_to_staging(pocket: str, filename: str, staging: str) -> str:
+def download_file_to_staging(pocket: str, filename: str, staging: str) -> Tuple[str, str]:
     """Download a file relative to the upstream URL to the staging directory."""
     remote = upstream_url_in_pocket(pocket, filename)
     result = requests.get(remote)
-    # Probably screwing up decoding of binary content to utf-8 here
+    m_time = get_last_modified(result)
+    MD5 = "Content-MD5"
+    if MD5 in result.headers:
+        expected_md5hash = hex(
+            int.from_bytes(base64.b64decode(result.headers[MD5]), byteorder="big")
+        )
+        actual_md5hash = hashlib.md5(result.content).hexdigest()
+        if expected_md5hash[2:] != actual_md5hash:
+            raise HashMismatch(f"Corrupted file downloaded: {filename} in {pocket}!")
+
     with tempfile.NamedTemporaryFile(dir=staging, delete=False) as f:
         f.write(result.content)
-        return f.name
+        hash = hashlib.sha256(result.content).hexdigest()
+        # Set the created / modified times to the Last-Modified time.
+        os.utime(f.name, (m_time, m_time))
+        return f.name, hash
 
 
 def fetch_metadata(pocket: str) -> None:
@@ -227,18 +252,27 @@ def fetch_metadata(pocket: str) -> None:
 
     with tempfile.TemporaryDirectory(dir=www_root) as staging:
 
-        def stage_file(filename: str) -> str:
-            f = download_file_to_staging(pocket, filename, staging)
+        def stage_file(filename: str) -> Tuple[str, str]:
+            f, hash = download_file_to_staging(pocket, filename, staging)
             renames[f] = local_name_in_pocket(pocket, filename)
-            return f
+            return f, hash
 
-        release_file = stage_file("Release")
+        release_file, _ = stage_file("Release")
         stage_file("Release.gpg")
         stage_file("InRelease")
 
         release = Release.from_path(release_file)
         for filename in release.filenames:
-            stage_file(filename)
+            _, hash = stage_file(filename)
+            # This assumes that all metadata files are generating a sha256 sum, which I think
+            # is a safe assumption. If not, barf.
+            try:
+                if hash != release.hashes["SHA256"][filename]:
+                    raise HashMismatch(f"Hash mismatch for {filename} in {pocket}.")
+            except KeyError:
+                raise Exception(
+                    f"Release file for {pocket} does not have a SHA256 sum for {filename}?!"
+                )
 
         for source, target in renames.items():
             target.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
@@ -268,7 +302,11 @@ def main(
     if force or is_outdated(pocket):
         logger.info(f"Fetching metadata for {pocket} (force={force})")
         try:
-            fetch_metadata(pocket)
+            try:
+                fetch_metadata(pocket)
+            except HashMismatch:
+                # Caught it in the middle of an update? Try again.
+                fetch_metadata(pocket)
         except Exception as ex:
             logger.exception(f"Exception while fetching {pocket}")
         note.flush_to_log()
@@ -312,9 +350,7 @@ SHA512:
     assert release.label == "microsoft-ubuntu-xenial-prod xenial"
     assert release.suite == "xenial"
     assert release.codename == "xenial"
-    assert release.date == datetime.datetime(
-        2023, 2, 17, 17, 19, 46, tzinfo=datetime.timezone.utc
-    )
+    assert release.date == datetime.datetime(2023, 2, 17, 17, 19, 46, tzinfo=datetime.timezone.utc)
     assert release.architectures == ["amd64", "all"]
     assert release.components == ["main"]
     assert release.description == "Generated by aptly"
