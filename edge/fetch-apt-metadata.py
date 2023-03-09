@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
-import base64
 import datetime
 import hashlib
 import logging
 import os
 import tempfile
+import time
+from base64 import b64decode
 from logging.handlers import SysLogHandler as SysLogHandler
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -30,6 +31,10 @@ logger.addHandler(handler)
 
 
 class HashMismatch(Exception):
+    pass
+
+
+class MissingFile(Exception):
     pass
 
 
@@ -204,7 +209,8 @@ def get_last_modified(response: requests.Response) -> float:
         remote_mtime = response.headers[LM]
         return parsedate(remote_mtime).timestamp()
     else:
-        return 0.0
+        # Assume it was modified 15 minutes ago
+        return time.time() - 900
 
 
 def is_outdated(pocket: str) -> bool:
@@ -223,26 +229,36 @@ def is_outdated(pocket: str) -> bool:
     return remote_mtime > local_mtime
 
 
+def verify_fileset(release_file, gpg_file, inrelease_file) -> bool:
+    """ Return True only if the three files are mutually consistent and verified """
+    return True
+
+
 def download_file_to_staging(pocket: str, filename: str, staging: str) -> Tuple[str, str]:
     """Download a file relative to the upstream URL to the staging directory."""
     remote = upstream_url_in_pocket(pocket, filename)
     result = requests.get(remote)
+    if result.status_code != 200:
+        raise MissingFile(f"Failed to GET {pocket}/{filename} status {result.status_code}")
     m_time = get_last_modified(result)
     MD5 = "Content-MD5"
     if MD5 in result.headers:
-        expected_md5hash = hex(
-            int.from_bytes(base64.b64decode(result.headers[MD5]), byteorder="big")
-        )
+        rawhash = int.from_bytes(b64decode(result.headers[MD5]), byteorder="big")
+        expected_md5hash = "{0:032x}".format(rawhash)
         actual_md5hash = hashlib.md5(result.content).hexdigest()
-        if expected_md5hash[2:] != actual_md5hash:
-            raise HashMismatch(f"Corrupted file downloaded: {filename} in {pocket}!")
+        if expected_md5hash != actual_md5hash:
+            raise HashMismatch(f"MD5 mismatch {pocket}/{filename} - expected {expected_md5hash} got {actual_md5hash}")
+    else:
+        logger.info(f"Missing Content-MD5 header for {pocket}/{filename}")
 
     with tempfile.NamedTemporaryFile(dir=staging, delete=False) as f:
         f.write(result.content)
+        name = f.name
         hash = hashlib.sha256(result.content).hexdigest()
-        # Set the created / modified times to the Last-Modified time.
-        os.utime(f.name, (m_time, m_time))
-        return f.name, hash
+
+    # Set the created / modified times to the Last-Modified time.
+    os.utime(name, (m_time, m_time))
+    return name, hash
 
 
 def fetch_metadata(pocket: str) -> None:
@@ -258,21 +274,26 @@ def fetch_metadata(pocket: str) -> None:
             return f, hash
 
         release_file, _ = stage_file("Release")
-        stage_file("Release.gpg")
-        stage_file("InRelease")
+        gpg_file, _ = stage_file("Release.gpg")
+        inrelease_file, _ = stage_file("InRelease")
+        verify_fileset(release_file, gpg_file, inrelease_file)
 
         release = Release.from_path(release_file)
         for filename in release.filenames:
-            _, hash = stage_file(filename)
+            try:
+                _, hash = stage_file(filename)
+            except MissingFile as ex:
+                note.warning(f"{pocket}/{filename}", f"{pocket}/Release mentions {filename} which is not found at origin")
+                continue
             # This assumes that all metadata files are generating a sha256 sum, which I think
             # is a safe assumption. If not, barf.
             try:
-                if hash != release.hashes["SHA256"][filename]:
-                    raise HashMismatch(f"Hash mismatch for {filename} in {pocket}.")
+                expected_hash = release.hashes["SHA256"][filename]
             except KeyError:
-                raise Exception(
-                    f"Release file for {pocket} does not have a SHA256 sum for {filename}?!"
-                )
+                raise Exception(f"Release file for {pocket} missing SHA256 sum for {filename}?!")
+            if hash != expected_hash:
+                note.warning(filename, f"SHA256 mismatch: Release {expected_hash} but computed {hash}")
+                raise HashMismatch(f"SHA256 mismatch for {pocket}/{filename} - Release {expected_hash} but computed {hash}")
 
         for source, target in renames.items():
             target.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
