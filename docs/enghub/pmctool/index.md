@@ -98,8 +98,8 @@ pmc repo list --limit 50
 pmc package upload [FILE]
 
 # Add one or more packages to a repo
-pmc repo package update --add-packages $PKG_ID;... $REPO_MAME [$RELEASE]
+pmc repo package update --add-packages $PKG_ID,... $REPO_MAME [$RELEASE]
 
 # Remove one or more packages from a repo
-pmc repo package update --remove-packages $PKG_ID;... $REPO_NAME [$RELEASE]
+pmc repo package update --remove-packages $PKG_ID,... $REPO_NAME [$RELEASE]
 ```

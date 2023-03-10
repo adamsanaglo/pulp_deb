@@ -1,1 +1,1 @@
-LIST_SEPARATOR = ";"
+LIST_SEPARATOR = ","
