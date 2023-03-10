@@ -4,6 +4,7 @@ import datetime
 import hashlib
 import logging
 import os
+import subprocess
 import tempfile
 import time
 from base64 import b64decode
@@ -47,53 +48,67 @@ class Notes:
     converted to a single string, but flushed to logging in whatever order dict.values()
     yields them.
     """
+    class LogBucket:
+        def __init__(self, label: str, level: int):
+            self.label = label
+            self.level = level
+            self.messages: Dict[str, str]
+        
+        def add(self, tag: str, message: str) -> None:
+            self.messages[tag] = message
+        
+        @property
+        def is_empty(self) -> bool:
+            return len(self.messages) == 0
+        
+        def to_strings(self) -> List[str]:
+            out = []
+            if not self.is_empty:
+                out.append(f"{self.label}:")
+                out.extend(self.messages.values())
+            return out
+
+        def flush_to_log(self) -> None:
+            for message in self.messages.values():
+                logger.log(self.level, message)
+            self.messages.clear()
 
     def __init__(self) -> None:
-        self.errors: Dict[str, str] = {}
-        self.warnings: Dict[str, str] = {}
-        self.info: Dict[str, str] = {}
+        self.errors = self.LogBucket("Errors", logging.ERROR)
+        self.warnings = self.LogBucket("Warnings", logging.WARNING)
+        self.information = self.LogBucket("Information", logging.INFO)
 
     def error(self, tag: str, message: str) -> None:
-        self.errors[tag] = message
+        self.errors.add(tag, message)
 
     def warning(self, tag: str, message: str) -> None:
-        self.warnings[tag] = message
+        self.warnings.add(tag, message)
 
     def info(self, tag: str, message: str) -> None:
-        self.info[tag] = message
+        self.information.add(tag, message)
 
     @property
     def has_errors(self) -> bool:
-        return len(self.errors) > 0
+        return not self.errors.is_empty
 
     @property
     def has_warnings(self) -> bool:
-        return len(self.warnings) > 0
+        return not self.warnings.is_empty
 
     @property
     def has_info(self) -> bool:
-        return len(self.info) > 0
+        return not self.information.is_empty
 
     def to_string(self) -> str:
-        results: List[str] = []
-        if self.has_errors:
-            results.append("Errors:")
-            results.extend([self.errors[tag] for tag in sorted(self.errors.keys())])
-        if self.has_warnings:
-            results.append("Warnings:")
-            results.extend([self.warnings[tag] for tag in sorted(self.warnings.keys())])
-        if self.has_errors:
-            results.append("Informational:")
-            results.extend([self.info[tag] for tag in sorted(self.info.keys())])
+        results = self.errors.to_strings()
+        results.extend(self.warnings.to_strings())
+        results.extend(self.information.to_strings())
         return "\n".join(results)
 
     def flush_to_log(self) -> None:
-        for message in self.errors.values():
-            logger.error(message)
-        for message in self.warnings.values():
-            logger.warning(message)
-        for message in self.info.values():
-            logger.info(message)
+        self.errors.flush_to_log()
+        self.warnings.flush_to_log()
+        self.information.flush_to_log()
 
 
 note = Notes()
@@ -179,12 +194,45 @@ class Release:
                 continue
 
             (tag, value) = line.split(":", 1)
+            tag = tag.strip()
             if tag in apt_hash_names:
-                hash_name = tag.strip()
+                hash_name = tag
                 self.hashes[hash_name] = {}
             else:
                 self.properties[tag] = value.strip()
                 hash_name = None
+
+    def verify_detached_signature(self, gpg_file: str) -> bool:
+        """Returns True if the detached signature file can be verified against the Release file"""
+        try:
+            subprocess.run(
+                ["gpgv", "-q", "--keyring", "pubring.kbx", gpg_file, self.path],
+                check=True,
+                cwd="~",
+                stderr=subprocess.PIPE
+            )
+        except subprocess.CalledProcessError:
+            note.error("Release.gpg", "Release.gpg doesn't verify against Release")
+            return False
+        return True
+    
+    def match_checksums(self, inrelease) -> bool:
+        """Returns true if all our checksums match the ones in inrelease"""
+        errors = 0
+        for hash_name, filehashes in self.hashes.items():
+            if hash_name not in inrelease.hashes:
+                note.error("InRelease", f"InRelease missing {hash_name} present in Release")
+                errors += 1
+                continue
+            for filename, hash in filehashes.items():
+                if filename not in inrelease.hashes[hash_name]:
+                    note.error(f"InRelease missing {filename}", f"{filename} missing from one or more hashsets in InRelease")
+                    errors += 1
+                elif hash != inrelease.hashes[hash_name][filename]:
+                    note.error(f"InRelease mismatch {filename}", f"{filename} hash mismatch vs InRelease")
+                    errors += 1
+
+        return errors == 0
 
     def __str__(self) -> str:
         return f"Release({self.path}, {self.filenames})"
@@ -229,11 +277,6 @@ def is_outdated(pocket: str) -> bool:
     return remote_mtime > local_mtime
 
 
-def verify_fileset(release_file, gpg_file, inrelease_file) -> bool:
-    """ Return True only if the three files are mutually consistent and verified """
-    return True
-
-
 def download_file_to_staging(pocket: str, filename: str, staging: str) -> Tuple[str, str]:
     """Download a file relative to the upstream URL to the staging directory."""
     remote = upstream_url_in_pocket(pocket, filename)
@@ -276,9 +319,14 @@ def fetch_metadata(pocket: str) -> None:
         release_file, _ = stage_file("Release")
         gpg_file, _ = stage_file("Release.gpg")
         inrelease_file, _ = stage_file("InRelease")
-        verify_fileset(release_file, gpg_file, inrelease_file)
 
         release = Release.from_path(release_file)
+        inrelease = Release.from_path(inrelease_file)
+        if not release.verify_detached_signature(gpg_file):
+            raise HashMismatch("Release.gpg doesn't match Release")
+        elif not release.match_inrelease_checksums(inrelease):
+            raise HashMismatch("InRelease doesn't match Release")
+
         for filename in release.filenames:
             try:
                 _, hash = stage_file(filename)
@@ -327,6 +375,8 @@ def main(
                 fetch_metadata(pocket)
             except HashMismatch:
                 # Caught it in the middle of an update? Try again.
+                note.flush_to_log()
+                logger.warning(f"Retry fetching metadata for {pocket}")
                 fetch_metadata(pocket)
         except Exception as ex:
             logger.exception(f"Exception while fetching {pocket}")
