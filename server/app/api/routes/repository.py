@@ -94,6 +94,11 @@ async def update_packages(
     account: Account = Depends(get_active_account),
     session: AsyncSession = Depends(get_session),
 ) -> TaskResponse:
+    if id.type == RepoType.yum and repo_update.release:
+        raise HTTPException(
+            status_code=422, detail="Release field is not permitted for yum repositories."
+        )
+
     # First we must convert the package *ids* sent to us into *names*.
     add_names, remove_names = set(), set()
     remove_filenames: List[str] = []  # TODO: [MIGRATE] remove
@@ -150,6 +155,11 @@ async def bulk_delete(
     Primarily this will be useful for handing bulk-deletes from the migration function (so lists
     of debs and rpms), but it will also allow for a "repo clear" command in the cli.
     """
+    if id.type == RepoType.yum and delete_cmd.release:
+        raise HTTPException(
+            status_code=422, detail="Release field is not permitted for yum repositories."
+        )
+
     # We'll need to look up package ids.
     # We can also allow an "all" delete to clear every package in the repo without the caller
     # having to know anything about them. Pulp actually allows for a "*" special package id to be
@@ -191,11 +201,6 @@ async def _update_packages(
     remove_names: MutableSet[str],
     remove_filenames: List[str],  # TODO: [MIGRATE] remove
 ) -> TaskResponse:
-    if id.type == RepoType.yum and repo_update.release:
-        raise HTTPException(
-            status_code=422, detail="Release field is not permitted for yum repositories."
-        )
-
     # Repo Package Update permissions are complicated.
     # * Repo Admins and Publishers should be able to ADD packages if and only if they "own" packages
     #   of that name in this repo.
