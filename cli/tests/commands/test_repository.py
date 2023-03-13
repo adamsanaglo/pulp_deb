@@ -155,6 +155,24 @@ def test_apt_update_packages_without_release(deb_package: Any, release: Any) -> 
     assert error["detail"] == "You must specify a release to add packages to an apt repo."
 
 
+def test_apt_update_packages_with_bad_release(deb_package: Any, release: Any) -> None:
+    become(Role.Repo_Admin)
+    cmd = [
+        "repo",
+        "packages",
+        "update",
+        release["repository_id"],
+        "bad_release",
+        "--add-packages",
+        deb_package["id"],
+    ]
+    result = invoke_command(cmd)
+    assert result.exit_code == 1
+    error = json.loads(result.stdout)
+    assert error["http_status"] == 422
+    assert "Found 0 releases for 'bad_release'" in error["detail"]
+
+
 def test_yum_update_packages_with_release(rpm_package: Any, yum_repo: Any) -> None:
     become(Role.Repo_Admin)
     cmd = [
