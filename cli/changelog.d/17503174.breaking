@@ -1,2 +1,0 @@
-Changed the list separator from ";" to "," for options that accept lists as the former requires
-escaping in bash.
