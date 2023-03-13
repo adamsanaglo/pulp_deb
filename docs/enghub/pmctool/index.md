@@ -1,6 +1,12 @@
 # pmc CLI installation and usage
 
 Publishers operate on PMC repos via the `pmc` client CLI.
+- [Installing the PMC Client](#installing-the-pmc-client)
+- [Configuration File](#configuration-file)
+    - [Sample Config](#sample-config)
+- [Usage](#usage)
+    - [List Resources](#list-resources)
+    - [Add/Remove Packages](#addremove-packages)
 
 ## Installing the pmc client
 
@@ -36,7 +42,7 @@ See the sample config (below) for more information.
 The sample config below has profiles for both tux-dev and prod. You may choose to only set up only
 one profile in your settings.toml file though if you are using only one environment.
 
-If you have  multiple profiles, use the `--profile` option to select the one you want to use
+If you have multiple profiles, use the `--profile` option to select the one you want to use
 (e.g. `pmc --profile prod repo list`).
 
 For each profile you'll need to populate two fields:
