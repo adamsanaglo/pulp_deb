@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 <!-- towncrier release notes start -->
 
+## [0.3.1](https://msazure.visualstudio.com/One/_git/Compute-PMC?version=GTcli-0.3.1) - 2023-03-14
+
+
+### Bug fixes
+
+- Fixed a bug where a PEM file with more than one intermediate CA would cause a cli crash. [#17544504](https://msazure.visualstudio.com/One/_workitems/edit/17544504)
+
+
 ## [0.3.0](https://msazure.visualstudio.com/One/_git/Compute-PMC?version=GTcli-0.3.0) - 2023-03-13
 
 

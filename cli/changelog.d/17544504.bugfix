@@ -1,1 +1,0 @@
-Fixed a bug where a PEM file with more than one intermediate CA would cause a cli crash.
