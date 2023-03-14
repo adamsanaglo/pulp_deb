@@ -1,7 +1,5 @@
 - name: Home
   href: index.md
-- name: v4 Preview
-  href: preview.md
 - name: Onboarding
   href: onboard/
 - name: Publishing
