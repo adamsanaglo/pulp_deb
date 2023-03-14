@@ -1,15 +1,15 @@
-## Publishing
+# Publishing
 
 This document describes how to package and publish the CLI.
 
-### PyPI
+## PyPI
 
 While we publish the pmc-cli package to packages.microsoft.com, there is an empty package on PyPI at
 `https://pypi.org/project/pmc-cli/`. The purpose of this package is to reserve the pmc-cli name and
 to prevent a nefarious actor from publishing their own pmc-cli package which our publishers might
 accidentally install and use.
 
-### Server Setup
+## Server Setup
 
 These steps describe how to prepare the PMC server to distribute the CLI package. They assume that
 your pmc client is setup using the repo admin credentials and that you want to distribute the
@@ -23,7 +23,21 @@ pmc repo create pmc-cli-python python
 pmc distro create pmc-cli pypi pmc-cli --repository pmc-cli-python
 ```
 
-### CLI setup
+## Publishing setup
+
+### Azure Artifacts
+
+In order to upload and publish to the Compute-PMC feed, you'll need to be a feed Contributor, Owner,
+or Administrator. By default the PMC team in ADO has Owner access to the Azure Artifact feed. If you
+are not on the PMC team or wish to customize your role/permissions, visit [the feed permissions
+setting page](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/settings/permissions).
+
+When you upload to the feed, you'll need to use your username and a password. The password
+is a Personal Access token that can be acquired at
+<https://msazure.visualstudio.com/_usersSettings/tokens>. The token will need the permission to
+read/write/manage packages.
+
+### packages.microsoft.com
 
 First, download the prod-publisher.pem cert from the production keyvault and then set up the following
 profile in your settings.toml:
@@ -43,7 +57,7 @@ Then you can either set `--profile prod-publisher` with each cli command or you 
 export PMC_CLI_PROFILE="prod-publisher"
 ```
 
-### Packaging and Uploading
+## Packaging and Uploading
 
 After you've set up your CLI:
 
@@ -60,11 +74,19 @@ git checkout cli-$VERSION
 
 poetry build
 
+# Azure Artifacts
+export POETRY_REPOSITORIES_AZURE_URL="https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/upload/"
+poetry publish -r azure -u <username> -p <password>
+
+# packages.microsoft.com
 PACKAGE_ID=$(pmc --id-only package upload dist/pmc_cli-${VERSION}-py3-none-any.whl)
-
 pmc repo packages update pmc-cli-python --add-packages $PACKAGE_ID
-
 pmc repo publish pmc-cli-python
 ```
 
-Now check `https://packages.microsoft.com/pmc-cli/` to ensure the package is there.
+Visit
+<https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/versions/>, find the
+latest version and click the "Promote" button to promote the package to a "Release". If you aren't
+able to promote the package version, see the setup section of this doc for info about permissions.
+
+Lastly check <https://packages.microsoft.com/pmc-cli/> to ensure the package is there as well.

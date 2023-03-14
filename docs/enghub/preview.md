@@ -18,10 +18,12 @@ Tux-dev is only accessible from Corpnet.
 
 ### **PMC CLI**
 
-The new CLI is a platform-agnostic Python package which can be installed from tux-dev.
+The new CLI is a platform-agnostic Python package and can be installed from our [Azure Artifacts
+feed](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC). Assuming you have a
+[personal access token](https://msazure.visualstudio.com/_usersSettings/tokens):
 
 ```bash
-pip install --extra-index-url https://packages.microsoft.com/pmc-cli/simple/ "pmc-cli>=0.1.0"
+pip install --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/simple/ "pmc-cli>0.0"
 ```
 
 ### **Client Config**

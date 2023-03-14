@@ -8,26 +8,43 @@ Publishers operate on PMC repos via the `pmc` client CLI.
     - [List Resources](#list-resources)
     - [Add/Remove Packages](#addremove-packages)
 
+## Azure Artifacts
+
+The pmc-cli tool is available via our [Compute-PMC Azure Artifacts
+feed](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC@Release/PyPI/pmc-cli/overview/).
+
+If you want to pull the pmc-cli into your own Azure Artifact feed, [configure the Compute-PMC feed
+as an upstream Python
+source](https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/azure-artifacts/troubleshooting/how-to-add-upstream-sources-to-azure-artifacts-feed).
+
+If you're in the msazure org, select "Azure Artifacts feed in this organization", select
+"Compute-PMC" as the feed and then "Release" as the view.
+
+If you're outside the msazure org, select "Azure Artifacts in another orgazation" and enter
+"azure-feed://msazure/Compute-PMC@Release" as your feed.
+
+Now when you search for Python packages from upstream sources, you should see the pmc-cli package.
+Make sure that you do **not** use the 0.0 version from PyPI.
+
 ## Installing the pmc client
 
-The pmc client is a python package.
+There are several different ways to install the client depending on where you want to install the
+pmc cli client.
 
-If you are not using a VM or container, consider [setting up a Python virtual
-environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
-or using [pipx](https://pypa.github.io/pipx/):
+If you are using ADO pipelines, you can use [the PipAuthenticate task to authenticate and then
+download the pmc-cli
+client](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/pip-authenticate-v1).
+
+Alternatively, you can follow the [Azure Artifact instructions for setting up pip to use the Compute-PMC
+feed](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/connect/pip) and then run
+`pip install pmc-cli`.
+
+Lastly, you can simply install the pmc-cli with a single command but you will need [a
+personal access token](https://msazure.visualstudio.com/_usersSettings/tokens):
 
 ```bash
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-pipx install --pip-args="--extra-index-url=https://packages.microsoft.com/pmc-cli/simple/" "pmc-cli>=0.1.0"
+pip install --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/simple/ "pmc-cli>0.0"
 ```
-
-If you want to just install the CLI without a Python virtual environment:
-
-```bash
-pip install --extra-index-url https://packages.microsoft.com/pmc-cli/simple/ "pmc-cli>=0.1.0"
-```
-You can also download the latest .whl file from `http://packages.microsoft.com/pmc-cli/` and add that file to any environment which cannot access the corp.microsoft.com domain. The `pip` command can be used to install the pmc command from the .whl file; pip will resolve dependencies from the usual Python package source on the internet.
 
 ## Configuration file
 
