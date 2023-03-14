@@ -129,10 +129,15 @@ class pmcauth:
         # Identify and remove the CA
         ca_cert = next(cert for cert in certs if cert.get_issuer().CN == cert.get_subject().CN)
         certs.remove(ca_cert)
-        issuer = ca_cert.get_issuer().CN
+        # Root CA's subject is the issuer of the next cert in the chain
+        issuer = ca_cert.get_subject().CN
         while len(certs) > 1:
             # Loop through certs, removing intermediaries until we find the leaf cert
-            intermediary = next(cert for cert in certs if cert.get_issuer().CN == issuer)
+            try:
+                intermediary = next(cert for cert in certs if cert.get_issuer().CN == issuer)
+            except StopIteration:
+                raise AuthenticationError("Unable to find leaf certificate in cert chain")
             certs.remove(intermediary)
-            issuer = intermediary.get_issuer().CN
+            # This intermediary (known by its subject) issued the next cert in the chain
+            issuer = intermediary.get_subject().CN
         return certs
