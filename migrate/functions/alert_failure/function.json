@@ -1,0 +1,19 @@
+{
+    "scriptFile": "__init__.py",
+    "bindings": [
+        {
+            "name": "inMsg",
+            "type": "serviceBusTrigger",
+            "direction": "in",
+            "queueName": "pmcmigrate/$DeadLetterQueue",
+            "connection": "AzureServiceBusConnectionString",
+        },
+        {
+            "name": "outMsg",
+            "type": "serviceBus",
+            "direction": "out",
+            "queueName": "pmcmigrate-failed",
+            "connection": "AzureServiceBusConnectionString",
+        }
+    ]
+}

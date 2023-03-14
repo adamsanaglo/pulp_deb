@@ -7,6 +7,10 @@ export location="centralus"
 export VNEXT_URL="https://pmc-ingest.trafficmanager.net"
 export VCURRENT_SERVER="azure-apt-cat.cloudapp.net"
 export VCURRENT_PORT="443"
+# This is the "HTTP POST URL" that ICM gives us to trigger our "PMC-Azure-Function-Failure"
+# issue-generating workflow. Go to edit the workflow and click on the first step to retrieve:
+# https://portal.microsofticm.com/imp/v5/automation/workflows/PMC-Azure-Function-Failure/edit
+export ICM_URL="https://resource-provider.genevaautomation.ms/icm/services/b4ae9603-0789-4f64-b1f2-52bb113f27d5/workflows/PMC-Azure-Function-Failure/triggers/manual/execute"
 
 # vnext MSAL vars
 export MSAL_CLIENT_ID="d017e1a1-438e-469a-acd7-a6877fd2d27f"

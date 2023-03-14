@@ -7,6 +7,10 @@ export location="westcentralus"
 export VNEXT_URL="http://10.169.23.70:80"
 export VCURRENT_SERVER="tux-devrepo.corp.microsoft.com"
 export VCURRENT_PORT="443"
+# This is the "HTTP POST URL" that ICM gives us to trigger our "PMC-Azure-Function-Failure"
+# issue-generating workflow. Go to edit the workflow and click on the first step to retrieve:
+# https://portal.microsofticm.com/imp/v5/automation/workflows/PMC-Azure-Function-Failure/edit
+export ICM_URL="https://resource-provider.genevaautomation.ms/icm/services/b4ae9603-0789-4f64-b1f2-52bb113f27d5/workflows/PMC-Azure-Function-Failure/triggers/manual/execute"
 
 # vnext MSAL vars
 export MSAL_CLIENT_ID="642a4463-1cf9-451b-9deb-d8112f36535c"

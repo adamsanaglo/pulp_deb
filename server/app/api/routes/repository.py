@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import List, MutableSet, Optional, Union
+from typing import Any, List, MutableSet, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -317,3 +317,17 @@ async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = Non
         data = {}
 
     return await RepositoryApi.publish(id, data)
+
+
+# TODO: [MIGRATE] remove these lines
+@router.post(
+    "/repositories/migration_failures/", dependencies=[Depends(requires_repo_admin_or_migration)]
+)
+async def migration_failures(retry: Optional[bool] = False) -> Any:
+    if settings.AF_QUEUE_ACTION_URL:
+        from app.services.migration import list_or_retry_failures
+
+        return await list_or_retry_failures(retry)
+
+
+# END [MIGRATE]

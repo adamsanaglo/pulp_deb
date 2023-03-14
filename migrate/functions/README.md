@@ -31,6 +31,28 @@ the same order in vNext. The Azure Functions maintain this order by using a Serv
 guarantees ordering unlike a Storage Queue), and by limiting the processing function to a single
 instance by setting `maxConcurrentCalls` and `WEBSITE_MAX_DYNAMIC_APPLICATION_SCALE_OUT` both to 1.
 
+## Error Alerting and Retrying
+
+There are an additional two functions and an additional queue that handle error alerting and
+allow us to retry failures.
+Built-in alerting solutions would alert us every time an attempt to process a message fails, which
+is not really what you want if you allow for multiple retries.
+Sometimes there are transient errors and the system transparently recovers.
+We would rather only be alerted if all retries have failed and the message is sent to the
+dead-letter subqueue.
+
+To facilitate that, there is an `alert_failure` function that watches for dead-lettered messages,
+and when it finds one will file an ICM and move the message to a second queue.
+There is also a `list_or_retry_failure` function that lists (if a GET request) messages in the
+failure queue, or (if a POST request) moves them back to the regular queue.
+This allows us to retry messages once we have fixed the cause of the underlying failure.
+One caveat to be aware of is that the failure queue will not allow a message to be viewed more
+frequently then once a second, so you cannot list and then immediately retry the failures or some
+may be missed (there is an abandon_message method that is supposed to release the lock, but it just,
+doesn't work? So we live with a 1-second lock lifetime instead.).
+`list_or_retry_failure` operates in batches of 10 per call.
+
+
 ## Azure CLI and Azure Functions CLI
 
 In order to publish or run these functions locally, you'll need to [install the Azure Functions
@@ -57,10 +79,12 @@ To create a service bus using the Azure CLI, run:
 
 ```bash
 rg="mypmcmigrate"
+bus="${rg}-bus"
 az group create --name $rg --location eastus
-az servicebus namespace create --resource-group $rg --name pmcmigrate
-az servicebus queue create --resource-group $rg --namespace-name pmcmigrate --name pmcmigrate --max-delivery-count 3 --lock-duration PT5M
-az servicebus namespace authorization-rule keys list --resource-group $rg --namespace-name pmcmigrate --name RootManageSharedAccessKey --query primaryConnectionString --output tsv
+az servicebus namespace create --resource-group $rg --name $bus
+az servicebus queue create --resource-group $rg --namespace-name $bus --name pmcmigrate --max-delivery-count 3 --lock-duration PT5M
+az servicebus queue create --resource-group $rg --namespace-name $bus --name pmcmigrate-failed --max-delivery-count 300 --lock-duration PT1S
+az servicebus namespace authorization-rule keys list --resource-group $rg --namespace-name $bus --name RootManageSharedAccessKey --query primaryConnectionString --output tsv
 ```
 
 The last command will output the service bus connection string. Copy `local.settings.json.example`

@@ -268,3 +268,20 @@ def purge(
         params["release"] = release
     resp = client.patch(f"/repositories/{repo_id}/bulk_delete/", json=params)
     handle_response(ctx.obj, resp)
+
+
+# TODO: [MIGRATE] remove these lines
+@app.restricted_command()
+def migration_failures(
+    ctx: typer.Context,
+    retry: Optional[bool] = typer.Option(False),
+) -> None:
+    """List [default] or retry a batch of 10 failing migration messages."""
+    args = {}
+    if retry:
+        args["retry"] = True
+    resp = client.post("/repositories/migration_failures/", params=args)
+    handle_response(ctx.obj, resp)
+
+
+# END [MIGRATE]

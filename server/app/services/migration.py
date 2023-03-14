@@ -1,8 +1,8 @@
 # TODO: [MIGRATE] Remove me.
 import logging
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, List, Optional
-from urllib.parse import parse_qs, urlparse
+from typing import Any, AsyncGenerator, List, Optional
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import httpx
 from asgi_correlation_id.context import correlation_id
@@ -19,7 +19,7 @@ class MigrationError(Exception):
 
 
 @asynccontextmanager
-async def get_client() -> AsyncGenerator[httpx.AsyncClient, None]:
+async def get_client(action: Optional[str] = None) -> AsyncGenerator[httpx.AsyncClient, None]:
     async def raise_on_4xx_5xx(response: httpx.Response) -> None:
         try:
             response.raise_for_status()
@@ -30,6 +30,11 @@ async def get_client() -> AsyncGenerator[httpx.AsyncClient, None]:
 
     # strip out any query params (e.g. 'code') and send them separately
     base = settings.AF_QUEUE_ACTION_URL.split("?")[0]
+    if action:
+        # The default configured action URL is for ".../queue_action". When presented with a URL
+        # and a word urljoin replaces the last part of the path with the new word, so we can use
+        # it here to connect to any other one of our function actions.
+        base = urljoin(base, action)
     params = parse_qs(urlparse(settings.AF_QUEUE_ACTION_URL).query)
 
     client = httpx.AsyncClient(
@@ -65,3 +70,14 @@ async def remove_vcurrent_packages(
         logger.info(f"[MIGRATION] Removing {len(data['packages'])} from {repo_name}.")
         response = await client.post("", json=data)
         logger.info(f"[MIGRATION] Received {response.status_code} response: {response}.")
+
+
+async def list_or_retry_failures(retry: Optional[bool] = False) -> Any:
+    """Lists or retries a batch of 10 failures."""
+    async with get_client(action="list_or_retry_failure") as client:
+        method = "GET"
+        if retry:
+            method = "POST"
+            logger.info("Retrying failed message batch.")
+
+        return (await client.request(method=method, url="")).json()
