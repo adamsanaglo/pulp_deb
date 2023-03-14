@@ -52,7 +52,7 @@ class Notes:
         def __init__(self, label: str, level: int):
             self.label = label
             self.level = level
-            self.messages: Dict[str, str]
+            self.messages: Dict[str, str] = {}
         
         def add(self, tag: str, message: str) -> None:
             self.messages[tag] = message
@@ -191,24 +191,25 @@ class Release:
                         "IndentationError",
                         f"{self.path}: indented line {line_number+1} outside hash block.",
                     )
-                continue
-
-            (tag, value) = line.split(":", 1)
-            tag = tag.strip()
-            if tag in apt_hash_names:
-                hash_name = tag
-                self.hashes[hash_name] = {}
+            elif ":" in line:
+                (tag, value) = line.split(":", 1)
+                tag = tag.strip()
+                if tag in apt_hash_names:
+                    hash_name = tag
+                    self.hashes[hash_name] = {}
+                else:
+                    self.properties[tag] = value.strip()
+                    hash_name = None
             else:
-                self.properties[tag] = value.strip()
-                hash_name = None
+                pass    # Ignore unindented lines that aren't "tag: value"
+
 
     def verify_detached_signature(self, gpg_file: str) -> bool:
         """Returns True if the detached signature file can be verified against the Release file"""
         try:
             subprocess.run(
-                ["gpgv", "-q", "--keyring", "pubring.kbx", gpg_file, self.path],
+                ["gpgv", "-q", "--homedir", "/var/pmc/wwwgpg", "--keyring", "pubring.kbx", gpg_file, self.path],
                 check=True,
-                cwd="~",
                 stderr=subprocess.PIPE
             )
         except subprocess.CalledProcessError:
@@ -324,7 +325,7 @@ def fetch_metadata(pocket: str) -> None:
         inrelease = Release.from_path(inrelease_file)
         if not release.verify_detached_signature(gpg_file):
             raise HashMismatch("Release.gpg doesn't match Release")
-        elif not release.match_inrelease_checksums(inrelease):
+        elif not release.match_checksums(inrelease):
             raise HashMismatch("InRelease doesn't match Release")
 
         for filename in release.filenames:
