@@ -276,7 +276,10 @@ def migration_failures(
     ctx: typer.Context,
     retry: Optional[bool] = typer.Option(False),
 ) -> None:
-    """List [default] or retry a batch of 10 failing migration messages."""
+    """
+    List [default] or retry a batch of 10 failing migration messages.
+    Wait 5 seconds between requests so the messages become available again.
+    """
     args = {}
     if retry:
         args["retry"] = True

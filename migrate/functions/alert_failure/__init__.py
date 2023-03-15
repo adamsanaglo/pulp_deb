@@ -9,6 +9,7 @@ import httpx
 
 ICM_URL = os.getenv("ICM_URL", "")
 RG = os.getenv("resourceGroup", "")
+CLEAR_DEADLETTER = os.getenv("clearDeadletter", False)
 if os.getenv("MSAL_CERT_PATH"):
     MSAL_CERT = Path(os.environ["MSAL_CERT_PATH"]).expanduser().read_text()
 else:
@@ -33,13 +34,19 @@ def main(inMsg: func.ServiceBusMessage, outMsg: func.Out[str]):
     """
     msg_json = inMsg.get_body().decode("utf-8")
     msg = json.loads(msg_json)
-    environment = "prod" if "prod" in RG else "tux-dev"
+    if "-ppe-" in RG:
+        environment = "ppe"
+    elif "-prod-" in RG:
+        environment = "prod"
+    else:
+        environment = "tux-dev"
+
     title = f"PMC Migration Message Failure in {environment}: {inMsg.message_id}"
     correlation_id = msg["correlation_id"] or ""
     body = ICM_BODY % (environment, TSG_URL, msg_json)
     request = {"title": title, "correlation_id": correlation_id, "body": body}
 
-    if ICM_URL and MSAL_CERT:
+    if ICM_URL and MSAL_CERT and not CLEAR_DEADLETTER:
         logging.info(f"New dead-letter message, filing ICM: {request}")
         # httpx only accepts certs in the form of a path to the on-disk pem.
         # https://github.com/encode/httpx/issues/924#issuecomment-1052681712
@@ -58,4 +65,5 @@ def main(inMsg: func.ServiceBusMessage, outMsg: func.Out[str]):
             f"Would have filed: {request}"
         )
 
-    outMsg.set(msg_json)
+    if not CLEAR_DEADLETTER:
+        outMsg.set(msg_json)
