@@ -48,7 +48,7 @@ directory = "changelog.d"
 start_string = "<!-- towncrier release notes start -->\n"
 underlines = ["", "", ""]
 template = "changelog.d/changelog_template.jinja"
-title_format = "## [{version}](https://msazure.visualstudio.com/One/_git/Compute-PMC?version=GTcli-{version}) - {project_date}"
+title_format = "## [{version}](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/{version}) - {project_date}"
 issue_format = "[#{issue}](https://msazure.visualstudio.com/One/_workitems/edit/{issue})"
 
     [[tool.towncrier.type]]
