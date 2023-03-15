@@ -42,7 +42,7 @@ def main(inMsg: func.ServiceBusMessage, outMsg: func.Out[str]):
         environment = "tux-dev"
 
     title = f"PMC Migration Message Failure in {environment}: {inMsg.message_id}"
-    correlation_id = msg["correlation_id"] or ""
+    correlation_id = msg.get("correlation_id", "")
     body = ICM_BODY % (environment, TSG_URL, msg_json)
     request = {"title": title, "correlation_id": correlation_id, "body": body}
 
