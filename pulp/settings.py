@@ -7,3 +7,6 @@ CONTENT_PATH_PREFIX = "/"
 
 # pulp_deb settings
 PUBLISH_RELEASE_FILE_LABEL = True
+
+# pulp_rpm settings
+RPM_METADATA_USE_REPO_PACKAGE_TIME = True

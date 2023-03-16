@@ -95,7 +95,7 @@ RUN mkdir -p /etc/pulp \
 RUN pip install pulpcore==3.22.0  # pin for patches below
 RUN pip install pulp-python~=3.8.0
 RUN pip install pulp-deb==2.20.0  # pin for patches below
-RUN pip install pulp-rpm~=3.18.9
+RUN pip install pulp-rpm==3.19.1 # pin for patches below
 RUN pip install pulp-file~=1.11.2
 
 # Enable use of cloud storage using vendored clone of github.com/jasonzio/django_storages
@@ -122,6 +122,10 @@ RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0008-Merged-P
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0009-Prevent-sync-from-breaking-if-a-custom-field-is-blan.patch # https://github.com/pulp/pulp_deb/pull/695
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0010-Store-release-signing-overrides-on-repo-to-avoid-syn.patch # https://github.com/pulp/pulp_deb/pull/689
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0011-Add-repo_key_fields-constraint-to-PackageReleaseComp.patch # https://github.com/pulp/pulp_deb/pull/705
+
+# Apply our pulp_rpm patches until upstream accepts/releases our merge requests
+COPY container-assets/pulp_rpm /tmp/pulp_rpm
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_rpm/0001-Add-a-setting-to-publish-package-repo-timestamp.patch # https://github.com/pulp/pulp_rpm/pull/3010
 
 # In this image the manager is in /usr/bin, not /usr/local/bin
 RUN ["ln", "-s", "/usr/bin/pulpcore-manager", "/usr/local/bin/pulpcore-manager"]

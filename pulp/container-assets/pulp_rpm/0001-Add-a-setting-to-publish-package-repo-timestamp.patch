@@ -1,0 +1,74 @@
+From 9c5e13b7feecadb9fe4559c7fdd2f7d3671b8f13 Mon Sep 17 00:00:00 2001
+From: David Davis <daviddavis@users.noreply.github.com>
+Date: Tue, 14 Mar 2023 10:03:03 -0400
+Subject: [PATCH] Add a setting to publish package repo timestamp
+
+Add a setting that will publish the time at which a package gets added
+to a repo rather than when it first appears in Pulp. This affects
+primary.xml and the setting defaults to False.
+
+fixes #3009
+
+[nocoverage]
+---
+ CHANGES/3009.feature             |  3 +++
+ docs/settings.rst                |  8 ++++++++
+ pulp_rpm/app/settings.py         |  1 +
+ pulp_rpm/app/tasks/publishing.py | 17 +++++++++++++++++
+ 4 files changed, 29 insertions(+)
+ create mode 100644 CHANGES/3009.feature
+
+diff --git a/pulp_rpm/app/settings.py b/pulp_rpm/app/settings.py
+index 27a91610..63bb6792 100644
+--- a/pulp_rpm/app/settings.py
++++ b/pulp_rpm/app/settings.py
+@@ -14,3 +14,4 @@ ALLOW_AUTOMATIC_UNSAFE_ADVISORY_CONFLICT_RESOLUTION = False
+ DEFAULT_ULN_SERVER_BASE_URL = "https://linux-update.oracle.com/"
+ KEEP_CHANGELOG_LIMIT = 10
+ SOLVER_DEBUG_LOGS = True
++RPM_METADATA_USE_REPO_PACKAGE_TIME = False
+diff --git a/pulp_rpm/app/tasks/publishing.py b/pulp_rpm/app/tasks/publishing.py
+index 084c62f5..942d7a92 100644
+--- a/pulp_rpm/app/tasks/publishing.py
++++ b/pulp_rpm/app/tasks/publishing.py
+@@ -20,6 +20,7 @@ from pulpcore.plugin.models import (
+     ProgressReport,
+     PublishedArtifact,
+     PublishedMetadata,
++    RepositoryContent,
+ )
+ 
+ from pulp_rpm.app.comps import dict_to_strdict
+@@ -542,6 +543,18 @@ def generate_repo_metadata(
+     fil_xml.set_num_of_pkgs(total_packages)
+     oth_xml.set_num_of_pkgs(total_packages)
+ 
++    if settings.RPM_METADATA_USE_REPO_PACKAGE_TIME:
++        # gather the times the packages were added to the repo
++        repo_content = (
++            RepositoryContent.objects.filter(
++                repository=publication.repository,
++                version_added__number__lte=publication.repository_version.number,
++            )
++            .exclude(version_removed__number__lte=publication.repository_version.number)
++            .values_list("content", "pulp_created")
++        )
++        repo_pkg_times = {pk: created.timestamp() for pk, created in repo_content}
++
+     # Process all packages
+     for package in packages.order_by("name", "evr").iterator():
+         if package.pk in pkg_pks_to_ignore:  # Temporary!
+@@ -557,6 +570,10 @@ def generate_repo_metadata(
+         # this can cause an issue when two same RPM package names appears
+         # a/name1.rpm b/name1.rpm
+         pkg.location_href = os.path.join(PACKAGES_DIRECTORY, pkg_filename[0].lower(), pkg_filename)
++
++        if settings.RPM_METADATA_USE_REPO_PACKAGE_TIME:
++            pkg.time_file = repo_pkg_times[package.pk]
++
+         pri_xml.add_pkg(pkg)
+         fil_xml.add_pkg(pkg)
+         oth_xml.add_pkg(pkg)
+-- 
+2.34.1
+
