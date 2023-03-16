@@ -50,6 +50,9 @@ function createServiceBus() {
 
     echo "Creating queue 'pmcmigrate' for '$sbns'..."
     az servicebus queue create --resource-group $resourceGroup --namespace-name $sbns --name pmcmigrate --max-delivery-count 3 --lock-duration PT5M
+
+    echo "Creating queue 'pmcmigrate-failed' for '$sbns'..."
+    az servicebus queue create --resource-group $rg --namespace-name $sbns --name pmcmigrate-failed --max-delivery-count 300 --lock-duration PT1S
 }
 
 function createFunctionApp() {
