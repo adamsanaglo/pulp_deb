@@ -324,7 +324,7 @@ async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = Non
     "/repositories/migration_failures/", dependencies=[Depends(requires_repo_admin_or_migration)]
 )
 async def migration_failures(retry: Optional[bool] = False) -> Any:
-    if settings.AF_QUEUE_ACTION_URL:
+    if settings.AF_FAILURE_URL:
         from app.services.migration import list_or_retry_failures
 
         return await list_or_retry_failures(retry)

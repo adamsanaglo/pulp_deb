@@ -2,7 +2,7 @@
 import logging
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, List, Optional
-from urllib.parse import parse_qs, urljoin, urlparse
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 from asgi_correlation_id.context import correlation_id
@@ -19,23 +19,21 @@ class MigrationError(Exception):
 
 
 @asynccontextmanager
-async def get_client(action: Optional[str] = None) -> AsyncGenerator[httpx.AsyncClient, None]:
+async def get_client(
+    url: str = settings.AF_QUEUE_ACTION_URL,
+) -> AsyncGenerator[httpx.AsyncClient, None]:
+    # strip out any query params (e.g. 'code') and send them separately
+    base = url.split("?")[0]
+    params = parse_qs(urlparse(url).query)
+
     async def raise_on_4xx_5xx(response: httpx.Response) -> None:
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            # don't raise an HTTPStatusError as the exception handler code will think it's an
+            # Don't raise an HTTPStatusError as the exception handler code will think it's an
             # error from pulp.
-            raise MigrationError(f"Received {e.response.status_code} response: {e}.")
-
-    # strip out any query params (e.g. 'code') and send them separately
-    base = settings.AF_QUEUE_ACTION_URL.split("?")[0]
-    if action:
-        # The default configured action URL is for ".../queue_action". When presented with a URL
-        # and a word urljoin replaces the last part of the path with the new word, so we can use
-        # it here to connect to any other one of our function actions.
-        base = urljoin(base, action)
-    params = parse_qs(urlparse(settings.AF_QUEUE_ACTION_URL).query)
+            # Also don't naively copy in error details, which may contain auth token in url.
+            raise MigrationError(f"Received {e.response.status_code} response from {base}.")
 
     client = httpx.AsyncClient(
         base_url=base,
@@ -74,7 +72,7 @@ async def remove_vcurrent_packages(
 
 async def list_or_retry_failures(retry: Optional[bool] = False) -> Any:
     """Lists or retries a batch of 10 failures."""
-    async with get_client(action="list_or_retry_failure") as client:
+    async with get_client(url=settings.AF_FAILURE_URL) as client:
         method = "GET"
         if retry:
             method = "POST"

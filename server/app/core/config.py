@@ -31,6 +31,8 @@ class Settings(BaseSettings):
 
     # TODO: [MIGRATE] Remove me.
     AF_QUEUE_ACTION_URL: str = ""
+    AF_FAILURE_URL: str = ""
+    # END [MIGRATE]
 
     def db_uri(self) -> Any:
         return PostgresDsn.build(

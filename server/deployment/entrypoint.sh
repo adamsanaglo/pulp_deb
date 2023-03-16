@@ -13,6 +13,7 @@ else
       pmcPostgresPassword) name="POSTGRES_PASSWORD";;
       pulpPostgresPassword) name="PULP_DATABASES__default__PASSWORD";;
       afQueueActionUrl) name="AF_QUEUE_ACTION_URL";;
+      afFailureUrl) name="AF_FAILURE_URL";;
       *) export name="$f";; # Else use the filename exactly
     esac
     echo "Exporting $SECRETS_MOUNTPOINT/$f to $name"

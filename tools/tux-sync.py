@@ -28,9 +28,6 @@ acr_images = [
     "signer"
 ]
 
-# Azure Function
-af_secret_name = "afQueueActionUrl"
-
 # Cotnainer Secrets
 secret_paths = {
     "pmcserver_api": [
@@ -125,13 +122,17 @@ def install_nginx_config():
 
 def update_function_url():
     """
-    Insert the AF_QUEUE_ACTION_URL into the env file
+    Insert AF_QUEUE_ACTION_URL and AF_FAILURE_URL into the env file
     """
     kvutil = get_kv_util()
-    af_queue_url = kvutil.get_secret(akv, af_secret_name)
-    var_name="AF_QUEUE_ACTION_URL"
-    cmd = f"sed -i s|^{var_name}=.*|{var_name}={af_queue_url}| {tux_sync_dir}/.env-api"
-    util.run_cmd(cmd)
+
+    def _insert_url(secret_name, var_name):
+        af_url = kvutil.get_secret(akv, secret_name)
+        cmd = f"sed -i s|^{var_name}=.*|{var_name}={af_url}| {tux_sync_dir}/.env-api"
+        util.run_cmd(cmd)
+
+    _insert_url("afQueueActionUrl", "AF_QUEUE_ACTION_URL")
+    _insert_url("afFailureUrl", "AF_FAILURE_URL")
 
 def restart_containers():
     docker_compose_cmd = "sudo docker compose"
