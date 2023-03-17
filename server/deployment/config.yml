@@ -45,6 +45,7 @@ data:
   PULP_WORKER_TTL: "300"
   PULP_DATABASES__default__OPTIONS__sslmode: "verify-full"
   PULP_DATABASES__default__OPTIONS__sslrootcert: "/usr/bin/root-cert-bundle.pem"
+  PULP_RPM_METADATA_USE_REPO_PACKAGE_TIME: "true"
 ---
 apiVersion: v1
 kind: ConfigMap
