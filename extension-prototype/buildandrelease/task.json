@@ -1,0 +1,73 @@
+{
+  "id": "e28f339b-de4f-4f3c-a317-e8c5e942232e",
+  "name": "PublishLinuxPackagesPMC",
+  "friendlyName": "Publish Linux Packages (PMC)",
+  "description": "To be able to upload Linux Packages without scaffolding the pmc-cli from Azure Pipeline",
+  "helpMarkDown": "Can be utilized in the release pipeline for adding a package to packages.microsoft.com",
+  "category": "Utility",
+  "author": "aztuxrepo@microsoft.com",
+  "version": {
+    "Major": 0,
+    "Minor": 1,
+    "Patch": 3
+  },
+  "instanceNameFormat": "Publish Linux Packages (PMC)",
+  "inputs": [
+    {
+      "name": "profile",
+      "type": "pickList",
+      "label": "Upload Profile",
+      "required": true,
+      "helpMarkDown": "Pick a profile configuration for your package upload",
+      "options": {
+        "tuxdev": "tuxdev",
+        "prod": "prod",
+        "ppe": "ppe"
+      }
+    },
+        {
+      "name": "msal_SNIAuth",
+      "type": "pickList",
+      "label": "Subject Name Issuer Auth",
+      "required": true,
+      "helpMarkDown": "Please choose whether to use Subject Name Issue Auth",
+      "options":{
+        "True": "msal-sniauth",
+        "False": "no-msal-sniauth"
+      }
+    },
+    {
+      "name": "msal_client_ID",
+      "type": "string",
+      "label": "Publishing Account ID",
+      "required": true,
+      "helpMarkDown": "Please provide your publishing account ID"
+    },
+    {
+      "name": "msal_cert_path",
+      "type": "filePath",
+      "label": "Publisher Cert Path",
+      "required": true,
+      "helpMarkDown": "Please provide the path to your publisher cert from root"
+    },
+    {
+      "name": "package_path",
+      "type": "filePath",
+      "label": "Package Source Path",
+      "required": true,
+      "helpMarkDown": "Please provide the directory path of your package from root"
+    },
+    {
+      "name": "repository",
+      "type": "string",
+      "label": "Repository name",
+      "required": true,
+      "helpMarkDown": "Please provide the destination repo name with the specified type suffix (-apt, -yum, -file)"
+    }
+  ],
+  "execution": {
+    "Node10": {
+      "target": "main.js"
+    }
+  }
+}

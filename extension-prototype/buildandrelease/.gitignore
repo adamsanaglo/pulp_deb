@@ -1,0 +1,6 @@
+node_modules
+publisher.pem
+.env
+tests
+main.js
+test_uploads

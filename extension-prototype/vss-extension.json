@@ -1,0 +1,34 @@
+{
+    "manifestVersion": 1,
+    "id": "build-release-task",
+    "name": "Publish Linux Packages (PMC)",
+    "version": "0.0.1",
+    "publisher": "aztuxrepo@microsoft.com",
+    "public": false,
+    "targets": [
+        {
+            "id": "Microsoft.VisualStudio.Services"
+        }
+    ],    
+    "description": "Extension tool for easier package publishing to PMC",
+    "categories": [
+        "Azure Pipelines"
+    ],
+    "files": [
+        {
+            "path": "buildandrelease"
+        }
+    ],
+    "contributions": [
+        {
+            "id": "custom-build-release-task",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name": "buildandreleasetask"
+            }
+        }
+    ]
+}
