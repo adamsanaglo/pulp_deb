@@ -197,7 +197,7 @@ def upload(
     """Upload a package."""
     uploader = PackageUploader(ctx.obj, package, ignore_signature, file_type, relative_path)
     packages = uploader.upload()
-    if ctx.obj.config.id_only and len(packages) == 1:
+    if ctx.obj.id_only and len(packages) == 1:
         typer.echo(packages[0]["id"])
     else:
         output_json(ctx.obj, packages)

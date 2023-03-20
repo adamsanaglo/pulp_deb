@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 from .auth import pmcauth
@@ -14,3 +14,9 @@ class PMCContext:
         self.config_path = config_path
         self.isatty = sys.stdout.isatty()
         self.auth = pmcauth(**self.config.auth_fields())
+
+    def __getattr__(self, key: str) -> Any:
+        try:
+            return self.config.dict()[key]
+        except ValueError:
+            raise AttributeError(f"PMCContext has not attribute '{key}'.")

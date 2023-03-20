@@ -86,16 +86,16 @@ def create_client(ctx: PMCContext) -> httpx.Client:
     request_hooks = [_call_set_auth_header]
     response_hooks = [_raise_for_status]
 
-    if ctx.config.debug:
+    if ctx.debug:
         request_hooks.append(_log_request)
         response_hooks.insert(0, _log_response)
 
     client = httpx.Client(
-        base_url=ctx.config.base_url,
+        base_url=ctx.base_url,
         event_hooks={"request": request_hooks, "response": response_hooks},
         headers={"x-correlation-id": ctx.cid.hex},
         timeout=None,
-        verify=ctx.config.ssl_verify,
+        verify=ctx.ssl_verify,
     )
     return client
 
@@ -147,17 +147,17 @@ def poll_task(task_id: str, task_handler: TaskHandler = None, quiet: bool = Fals
 
 
 def output_json(ctx: PMCContext, output: Any, suppress_pager: bool = False) -> None:
-    if ctx.config.id_only and (id := _extract_ids(output)):
+    if ctx.id_only and (id := _extract_ids(output)):
         typer.echo(id, nl=ctx.isatty)
     else:
         json_output = json.dumps(output, indent=3)
 
-        if PYGMENTS and not ctx.config.no_color:
+        if PYGMENTS and not ctx.no_color:
             formatter = Terminal256Formatter(style=PYGMENTS_STYLE)
             json_output = highlight(json_output, JsonLexer(), formatter)
 
         if (
-            ctx.config.pager
+            ctx.pager
             and not suppress_pager
             and json_output.count("\n") > shutil.get_terminal_size().lines - 3
         ):
@@ -178,7 +178,7 @@ def handle_response(
     else:
         task_id = None
 
-    if not ctx.config.no_wait and task_id:
-        resp = poll_task(task_id, task_handler, ctx.config.quiet)
+    if not ctx.no_wait and task_id:
+        resp = poll_task(task_id, task_handler, ctx.quiet)
 
     output_json(ctx, resp.json(), task_id is not None)

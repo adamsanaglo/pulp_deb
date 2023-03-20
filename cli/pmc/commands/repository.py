@@ -123,14 +123,14 @@ def create(
 
     if releases:
         for release in releases.split(LIST_SEPARATOR):
-            if not ctx.obj.config.quiet:
+            if not ctx.obj.quiet:
                 typer.echo(f"Creating release '{release}'.", err=True)
             resp = client.post(f"/repositories/{repo_id}/releases/", json={"name": release})
-            poll_task(resp.json().get("task"), quiet=ctx.obj.config.quiet)
+            poll_task(resp.json().get("task"), quiet=ctx.obj.quiet)
 
     if paths:
         for path in paths.split(LIST_SEPARATOR):
-            if not ctx.obj.config.quiet:
+            if not ctx.obj.quiet:
                 typer.echo(f"Creating distribution '{path}'.", err=True)
             distro = {
                 "repository": repo_id,
@@ -139,7 +139,7 @@ def create(
                 "base_path": path,
             }
             resp = client.post("/distributions/", json=distro)
-            poll_task(resp.json().get("task"), quiet=ctx.obj.config.quiet)
+            poll_task(resp.json().get("task"), quiet=ctx.obj.quiet)
 
 
 @app.command()
@@ -159,7 +159,7 @@ def update(
         "remotes", typer.Option(None, help="Remote id or name to use for sync.")
     ),
     sqlite_metadata: Optional[bool] = sqlite_metadata_option,
-    retain_repo_versions: Union[str] = typer.Option(None, help=RETAIN_REPO_VERSIONS_HELP),
+    retain_repo_versions: Optional[str] = typer.Option(None, help=RETAIN_REPO_VERSIONS_HELP),
 ) -> None:
     """Update a repository."""
 
