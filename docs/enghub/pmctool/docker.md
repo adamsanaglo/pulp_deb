@@ -5,14 +5,12 @@ Docker container. The main benefit of using a Docker container is that it provid
 environment in which Python, the pmc-cli, and its dependencies can be installed.
 
 
-## Building a CLI Docker image
+## Pulling the pmc-cli image
 
-To build your own Docker image, download a copy of [our
-Dockerfile](https://msazure.visualstudio.com/One/_git/Compute-PMC?path=/cli/Dockerfile). Then cd
-into the directory containing the Dockerfile and run:
+To pull the docker image, run:
 
 ```bash
-docker build -t pmc-cli .
+docker pull mcr.microsoft.com/pmc/pmc-cli
 ```
 
 ## Setup
@@ -45,13 +43,13 @@ then you can simply use `/home/user/.config/pmc` in the next section.
 To run CLI commands, assuming you are mounting in a pmc directory:
 
 ```bash
-docker run -t --volume "/path/to/pmc:/root/.config/pmc" --rm --network="host" pmc-cli repo list
+docker run -t --volume "/path/to/pmc:/root/.config/pmc" --rm --network="host" mcr.microsoft.com/pmc/pmc-cli repo list
 ```
 
 We recommend setting up an alias:
 
 ```bash
-alias pmc='docker run -t --volume "/path/to/pmc:/root/.config/pmc" --rm --network="host" pmc-cli'
+alias pmc='docker run -t --volume "/path/to/pmc:/root/.config/pmc" --rm --network="host" mcr.microsoft.com/pmc/pmc-cli'
 ```
 
 Then you can run:
@@ -67,5 +65,5 @@ recommend creating a folder and mounting it as a volume. The path you pass to th
 path in the container and not the host filesystem.
 
 ```bash
-docker run -t --volume "/path/to/pmc:/root/.config/pmc" --volume "/path/to/packages:/packages" --rm --network="host" pmc-cli package upload packages/mypkg.deb
+docker run -t --volume "/path/to/pmc:/root/.config/pmc" --volume "/path/to/packages:/packages" --rm --network="host" mcr.microsoft.com/pmc/pmc-cli package upload packages/mypkg.deb
 ```
