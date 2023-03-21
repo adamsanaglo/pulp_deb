@@ -8,13 +8,16 @@ Publishers operate on PMC repos via the `pmc` client CLI.
     - [List Resources](#list-resources)
     - [Add/Remove Packages](#addremove-packages)
 
-## Azure Artifacts
+## Installing the pmc client
 
-The pmc-cli tool is available via our [Compute-PMC Azure Artifacts
+### Azure Artifacts
+
+The recommended way to install the pmc client in Azure DevOps is to set up your own Azure Artifacts feed
+which will pull in the pmc-cli package from our [Compute-PMC Azure Artifacts
 feed](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC@Release/PyPI/pmc-cli/overview/).
 
-If you want to pull the pmc-cli into your own Azure Artifact feed, [configure the Compute-PMC feed
-as an upstream Python
+First set up an Azure Artifacts feed feed in your org or project and then [configure the Compute-PMC
+feed as an upstream Python
 source](https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/azure-artifacts/troubleshooting/how-to-add-upstream-sources-to-azure-artifacts-feed).
 
 If you're in the msazure org, select "Azure Artifacts feed in this organization", select
@@ -23,23 +26,22 @@ If you're in the msazure org, select "Azure Artifacts feed in this organization"
 If you're outside the msazure org, select "Azure Artifacts in another orgazation" and enter
 "azure-feed://msazure/Compute-PMC@Release" as your feed.
 
-Now when you search for Python packages from upstream sources, you should see the pmc-cli package.
-Make sure that you do **not** use the 0.0 version from PyPI.
+After your Azure Artifacts feed has been set up, when you search for Python packages from upstream
+sources, you should see the pmc-cli package.
 
-## Installing the pmc client
-
-There are several different ways to install the client depending on where you want to install the
-pmc cli client.
-
-If you are using ADO pipelines, you can use [the PipAuthenticate task to authenticate and then
-download the pmc-cli
+After you have set up your Azure Artifact feed, you can use [the PipAuthenticate task to
+authenticate and then download the pmc-cli
 client](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/pip-authenticate-v1).
 
-Alternatively, you can follow the [Azure Artifact instructions for setting up pip to use the Compute-PMC
+### Installing directly
+
+If you aren't using ADO, then you can install the pmc-cli directly.
+
+One option is to follow the [Azure Artifact instructions for setting up pip to use the Compute-PMC
 feed](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/connect/pip) and then run
 `pip install pmc-cli`.
 
-Lastly, you can simply install the pmc-cli with a single command but you will need [a
+Alternatively, you can simply install the pmc-cli with a single command but you will need [a
 personal access token](https://msazure.visualstudio.com/_usersSettings/tokens):
 
 ```bash
