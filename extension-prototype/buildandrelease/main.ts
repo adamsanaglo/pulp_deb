@@ -157,7 +157,7 @@ function main() {
         // Checks that all inputs are present
         inputCheck(sourceDir, profile, msal_client_id, msal_cert_path, msal_SNIAuth, repository);
 
-        const dockerImage = 'mcr.microsoft.com/unlisted/pmc/pmc-cli';
+        const dockerImage = 'mcr.microsoft.com/pmc/pmc-cli';
 
         const dockerCommand: string = `docker run -v ${msal_cert_path}:${msal_cert_path} -v ${sourceDir}:${sourceDir} ${dockerImage}`;
         const cliOptions: string = generateConfigs(profile, msal_client_id, msal_cert_path, msal_SNIAuth);
