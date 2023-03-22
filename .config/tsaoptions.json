@@ -1,0 +1,8 @@
+{
+  "instanceUrl": "https://msazure.visualstudio.com",
+  "projectName": "One",
+  "areaPath": "One\\Compute\\PMC",
+  "notificationAliases": [
+    "aztuxrepo@microsoft.com"
+  ]
+}
