@@ -1,6 +1,7 @@
 import asyncio
+import hashlib
 import re
-from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, Optional
+from typing import Any, AsyncGenerator, Awaitable, BinaryIO, Callable, Dict, Optional
 
 import httpx
 from asgi_correlation_id.context import correlation_id
@@ -60,6 +61,12 @@ def translate_response(response_json: Any, pagination: Optional[Pagination] = No
                 field = field.rstrip("_href")
             response_json[field] = pulp_href_to_id(val)
 
+        if field == "artifacts" and isinstance(val, dict):
+            artifacts_dict = val  # Just for readability.
+            for key, href in artifacts_dict.items():
+                if re.match(rf"^{settings.PULP_API_PATH}/[a-z0-9_\-/]+/$", href):
+                    artifacts_dict[key] = pulp_href_to_id(href)
+
     # strip out next/previous pulp links
     for link in ("next", "previous"):
         response_json.pop(link, None)
@@ -69,6 +76,14 @@ def translate_response(response_json: Any, pagination: Optional[Pagination] = No
         response_json["offset"] = pagination.offset
 
     return response_json
+
+
+def sha256(file: BinaryIO) -> str:
+    file_hash = hashlib.sha256()
+    buffer_size = 4 * 1048
+    while chunk := file.read(buffer_size):
+        file_hash.update(chunk)
+    return file_hash.hexdigest()
 
 
 async def yield_all(

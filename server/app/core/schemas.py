@@ -101,6 +101,7 @@ class PackageType(str, Enum):
     """
 
     deb = "deb"
+    deb_src = "deb_src"
     rpm = "rpm"
     python = "python"
     file = "file"
@@ -113,6 +114,7 @@ class PackageType(str, Enum):
     def natural_key_fields(self) -> List[str]:
         fields = {
             "deb": ["package", "version", "architecture"],
+            "deb_src": ["source", "version"],
             "rpm": ["name", "epoch", "version", "release", "arch"],
             "python": ["name", "filename"],
             "file": ["relative_path"],
@@ -123,11 +125,18 @@ class PackageType(str, Enum):
     def pulp_filename_field(self) -> str:
         fields = {
             "deb": "relative_path",
+            "deb_src": "relative_path",
             "rpm": "location_href",
             "python": "filename",
             "file": "relative_path",
         }
         return fields[self.value]
+
+    @property
+    def resp_model(self) -> str:
+        if self == PackageType.deb_src:
+            return "DebSourcePackageResponse"
+        return self.value + "PackageResponse"
 
 
 class RepoType(str, Enum):
@@ -349,10 +358,14 @@ class ContentId(Identifier):
 
 class PackageId(ContentId):
     pattern = re.compile(
-        rf"^content-(?P<type>deb|rpm|python|file)-(packages|files)-({uuid_group})$"
+        (
+            "^content-(?P<type>deb|rpm|python|file)-"
+            rf"(?P<subtype>source_packages|packages|files)-({uuid_group})$"
+        )
     )
     examples = [
         "content-deb-packages-39a63a9e-2081-4dfe-80eb-2c27af4b6024",
+        "content-deb-source_packages-dd434ed1-caa6-47fe-b2c6-6ab3fdf10431",
         "content-rpm-packages-21b4d540-76ef-420c-af0a-78c92b67eca0",
         "content-python-packages-2322cee3-3886-45df-912d-f7afffe929b6",
         "content-file-file-56050e2b-4f9a-479d-9e12-cf6142eda69b",
@@ -360,7 +373,14 @@ class PackageId(ContentId):
 
     @property
     def type(self) -> PackageType:
+        if self._pieces.group("subtype") == "source_packages":
+            return PackageType(self._pieces.group("type") + "_src")
         return PackageType(self._pieces.group("type"))
+
+
+class ArtifactId(ContentId):
+    pattern = re.compile(rf"^artifacts-({uuid_group})$")
+    examples = ["artifacts-6e04bfa9-e491-445f-9ebe-f522791570e1"]
 
 
 class ReleaseId(ContentId):
@@ -540,6 +560,14 @@ class BasePackageResponse(BaseModel):
     sha512: Optional[str]
 
 
+class ArtifactResponse(BaseModel):
+    id: ArtifactId
+    pulp_created: datetime
+    sha256: str
+    sha384: Optional[str]
+    sha512: Optional[str]
+
+
 class PackageQuery(BaseModel):
     repository: Optional[RepoId]
     sha256: Optional[str]
@@ -575,6 +603,47 @@ class DebPackageResponse(BasePackageResponse):
 
     class Config:
         allow_population_by_field_name = True
+
+
+class DebSourcePackageResponse(BaseModel):
+    # rename "source" -> "name" and "architecture" -> "arch" to provide unified interface with rpm
+    id: PackageId
+    pulp_created: datetime
+    source: str = Field(..., alias="name")
+    version: str
+    architecture: str = Field(..., alias="arch")
+    relative_path: str
+    artifacts: Dict[str, str]
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+class FullDebSourcePackageResponse(DebSourcePackageResponse):
+    format: Optional[str]  # the format of the source package
+    binary: Optional[str]  # lists binary packages which a source package can produce
+    maintainer: Optional[str]
+    uploaders: Optional[str]  # Names and emails of co-maintainers
+    homepage: Optional[str]
+    vcs_browser: Optional[str]
+    vcs_arch: Optional[str]
+    vcs_bzr: Optional[str]
+    vcs_cvs: Optional[str]
+    vcs_darcs: Optional[str]
+    vcs_git: Optional[str]
+    vcs_hg: Optional[str]
+    vcs_mtn: Optional[str]
+    vcs_snv: Optional[str]
+    testsuite: Optional[str]
+    dgit: Optional[str]
+    standards_version: Optional[str]  # most recent version of the standards the pkg complies
+    build_depends: Optional[str]
+    build_depends_indep: Optional[str]
+    build_depends_arch: Optional[str]
+    build_conflicts: Optional[str]
+    build_conflicts_indep: Optional[str]
+    build_conflicts_arch: Optional[str]
+    package_list: Optional[str]  # all the packages that can be built from the source package
 
 
 class FullDebPackageResponse(DebPackageResponse):
@@ -621,8 +690,22 @@ class DebPackageQuery(StrictDebPackageQuery, metaclass=OptionalFieldsMeta):
     relative_path: Optional[str]
 
 
+class DebSourcePackageQuery(BaseModel):
+    source: Optional[str]
+    version: Optional[str]
+    architecture: Optional[str]
+    relative_path: Optional[str]
+    repository: Optional[RepoId]
+    release: Optional[ReleaseId]
+    ordering: Optional[str]
+
+
 class DebPackageListResponse(ListResponse):
     results: List[DebPackageResponse]
+
+
+class DebSourcePackageListResponse(ListResponse):
+    results: List[DebSourcePackageResponse]
 
 
 class RpmPackageResponse(BasePackageResponse):

@@ -3,6 +3,7 @@ from functools import partialmethod
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import httpx
+from fastapi import UploadFile
 from starlette_context import context
 
 from app.core.schemas import (
@@ -24,7 +25,7 @@ from app.core.schemas import (
     RepoVersionId,
     TaskId,
 )
-from app.services.pulp.utils import get_client, id_to_pulp_href, memoize, translate_response
+from app.services.pulp.utils import get_client, id_to_pulp_href, memoize, sha256, translate_response
 
 T = TypeVar("T", bound="PulpApi")
 
@@ -480,18 +481,63 @@ class DistributionApi(PulpApi):
             raise ValueError(f"Could not construct endpoint for '{action}' with '{kwargs}'.")
 
 
+class ArtifactApi(PulpApi):
+    @classmethod
+    async def create(cls, data: Dict[str, Any]) -> Any:
+        """Call the artifact create endpoint."""
+        file = data.pop("file")
+        path = cls.endpoint("create")
+
+        resp = await cls.post(path, files={"file": file.file}, data=data)
+        return translate_response(resp.json())
+
+    @classmethod
+    async def find(cls, file: UploadFile) -> Optional[Any]:
+        """Find an artifact, if it exists."""
+        file_sha256 = sha256(file.file)
+        resp = await cls.list(params={"sha256": file_sha256})
+        if resp["count"] > 0:
+            return translate_response(resp["results"][0])
+        return None
+
+    @classmethod
+    async def find_or_create(cls, data: Dict[str, Any]) -> Any:
+        """Find or create an artifact."""
+        file = data.pop("file")
+        artifact = await cls.find(file)
+        if artifact:
+            return artifact
+
+        artifact = await cls.create(data={"file": file})
+        return artifact
+
+    @staticmethod
+    def endpoint(action: str, **kwargs: Any) -> str:
+        if action in ["create", "list"]:
+            return "/artifacts/"
+        else:
+            raise ValueError(f"Could not construct endpoint for '{kwargs}'.")
+
+
 class PackageApi(PulpApi):
     @classmethod
     async def create(cls, data: Dict[str, Any]) -> Any:
         """Call the package create endpoint."""
+        logger.debug(f"Pulp Request data {data}")
         file = data.pop("file")
         file_type = data.pop("file_type")
         path = cls.endpoint("create", type=file_type)
+        logger.debug(f"Pulp Request Path {path}")
 
         if file_type == PackageType.python or (
             file_type == PackageType.file and "relative_path" not in data
         ):
             data["relative_path"] = file.filename
+
+        if file_type == PackageType.deb_src:
+            resp = await cls.post(path, data=data)
+            logger.debug(f"Response is {translate_response(resp.json())}")
+            return translate_response(resp.json())
 
         resp = await cls.post(path, files={"file": file.file}, data=data)
         return translate_response(resp.json())
@@ -532,6 +578,7 @@ class PackageApi(PulpApi):
         uris = {
             PackageType.rpm: "/content/rpm/packages/",
             PackageType.deb: "/content/deb/packages/",
+            PackageType.deb_src: "/content/deb/source_packages/",
             PackageType.python: "/content/python/packages/",
             PackageType.file: "/content/file/files/",
         }

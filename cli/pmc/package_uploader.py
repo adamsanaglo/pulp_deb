@@ -21,6 +21,10 @@ PACKAGE_EXISTS_ERRORS = {
         r"There is already a deb package with relative path '(?P<relative_path>\S+?)' "
         rf"and sha256 '({SHA256_REGEX})'"
     ),
+    PackageType.deb_src: (
+        r"There is already a DSC file with version '(?P<version>\S+?)' "
+        r"and source name '(?P<name>\S+?)'"
+    ),
     PackageType.rpm: (
         r"There is already a package with: arch=(?P<arch>\S+?), checksum_type=sha256, "
         rf"epoch=(?P<epoch>\S+?), name=(?P<name>\S+?), pkgId=({SHA256_REGEX}), "
@@ -47,10 +51,11 @@ class PackageUploader:
             self.url = parse_obj_as(AnyHttpUrl, path_or_url)
         except ValidationError:
             self.url = None
-            try:
-                self.path = Path(path_or_url)
-            except FileNotFoundError:
-                raise BadParameter("Invalid path/url for package.")
+            self.path = Path(path_or_url)
+            if not self.path.is_file() and not self.path.is_dir():
+                raise BadParameter(
+                    f"Invalid url or non-existent file/directory for package(s) {self.path}."
+                )
 
             if self.path.is_dir():
                 if self.relative_path:

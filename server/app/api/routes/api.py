@@ -4,6 +4,7 @@ from app.api import auth
 from app.api.routes import (
     access,
     account,
+    artifact,
     distribution,
     orphan,
     package,
@@ -21,6 +22,7 @@ router = APIRouter(dependencies=[Depends(auth.get_active_account)])
 router.include_router(distribution.router, tags=["distributions"])
 router.include_router(remote.router, tags=["remotes"])
 router.include_router(package.router, tags=["packages"])
+router.include_router(artifact.router, tags=["artifacts"])
 router.include_router(repository.router, tags=["repositories"])
 router.include_router(
     repo_version.router,

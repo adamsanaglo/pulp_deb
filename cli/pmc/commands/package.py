@@ -1,8 +1,9 @@
 import hashlib
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import typer
 
+from pmc.artifact_uploader import ArtifactUploader
 from pmc.client import client, handle_response, output_json
 from pmc.package_uploader import PackageUploader
 from pmc.schemas import LIMIT_OPT, OFFSET_OPT, ORDERING_OPT, PackageType
@@ -10,11 +11,13 @@ from pmc.utils import UserFriendlyTyper, build_params, id_or_name
 
 app = UserFriendlyTyper()
 deb = UserFriendlyTyper()
+deb_src = UserFriendlyTyper()
 rpm = UserFriendlyTyper()
 python = UserFriendlyTyper()
 file = UserFriendlyTyper()
 
 app.add_typer(deb, name="deb", help="Manage deb packages")
+app.add_typer(deb_src, name="debsrc", help="Manage deb source packages")
 app.add_typer(rpm, name="rpm", help="Manage rpm packages")
 app.add_restricted_typer(python, name="python", help="Manage python packages")
 app.add_restricted_typer(file, name="file", help="Manage files")
@@ -79,6 +82,43 @@ def deb_list(
         relative_path=relative_path,
     )
     _list(PackageType.deb, ctx, params)
+
+
+@deb_src.command(name="list")
+def deb_src_list(
+    ctx: typer.Context,
+    repository: Optional[str] = id_or_name("repositories", repo_option),
+    release: Optional[str] = id_or_name(
+        "repositories/%(repository)s/releases",
+        typer.Option(None, help="Name or Id. Only list packages in this apt release."),
+    ),
+    name: Optional[str] = name_option,
+    version: Optional[str] = typer.Option(None),
+    arch: Optional[str] = typer.Option(None),
+    relative_path: Optional[str] = typer.Option(None),
+    limit: int = LIMIT_OPT,
+    offset: int = OFFSET_OPT,
+    ordering: str = ORDERING_OPT,
+) -> None:
+    """
+    List debian source packages matching the specified optional filters.
+
+    \b
+    - pmc package debsrc list
+    - pmc package debsrc list --version=2.10-2ubuntu2
+    """
+    params = build_params(
+        limit,
+        offset,
+        ordering=ordering,
+        repository=repository,
+        release=release,
+        source=name,
+        version=version,
+        architecture=arch,
+        relative_path=relative_path,
+    )
+    _list(PackageType.deb_src, ctx, params)
 
 
 @rpm.command(name="list")
@@ -193,8 +233,16 @@ def upload(
     relative_path: Optional[str] = typer.Option(
         None, help="Manually specify the relative path of the package (files packages only)."
     ),
+    source_artifact: Optional[List[str]] = typer.Option(
+        None, help="URL to an artifact, path to an artifact, or path to a directory of artifacts."
+    ),
 ) -> None:
     """Upload a package."""
+    if source_artifact:
+        for artifact in source_artifact:
+            artifact_uploader = ArtifactUploader(ctx.obj, artifact)
+            artifact_uploader.upload()
+
     uploader = PackageUploader(ctx.obj, package, ignore_signature, file_type, relative_path)
     packages = uploader.upload()
     if ctx.obj.id_only and len(packages) == 1:

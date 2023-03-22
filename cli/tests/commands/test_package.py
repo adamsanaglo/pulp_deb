@@ -64,6 +64,17 @@ def test_deb_list(deb_package: Any) -> None:
     _assert_package_list_not_empty("deb", {"file": "tests/assets/signed-by-us.deb"})
 
 
+def test_deb_src_list(deb_src_package: Any) -> None:
+    _assert_package_list_not_empty("debsrc")
+    _assert_package_list_not_empty("debsrc", {"name": deb_src_package["name"]})
+    _assert_package_list_empty("debsrc", {"name": "notarealpackagename"})
+    _assert_package_list_not_empty("debsrc", {"version": deb_src_package["version"]})
+    _assert_package_list_empty("debsrc", {"arch": "flux64"})
+    _assert_package_list_not_empty("debsrc", {"relative-path": deb_src_package["relative_path"]})
+    _assert_package_list_empty("debsrc", {"relative-path": "nonexistingrelativepath"})
+    assert len(deb_src_package["artifacts"]) == len(set(deb_src_package["artifacts"].values())) == 3
+
+
 def test_rpm_list(rpm_package: Any) -> None:
     _assert_package_list_not_empty("rpm")
     _assert_package_list_not_empty("rpm", {"name": rpm_package["name"]})
@@ -165,6 +176,13 @@ def test_invalid_deb_package_upload() -> None:
     assert "Unable to find global header" in result.stdout
 
 
+def test_deb_src_package_upload_no_artifacts() -> None:
+    become(Role.Package_Admin)
+    result = invoke_command(package_upload_command("hello_2.10-2ubuntu2.dsc"))
+    assert result.exit_code != 0
+    assert "A source file is listed in the DSC file but is not yet available" in result.stdout
+
+
 def test_ignore_signature(forced_unsigned_package: Any) -> None:
     """This empty test ensures forcing an unsigned package works by exercising the fixture."""
     pass
@@ -206,6 +224,13 @@ def test_duplicate_deb_package(deb_package: Any) -> None:
     result = invoke_command(package_upload_command("signed-by-us.deb"))
     assert result.exit_code == 0
     assert json.loads(result.stdout)[0]["id"] == deb_package["id"]
+
+
+def test_duplicate_deb_src_package(deb_src_package: Any) -> None:
+    become(Role.Package_Admin)
+    result = invoke_command(package_upload_command("hello_2.10-2ubuntu2.dsc"))
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)[0]["id"] == deb_src_package["id"]
 
 
 def test_duplicate_rpm_package(deb_package: Any) -> None:

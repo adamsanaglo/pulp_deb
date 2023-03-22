@@ -208,10 +208,14 @@ def package_access(
 
 
 def package_upload_command(
-    package_name: str, unsigned: Optional[bool] = False, file_type: Optional[str] = None
+    package_name: str,
+    unsigned: Optional[bool] = False,
+    file_type: Optional[str] = None,
+    source_artifacts: Optional[List[str]] = None,
 ) -> List[str]:
+    asset_path = Path.cwd() / "tests" / "assets"
     package = Path.cwd() / "tests" / "assets" / package_name
-    cmd = ["package", "upload", str(package)]
+    cmd = ["package", "upload", str(asset_path / package)]
 
     if unsigned:
         cmd.append("--ignore-signature")
@@ -219,14 +223,21 @@ def package_upload_command(
     if file_type:
         cmd += ["--type", file_type]
 
+    if source_artifacts:
+        for artifact in source_artifacts:
+            cmd += ["--source-artifact", str(asset_path / artifact)]
+
     return cmd
 
 
 @contextmanager
 def _package_manager(
-    package_name: str, unsigned: Optional[bool] = False, file_type: Optional[str] = None
+    package_name: str,
+    unsigned: Optional[bool] = False,
+    file_type: Optional[str] = None,
+    source_artifacts: Optional[List[str]] = None,
 ) -> Generator[Any, None, None]:
-    cmd = package_upload_command(package_name, unsigned, file_type)
+    cmd = package_upload_command(package_name, unsigned, file_type, source_artifacts)
     with _object_manager(cmd, Role.Package_Admin, False) as p:
         yield p
 
@@ -234,6 +245,16 @@ def _package_manager(
 @pytest.fixture()
 def deb_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("signed-by-us.deb") as p:
+        yield p[0]
+
+
+@pytest.fixture()
+def deb_src_package(orphan_cleanup: None) -> Generator[Any, None, None]:
+    with _package_manager(
+        "hello_2.10-2ubuntu2.dsc",
+        True,
+        source_artifacts=["hello_2.10.orig.tar.gz", "hello_2.10-2ubuntu2.debian.tar.xz"],
+    ) as p:
         yield p[0]
 
 

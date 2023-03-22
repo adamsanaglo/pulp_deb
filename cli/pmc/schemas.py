@@ -97,6 +97,7 @@ class PackageType(StringEnum):
     """Type of packages."""
 
     deb = "deb"
+    deb_src = "deb_src"
     rpm = "rpm"
     python = "python"
     file = "file"

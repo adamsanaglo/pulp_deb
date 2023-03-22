@@ -6,15 +6,21 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from pydantic import AnyHttpUrl
 
 from app.api.auth import requires_package_admin_or_publisher
+from app.api.routes.artifact import create_artifact
 from app.core.schemas import (
+    ArtifactId,
     BasePackageResponse,
     DebPackageListResponse,
     DebPackageQuery,
     DebPackageResponse,
+    DebSourcePackageListResponse,
+    DebSourcePackageQuery,
+    DebSourcePackageResponse,
     FilePackageListResponse,
     FilePackageQuery,
     FilePackageResponse,
     FullDebPackageResponse,
+    FullDebSourcePackageResponse,
     FullFilePackageResponse,
     FullPythonPackageResponse,
     FullRpmPackageResponse,
@@ -31,6 +37,7 @@ from app.core.schemas import (
 )
 from app.services.package.verify import PackageSignatureError, verify_signature
 from app.services.pulp.api import PackageApi
+from app.services.pulp.utils import id_to_pulp_href
 
 router = APIRouter()
 
@@ -49,6 +56,14 @@ async def deb_packages(
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(DebPackageResponse)
     return await PackageApi.list(pagination, params=params, type=PackageType.deb)
+
+
+@router.get("/deb_src/packages/")
+async def deb_src_packages(
+    pagination: Pagination = Depends(Pagination), query: DebSourcePackageQuery = Depends()
+) -> DebSourcePackageListResponse:
+    params = query.dict(exclude_none=True)
+    return await PackageApi.list(pagination, params=params, type=PackageType.deb_src)
 
 
 @router.get("/rpm/packages/")
@@ -98,7 +113,12 @@ async def create_package(
 
     if not file_type:
         # attempt to resolve the file type using ext
-        types = {".whl": PackageType.python, ".deb": PackageType.deb, ".rpm": PackageType.rpm}
+        types = {
+            ".whl": PackageType.python,
+            ".deb": PackageType.deb,
+            ".rpm": PackageType.rpm,
+            ".dsc": PackageType.deb_src,
+        }
         extension = Path(file.filename).suffix
         if not (file_type := types.get(extension, None)):
             raise HTTPException(
@@ -124,6 +144,13 @@ async def create_package(
             await verify_signature(file, file_type)
         except PackageSignatureError as exc:
             raise HTTPException(status_code=422, detail=f"{exc.__class__.__name__}: {exc}")
+
+    if file_type == PackageType.deb_src:
+        # create the dsc file artifact, if it doesn't exist.
+        artifact = await create_artifact(file)
+        # Add the artifact pulp_href to data.
+        data["artifact"] = id_to_pulp_href(ArtifactId(artifact["id"]))
+
     return await PackageApi.create(data)
 
 
@@ -134,12 +161,14 @@ async def read_package(
     FullDebPackageResponse,
     FullRpmPackageResponse,
     FullPythonPackageResponse,
+    DebSourcePackageResponse,
+    FullDebSourcePackageResponse,
     DebPackageResponse,
     RpmPackageResponse,
     PythonPackageResponse,
     FullFilePackageResponse,
     FilePackageResponse,
 ]:
-    resp_model = ("Full" if details else "") + id.type.title() + "PackageResponse"
+    resp_model = ("Full" if details else "") + id.type.resp_model
     data = await PackageApi.read(id)
     return globals()[resp_model](**data)
