@@ -12,10 +12,10 @@ trigger:
 
 variables:
   tag: '$(Build.BuildId)'
-  LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004:vnext'
+  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
 
   # Agent VM image name
-  vmImageName: 'ubuntu-latest'
+  vmImageName: 'mariner-2-latest'
 
 resources:
   repositories: 
@@ -34,8 +34,8 @@ extends:
     globalSdl: # https://aka.ms/obpipelines/sdl
       tsa:
         enabled: true
-      # policheck:
-      #   break: true
+      policheck:
+        break: true
       # suppression:  # suppress warnings in vendored open source projects
       #   suppressionFile: $(Build.SourcesDirectory)/.gdn/.gdnsuppress
       #   suppressionSet: default

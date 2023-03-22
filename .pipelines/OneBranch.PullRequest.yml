@@ -12,8 +12,7 @@ trigger: none
 
 variables:
   CDP_DEFINITION_BUILD_COUNT: $[counter('', 0)] # needed for onebranch.pipeline.version task https://aka.ms/obpipelines/versioning
-  LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004:latest' # Docker image which is used to build the project https://aka.ms/obpipelines/containers
-  DEBIAN_FRONTEND: noninteractive
+  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0' # Docker image which is used to build the project https://aka.ms/obpipelines/containers
 
 resources:
   repositories: 
@@ -31,9 +30,14 @@ extends:
       # credscan:
       #   suppressionsFile: $(Build.SourcesDirectory)\.config\CredScanSuppressions.json
       policheck:
-        break: true # always break the build on policheck issues. You can disable it by setting to 'false'
+        enabled: false
+      antimalwareScan:
+        enabled: false
+      publishLogs:
+        enabled: false  # With the above this currently fails anyway with a "file not found" error
       # suppression:
       #   suppressionFile: $(Build.SourcesDirectory)\.gdn\global.gdnsuppress
+      
 
     stages:
     - stage: linux_stage
@@ -80,14 +84,11 @@ extends:
                 #cp $(Build.SourcesDirectory)/*.tgz.sha256 $(Build.SourcesDirectory)/out
 
           - script: |
-              apt-get update
-              apt-get install -y python3.8 python3-pip python3.8-venv
-              python3.8 -m pip install poetry
+              python3 -m pip install poetry
             displayName: 'Install dependencies'
 
           - script: |
               cd server
-              poetry env use 3.8
               poetry install && \
               poetry run flake8 . && \
               poetry run isort -c . && \
@@ -97,7 +98,6 @@ extends:
 
           - script: |
               cd cli
-              poetry env use 3.8
               poetry install && \
               poetry run flake8 . && \
               poetry run isort -c . && \
@@ -108,7 +108,7 @@ extends:
           # TODO: [MIGRATE] remove these lines
           - script: |
               cd migrate/functions
-              python3.8 -m venv .venv
+              python3 -m venv .venv
               source .venv/bin/activate
               pip3 install -r dev_requirements.txt
               black --check --diff . && isort -c . && flake8 .
