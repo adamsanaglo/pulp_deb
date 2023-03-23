@@ -136,7 +136,7 @@ class PackageType(str, Enum):
     def resp_model(self) -> str:
         if self == PackageType.deb_src:
             return "DebSourcePackageResponse"
-        return self.value + "PackageResponse"
+        return self.title() + "PackageResponse"
 
 
 class RepoType(str, Enum):
