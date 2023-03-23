@@ -1,0 +1,78 @@
+name: ${{ lower(variables['Build.SourceBranchName']) }}_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  tags:
+    include:
+      - cli-*
+
+variables:
+  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
+
+resources:
+  repositories: 
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: v2/OneBranch.NonOfficial.CrossPlat.yml@templates # https://aka.ms/obpipelines/templates
+  parameters:
+    featureFlags:
+      sbom: true  # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/6089/Generating-SBOM
+      pythonAuthInDockerJobsFeeds: 'Compute-PMC'  # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/4601/Build-Docker-Images?anchor=pip-authenticate
+
+    globalSdl: # https://aka.ms/obpipelines/sdl
+      tsa:
+        enabled: true
+
+    stages:
+
+    - stage: build_package
+      jobs:
+      - job: build_package
+        pool:
+          type: docker
+          os: linux
+        steps:
+          - script: VERSION_TAG=`git describe --tags | sed 's/cli-//'` && echo "##vso[task.setvariable variable=VERSION_TAG]$VERSION_TAG"
+            displayName: Set the tag name as an environment variable
+          - task: UsePythonVersion@0
+          - script: python3 -m pip install poetry
+            displayName: "Set up poetry"
+          - script: poetry build
+            workingDir: cli
+            displayName: 'Build cli package'
+          - script: |
+              poetry config repositories.azure https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/upload/
+              poetry publish -r azure -u a -p $(System.AccessToken)
+            workingDir: cli
+            displayName: 'Poetry publish to Azure Artifacts'
+
+          # TODO: upload CLI package to packages.microsoft.com
+
+    - stage: build_images
+      jobs:
+      - job: build_image
+        pool:
+          type: docker
+          os: linux
+        variables: # More settings at https://aka.ms/obpipelines/yaml/jobs
+          ob_git_checkout: true
+          ob_outputDirectory: '$(Build.SourcesDirectory)/out' # this directory is uploaded to pipeline artifacts, reddog and cloudvault. More info at https://aka.ms/obpipelines/artifacts
+        steps:
+          - script: VERSION_TAG=`git describe --tags | sed 's/cli-//'` && echo "##vso[task.setvariable variable=VERSION_TAG]$VERSION_TAG"
+            displayName: Set the tag name as an environment variable
+          - task: onebranch.pipeline.imagebuildinfo@1
+            displayName: 'Build CLI image'
+            inputs:
+              registry: pmccliprod.azurecr.io
+              repositoryName: unlisted/pmc/pmc-cli
+              dockerFileRelPath: cli/Dockerfile
+              dockerFileContextPath: cli
+              addPipelineData: false
+              push: true
+              saveImageToPath: cli-image.tar
+              buildkit: 0
+              enable_network: true
+              build_tag: $(VERSION_TAG)

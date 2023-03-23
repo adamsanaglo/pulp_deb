@@ -98,17 +98,3 @@ extends:
               buildkit: 0
               enable_network: true
               build_tag: $(Build.BuildNumber)            # Docker image tag
-          - task: onebranch.pipeline.imagebuildinfo@1
-            displayName: 'Build CLI image'
-            inputs:
-              registry: pmccliprod.azurecr.io
-              repositoryName: unlisted/pmc/pmc-cli
-              dockerFileRelPath: cli/Dockerfile
-              dockerFileContextPath: cli
-              addPipelineData: false
-              push: true
-              saveImageToPath: cli-image.tar
-              buildkit: 0
-              enable_network: true
-              build_tag: $(Build.BuildNumber)            # Docker image tag
-
