@@ -16,7 +16,7 @@ resources:
       ref: refs/heads/main
 
 extends:
-  template: v2/OneBranch.NonOfficial.CrossPlat.yml@templates # https://aka.ms/obpipelines/templates
+  template: v2/OneBranch.Official.CrossPlat.yml@templates # https://aka.ms/obpipelines/templates
   parameters:
     featureFlags:
       sbom: true  # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/6089/Generating-SBOM
