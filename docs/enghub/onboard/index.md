@@ -46,6 +46,7 @@ The recommended way to generate a certificate, per Azure Policy, is [OneCert](ht
     1. **NOTE:** The domain name will not be exported and should not end in .net, .com, etc.
 2. Generate a new Certificate in KeyVault, using the Subject/Domain name from step 1. See documentation [here](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/key-vault-dsms/onecert/docs/requesting-a-onecert-certificate-with-keyvault).
     1. This may require adding the OneCert issuer to your KeyVault, as described in the above link.
+    1. Be sure to choose PEM format (not PFX). The PMC CLI is only compatible with PEM formatted certificates.
 
 
 The domain name should be chosen to collect authentication certificates in buckets tied to their purpose.
@@ -72,6 +73,7 @@ This is the magic step that enables auto-rotation. Once completed, any cert issu
     - `TenantID` is the Tenant in which your Service Principal was created (see [previous section](#creating-the-service-principal))
     - `applicationObjectID` is the **Object ID** from [the previous section](#creating-the-service-principal)
     - `subjectName` is the domain/subject name you registered in the [first section](#generate-a-certificate-for-authentication)
+        - **Do not** include the `CN=` prefix here. Just supply the domain/subject name.
 - Optionally, run `SNIssuerConfig.exe getProperty <TenantID> <applicationObjectID>` to confirm the change has taken effect.
 
 ### Create an IcM incident queue
