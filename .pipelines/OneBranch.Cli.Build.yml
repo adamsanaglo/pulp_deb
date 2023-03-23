@@ -41,12 +41,12 @@ extends:
           - script: python3 -m pip install poetry
             displayName: "Set up poetry"
           - script: poetry build
-            workingDir: cli
+            workingDirectory: cli
             displayName: 'Build cli package'
           - script: |
               poetry config repositories.azure https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/upload/
               poetry publish -r azure -u a -p $(System.AccessToken)
-            workingDir: cli
+            workingDirectory: cli
             displayName: 'Poetry publish to Azure Artifacts'
 
           # TODO: upload CLI package to packages.microsoft.com
