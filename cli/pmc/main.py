@@ -12,6 +12,7 @@ from click.exceptions import UsageError
 from pydantic import AnyHttpUrl, ValidationError
 from pydantic.tools import parse_obj_as
 
+from .auth import AuthenticationError
 from .client import client_context, create_client
 from .commands import access, account
 from .commands import config as config_cmd
@@ -57,7 +58,13 @@ app.add_restricted_typer(orphan.app, name="orphan")
 
 
 # Exceptions for which a traceback is not helpful/meaningful
-NO_TRACEBACK_EXCEPTIONS = (httpx.HTTPStatusError, UsageError, ValidationError, DecodeError)
+NO_TRACEBACK_EXCEPTIONS = (
+    httpx.HTTPStatusError,
+    UsageError,
+    ValidationError,
+    DecodeError,
+    AuthenticationError,
+)
 
 
 def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:

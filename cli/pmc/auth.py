@@ -82,8 +82,11 @@ class pmcauth:
         """
         certs = self._parse_certs_from_text()
         if len(certs) == 0:
-            # No certs present - must only be private key
-            raise AuthenticationError("Found no leaf certificates in specified cert!")
+            # No certs present - could be a private key or invalid cert
+            raise AuthenticationError(
+                "Failed to parse MSAL certificate. Found no leaf certificates in specified cert. "
+                "Is your cert a valid pem?"
+            )
         if len(certs) > 1:
             # Cert chain is present - remove root/intermediary CA's.
             certs = pmcauth._remove_cas_from_chain(certs)
