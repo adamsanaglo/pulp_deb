@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import traceback
 from contextlib import suppress
@@ -154,17 +155,18 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback(result_callback=process_result)
+@app.callback(result_callback=process_result, context_settings={"auto_envvar_prefix": "PMC_CLI"})
 def main(
     ctx: typer.Context,
-    version: Optional[bool] = typer.Option(None, "--version", callback=version_callback),
+    version: Optional[bool] = typer.Option(
+        None, "--version", callback=version_callback, show_envvar=False
+    ),
     profile: Optional[str] = typer.Option(
         None,
         "--profile",
         "-p",
         help="Select which profile in the config to use. Defaults to the first profile.",
         is_eager=True,
-        envvar="PMC_CLI_PROFILE",
     ),
     config_path: Path = typer.Option(
         None,
@@ -195,6 +197,9 @@ def main(
     Many of the commands and options have help text but you can also get more info at
     https://aka.ms/pmctool.
     """
+    if ctx.invoked_subcommand:
+        ctx.auto_envvar_prefix = None
+
     if ctx.invoked_subcommand == "config":
         # don't bother to validate the config or set up the context for config commands
         return
@@ -205,6 +210,9 @@ def main(
         typer.echo(
             "Warning: no config file. One can be generated with 'pmc config create'.", err=True
         )
+
+    # msal cert is an env var only as passing it via the command line can be unsafe in shared envs
+    msal_cert = os.getenv("PMC_CLI_MSAL_CERT")
 
     # New config options MUST be specified above and below in order to take effect!
     config = Config(
@@ -218,6 +226,7 @@ def main(
         resp_format=resp_format,
         msal_client_id=msal_client_id,  # pyright: ignore
         msal_scope=msal_scope,  # pyright: ignore
+        msal_cert=msal_cert,
         msal_cert_path=msal_cert_path,
         msal_SNIAuth=msal_SNIAuth,
         msal_authority=msal_authority,  # pyright: ignore

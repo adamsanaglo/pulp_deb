@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 import click
 import typer
-from pydantic import AnyHttpUrl, BaseModel, FilePath, StrictStr, validator
+from pydantic import AnyHttpUrl, BaseModel, FilePath, StrictStr, root_validator, validator
 from pydantic.main import ModelMetaclass
 from pydantic.tools import parse_obj_as
 
@@ -139,7 +139,8 @@ class Config(BaseModel):
 
     msal_client_id: NonEmptyStr
     msal_scope: NonEmptyStr
-    msal_cert_path: FilePath
+    msal_cert: Optional[str]
+    msal_cert_path: Optional[FilePath]
     msal_SNIAuth: bool = True
     msal_authority: NonEmptyStr
 
@@ -153,6 +154,14 @@ class Config(BaseModel):
             # we encountered a problem; just use the original value and let validation handle it
             return v
 
+    @root_validator(pre=False, skip_on_failure=True)
+    def validate_msal_cert(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if not values["msal_cert"] and not values["msal_cert_path"]:
+            raise ValueError("Either msal_cert or msal_cert_path must be defined.")
+        if values["msal_cert"] and values["msal_cert_path"]:
+            raise ValueError("msal_cert and msal_cert_path cannot both be set.")
+        return values
+
     def auth_fields(self) -> Dict[str, Any]:
         return {k: v for k, v in self.dict().items() if k.startswith("msal_")}
 
@@ -164,5 +173,10 @@ class FileConfig(Config, metaclass=OptionalFieldsMeta):
     This differs from a Config in that required options do not need to be set as they may be passed
     in as options (e.g. --msal-client-id).
     """
+
+    @root_validator(pre=False, skip_on_failure=True)
+    def validate_msal_cert(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # skip validating msal_cert
+        return values
 
     pass

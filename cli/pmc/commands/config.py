@@ -28,7 +28,9 @@ SSL_VERIFY_OPT = typer.Option(True, help="Verify the ssl cert.", hidden=True)
 RESP_FORMAT_OPT = typer.Option(Format.json, "--format", hidden=True)  # TODO: add more formats
 BASE_URL_OPT = typer.Option("", help="The base url of the server (i.e. https://<hostname>/api/v4)")
 MSAL_CLIENT_ID_OPT = typer.Option(
-    None, "--msal-client-id", help="Client ID for the account's Service Principal"
+    None,
+    "--msal-client-id",
+    help="Client ID for the account's Service Principal",
 )
 MSAL_SCOPE_OPT = typer.Option(
     None,
@@ -36,10 +38,17 @@ MSAL_SCOPE_OPT = typer.Option(
     help="Scope for authentication (i.e. api://13ab6030...)",
 )
 MSAL_CERT_PATH_OPT = typer.Option(
-    None, "--msal-cert-path", help="Path to authentication cert for account's Service Principal"
+    None,
+    "--msal-cert-path",
+    help=(
+        "Path to authentication cert for account's Service Principal. "
+        "The cert contents can also be exported to an environment "
+        "variable 'PMC_CLI_MSAL_CERT'."
+    ),
 )
 MSAL_SNI_AUTH_OPT = typer.Option(
-    True, help="Use SNI Authentication, which enables certificate auto-rotation."
+    True,
+    help="Use SNI Authentication, which enables certificate auto-rotation.",
 )
 MSAL_AUTHORITY_OPT = typer.Option(
     None,
@@ -82,6 +91,9 @@ def create(
     config = {}
     location = location.expanduser()
     for key, field in Config.schema()["properties"].items():
+        if key == "msal_cert":
+            continue
+
         if locals().get(key):
             config[key] = locals()[key]
         else:
