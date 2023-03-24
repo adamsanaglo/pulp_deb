@@ -7,6 +7,7 @@ trigger:
 
 variables:
   LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
+  cliTag: $[replace(variables['build.sourcebranchname'], 'cli-', '')]
 
 resources:
   repositories: 
@@ -32,12 +33,10 @@ extends:
       jobs:
       - job: build_package
         pool:
-          type: docker
-          os: linux
+          type: linux
+        variables:
+          ob_outputDirectory: '$(Build.SourcesDirectory)/out'
         steps:
-          - script: VERSION_TAG=`git describe --tags | sed 's/cli-//'` && echo "##vso[task.setvariable variable=VERSION_TAG]$VERSION_TAG"
-            displayName: Set the tag name as an environment variable
-          - task: UsePythonVersion@0
           - script: python3 -m pip install poetry
             displayName: "Set up poetry"
           - script: poetry build
@@ -61,8 +60,6 @@ extends:
           ob_git_checkout: true
           ob_outputDirectory: '$(Build.SourcesDirectory)/out' # this directory is uploaded to pipeline artifacts, reddog and cloudvault. More info at https://aka.ms/obpipelines/artifacts
         steps:
-          - script: VERSION_TAG=`git describe --tags | sed 's/cli-//'` && echo "##vso[task.setvariable variable=VERSION_TAG]$VERSION_TAG"
-            displayName: Set the tag name as an environment variable
           - task: onebranch.pipeline.imagebuildinfo@1
             displayName: 'Build CLI image'
             inputs:
@@ -75,4 +72,5 @@ extends:
               saveImageToPath: cli-image.tar
               buildkit: 0
               enable_network: true
-              build_tag: $(VERSION_TAG)
+              build_tag: $(cliTag)
+              arguments: '--build-arg PIP_INDEX_URL'
