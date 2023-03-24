@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 <!-- towncrier release notes start -->
 
+## [0.4.0](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/0.4.0) - 2023-03-23
+
+
+### Features
+
+- Added support for reading configuration from environment variables. This includes a
+  `PMC_CLI_MSAL_CERT` var that can be set to the msal cert string so users don't have to save their
+  MSAL cert to the filesystem. [#17627301](https://msazure.visualstudio.com/One/_workitems/edit/17627301)
+- Improved the error that gets displayed to users when an invalid MSAL cert is used. [#17628171](https://msazure.visualstudio.com/One/_workitems/edit/17628171)
+
+
 ## [0.3.1](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/0.3.1) - 2023-03-14
 
 

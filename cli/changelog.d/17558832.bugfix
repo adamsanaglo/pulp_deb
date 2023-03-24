@@ -1,1 +1,0 @@
-Fixed an AttributeError that gets raised when creating a repo with remotes or distro paths.
