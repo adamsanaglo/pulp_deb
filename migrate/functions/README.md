@@ -11,17 +11,27 @@ There are three actions that are performed:
 
 We don't bother to add packages that get added to vNext to vCurrent.
 
-There are two functions: a `queue_action` function that queues requests to add/remove packages in a
-Service Bus Queue and a `process_action` function that reads the messages from the Service Bus and
-processes them. The `process_action` will call the vnext or vcurrent API depending on what it needs
-to do.
+In the happy path there are two functions: a `queue_action` function that queues requests to
+add/remove packages in a Service Bus Queue and a `process_action` function that reads the messages
+from the Service Bus and processes them.
+The `process_action` function will call the vnext or vcurrent API depending on what it needs to do.
 
+## Message Flow
+
+* Four functions: `queue_action`, `process_action`, `alert_failure`, and `list_or_retry_failure`.
+* Two queues: `{pmcmigrate}` and `{pmcmigrate-failure}`
 <pre>
 
 vnext - - -
-           | -> queue_action -> service bus -> process_action -> vnext/vcurrent
-vcurrent  -
-
+           | -> queue_action -> {pmcmigrate} -> process_action -[success]> vnext/vcurrent
+vcurrent  -          ^                                         |
+                     |                                     [failure]
+                     |                                         v                                                     
+                  [retry]                           {pmcmigrate.deadletter}
+                     |                                         |
+                     |                                         v
+         list_or_retry_failure <- {pmcmigrate-failure} <- alert_failure
+ 
 </pre>
 
 ## Service Bus
@@ -36,12 +46,15 @@ instance by setting `maxConcurrentCalls` and `WEBSITE_MAX_DYNAMIC_APPLICATION_SC
 There are an additional two functions and an additional queue that handle error alerting and
 allow us to retry failures.
 Built-in alerting solutions would alert us every time an attempt to process a message fails, which
-is not really what you want if you allow for multiple retries.
+is not really what you want if you allow for multiple retries (`process_action` tries three times
+before moving a message to the `{pmcmigrate.deadletter}` subqueue).
 Sometimes there are transient errors and the system transparently recovers.
+Sometimes the message is actually processing correctly, but processing it takes too long and the
+functions receive a Gateway Timeout or similar.
 We would rather only be alerted if all retries have failed and the message is sent to the
-dead-letter subqueue.
+deadletter subqueue, and we'd rather that failures are alerted via ICM not email.
 
-To facilitate that, there is an `alert_failure` function that watches for dead-lettered messages,
+To facilitate that, there is an `alert_failure` function that watches for deadlettered messages,
 and when it finds one will file an ICM and move the message to a second queue.
 There is also a `list_or_retry_failure` function that lists (if a GET request) messages in the
 failure queue, or (if a POST request) moves them back to the regular queue.
@@ -52,8 +65,21 @@ may be missed (there is an abandon_message method that is supposed to release th
 doesn't work? So we live with a 1-second lock lifetime instead.).
 `list_or_retry_failure` operates in batches of 10 per call.
 
+Additionally you can't really _move_ messages to different queues.
+So what's actually happening in both the move-to-`{pmcmigrate-failure}` case or the move-back-to-
+`{pmcmigrate}` case is that we're filing a _new_ message with the same body in the appropriate
+queue, and the functions are automatically marking the old message as "complete" when they
+successfully process it (which makes it no longer show up).
+So the message body is preserved, but any of the message metadata fields are not (like time
+enqueued, or failure `reason`).
+This is actually not a huge loss because the `reason` something is moved to the deadletter subqueue
+is always something like "hit retry limit", not something that actually contains _information_.
+Any _useful_ information can be found in the function logs by searching for the operation_Id:
 
-## Azure CLI and Azure Functions CLI
+    traces | where operation_Id =~ 'xxx' | order by timestamp asc
+
+## Developing
+### Azure CLI and Azure Functions CLI
 
 In order to publish or run these functions locally, you'll need to [install the Azure Functions
 CLI](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local). You may also need
@@ -69,7 +95,7 @@ pip install azure-cli
 pip install -r requirements.txt
 ```
 
-## Running locally
+### Running locally
 
 While the Azure Functions can be run locally, [the Service Bus
 cannot](https://github.com/Azure/azure-service-bus/issues/223). I recommend setting up a service bus
@@ -131,7 +157,7 @@ http :7071/api/queue_action action_type=remove source=vcurrent repo_name=debtest
 
 If you get a 403 response from vnext, make sure the account you're using has the Migration role.
 
-### Testing
+## Testing
 
 If you want to test out the Azure functions, you'll need to set up two repos--one in vNext and one
 in vCurrent.
