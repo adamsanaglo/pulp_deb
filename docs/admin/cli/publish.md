@@ -27,15 +27,20 @@ pmc distro create pmc-cli pypi pmc-cli --repository pmc-cli-python
 
 ### Azure Artifacts
 
-In order to upload and publish to the Compute-PMC feed, you'll need to be a feed Contributor, Owner,
-or Administrator. By default the PMC team in ADO has Owner access to the Azure Artifact feed. If you
+In order to access our Azure Artifacts feed, you'll need to use your username and a password. The password
+is a Personal Access token that can be acquired at
+<https://msazure.visualstudio.com/_usersSettings/tokens>. The token will need the permission to
+read packages.
+
+Alternatively, you can use artifacts-keyring to authenticate to Azure Artifacts. You'll need to have
+dotnet installed though. More information at <https://pypi.org/project/artifacts-keyring/>
+
+In order to manage packages in the Compute-PMC feed, you'll need to be a feed Contributor, Owner, or
+Administrator. By default the PMC team in ADO has Owner access to the Azure Artifact feed. If you
 are not on the PMC team or wish to customize your role/permissions, visit [the feed permissions
 setting page](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/settings/permissions).
 
-When you upload to the feed, you'll need to use your username and a password. The password
-is a Personal Access token that can be acquired at
-<https://msazure.visualstudio.com/_usersSettings/tokens>. The token will need the permission to
-read/write/manage packages.
+
 
 ### packages.microsoft.com
 
@@ -66,27 +71,20 @@ After you've set up your CLI:
 1. Next, update the change log with `towncrier build --yes --version $VERSION`.
 1. Open a PR with your changes and get it merged.
 1. Once the PR is merged, create a new cli-x.x.x tag at <https://msazure.visualstudio.com/One/_git/Compute-PMC/tags>
-1. Next run the following commands from your cli directory
+1. Now monitor [the build pipeline](https://msazure.visualstudio.com/One/_build?definitionId=312903)
+1. After the build is done, on the build page click 'Releases' and then the associated release.
+1. The release should automatically push to PPE. Manually start a Production push as well.
+1. Go to [our Azure Artifact
+   feed](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/versions/),
+   find the latest version and click the "Promote" button to promote it to a "Release". If you
+   aren't able to promote the package version, see the setup section of this doc.
+1. Finally run the following commands to upload the package to packages.microsoft.com:
 
-```
-git fetch -t
-git checkout cli-$VERSION
-
-poetry build
-
-# Azure Artifacts
-export POETRY_REPOSITORIES_AZURE_URL="https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/upload/"
-poetry publish -r azure -u <username> -p <password>
-
-# packages.microsoft.com
-PACKAGE_ID=$(pmc --id-only package upload dist/pmc_cli-${VERSION}-py3-none-any.whl)
+```bash
+pip download --no-deps --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/simple/ "pmc-cli==$VERSION"
+PACKAGE_ID=$(pmc --id-only package upload pmc_cli-${VERSION}-py3-none-any.whl)
 pmc repo packages update pmc-cli-python --add-packages $PACKAGE_ID
 pmc repo publish pmc-cli-python
 ```
 
-Visit
-<https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/versions/>, find the
-latest version and click the "Promote" button to promote the package to a "Release". If you aren't
-able to promote the package version, see the setup section of this doc for info about permissions.
-
-Lastly check <https://packages.microsoft.com/pmc-cli/> to ensure the package is there as well.
+Now check <https://packages.microsoft.com/pmc-cli/> to ensure the package is there.
