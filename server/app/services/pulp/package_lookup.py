@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 async def package_lookup(
     repo: RepoId,
-    release: Optional[str] = None,
+    release: Union[str, ReleaseId, None] = None,
     package_ids: Optional[List[PackageId]] = None,
     package_queries: Optional[
         List[
@@ -60,11 +60,14 @@ async def package_lookup(
     # Look up the current repo version once so we don't have to do it for each package list page.
     params["repository_version"] = await RepositoryApi.latest_version_href(repo)
     if release:
-        try:
-            rel = await ReleaseApi.get_repo_release(repo, release)
-        except ValueError as e:
-            raise HTTPException(status_code=422, detail=str(e))
-        params["release"] = ReleaseId(rel["id"])
+        if isinstance(release, ReleaseId):
+            params["release"] = release
+        else:
+            try:
+                rel = await ReleaseApi.get_repo_release(repo, release)
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+            params["release"] = ReleaseId(rel["id"])
 
     if request_size < 10 and request_size > 0:
         # Do individual lookups.

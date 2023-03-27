@@ -303,7 +303,7 @@ class PublicationId(Identifier):
 
 
 class DebRepoId(RepoId):
-    pattern = re.compile(rf"^repositories-deb-apt-({uuid_group})$")
+    pattern = re.compile(rf"^repositories-(?P<plugin>deb)-(?P<type>apt)-({uuid_group})$")
     examples = ["repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558"]
 
     @property

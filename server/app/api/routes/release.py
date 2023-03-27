@@ -9,10 +9,12 @@ from app.core.schemas import (
     PackageId,
     Pagination,
     ReleaseCreate,
+    ReleaseId,
     ReleaseListResponse,
     TaskResponse,
 )
 from app.services.pulp.api import ReleaseApi, RepositoryApi
+from app.services.pulp.content_manager import ContentManager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -52,3 +54,11 @@ async def create_release(repo_id: DebRepoId, release: ReleaseCreate) -> TaskResp
         raise HTTPException(status_code=409, detail="Release already exists.")
 
     return await ReleaseApi.create(params)
+
+
+@router.delete(
+    "/repositories/{repo}/releases/{release}/", dependencies=[Depends(requires_repo_admin)]
+)
+async def delete_release(repo: DebRepoId, release: ReleaseId) -> TaskResponse:
+    cm = ContentManager(id=repo)
+    return await cm.remove_release(release)

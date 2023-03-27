@@ -56,3 +56,14 @@ def create(
 
     resp = client.post(f"/repositories/{repo_id}/releases/", json=data)
     handle_response(ctx.obj, resp)
+
+
+@releases.restricted_command()
+def delete(
+    ctx: typer.Context,
+    repository: str = repo_option,
+    id: str = id_or_name("repositories/%(repository)s/releases"),
+) -> None:
+    """Delete a repository release."""
+    resp = client.delete(f"/repositories/{repository}/releases/{id}/")
+    handle_response(ctx.obj, resp)

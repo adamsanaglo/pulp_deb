@@ -1,14 +1,16 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException
 
-from app.core.schemas import ContentId, PackageId, RepoId, RepoType
+from app.core.schemas import ContentId, PackageId, ReleaseId, RepoId, RepoType
 from app.services.pulp.api import (
     PackageReleaseComponentApi,
     ReleaseApi,
+    ReleaseArchitectureApi,
     ReleaseComponentApi,
     RepositoryApi,
 )
+from app.services.pulp.package_lookup import package_lookup
 from app.services.pulp.utils import id_to_pulp_href
 
 
@@ -37,12 +39,17 @@ class ContentManager:
     """
 
     def __init__(
-        self, id: RepoId, release: Optional[str] = None, component: Optional[str] = None
+        self,
+        id: RepoId,
+        release: Optional[str] = None,
+        component: Optional[str] = None,
+        architecture: Optional[str] = None,
     ) -> None:
         self.id = id
         self.release = release
         self.specified_release_id = None
         self.component = component
+        self.architecture = architecture
 
     async def add_and_remove_packages(
         self,
@@ -52,6 +59,31 @@ class ContentManager:
         """
         Translate package lists into content lists and then call out to
         server.app.services.pulp.api.RepositoryApi.update_content to update Pulp.
+        """
+        await self._translate_packages(add_packages, remove_packages)
+        return await self._update_pulp()
+
+    async def remove_release(self, release_id: ReleaseId) -> Any:
+        """Remove a Release and all its various related Content/Packages."""
+        packages = await package_lookup(repo=self.id, release=release_id)
+        package_ids = [pkg["id"] for pkg in packages]
+        await self._translate_packages(remove_packages=package_ids)
+
+        self.remove_content.append(ContentId(release_id))
+        self.remove_content.extend(await self._get_component_ids_in_release(release_id))
+        self.remove_content.extend(await self._get_arch_ids_in_release(release_id))
+
+        return await self._update_pulp()
+
+    async def _translate_packages(
+        self,
+        add_packages: Optional[List[PackageId]] = None,
+        remove_packages: Optional[List[PackageId]] = None,
+    ) -> None:
+        """
+        Translate lists of packages to content.
+
+        Also adds necessary related content like PackageReleaseComponents to lists.
         """
         self.remove_content = [ContentId(pkg) for pkg in remove_packages or []]
         self.add_content = [ContentId(pkg) for pkg in add_packages or []]
@@ -65,6 +97,7 @@ class ContentManager:
 
             new_remove_content = []
             packages_we_cannot_remove = set()
+            release_ids = []
             if self.release:
                 # look up and set the ContentId of the specified release
                 release_ids = await self._get_release_ids()
@@ -106,13 +139,11 @@ class ContentManager:
 
             self.remove_content = new_remove_content
 
-        return await self._update_pulp()
-
     async def _get_release_ids(self, all: bool = False) -> List[ContentId]:
         """
         Get list of relevant release ids, which may only be one if release was specified.
         """
-        params = {"repository": self.id}
+        params: Dict[str, Any] = {"repository": self.id}
         if not all:
             params["distribution"] = self.release
         releases = await ReleaseApi.list(params=params)
@@ -124,6 +155,13 @@ class ContentManager:
             params={"release": id_to_pulp_href(release_id), "component": self.component}
         )
         return [ContentId(x["id"]) for x in components["results"]]
+
+    async def _get_arch_ids_in_release(self, release_id: ContentId) -> List[ContentId]:
+        """Get list of component ids in this release."""
+        architectures = await ReleaseArchitectureApi.list(
+            params={"release": id_to_pulp_href(release_id), "architecture": self.architecture}
+        )
+        return [ContentId(x["id"]) for x in architectures["results"]]
 
     @staticmethod
     async def _find_or_create_prc(package_id: ContentId, component_id: ContentId) -> ContentId:
