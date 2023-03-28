@@ -28,8 +28,8 @@ if DISABLE_SSL_VERIFY:
     api.disable_ssl_verification()
 
 
-def _get_repo(name):
-    resp = api.list_repositories(name)
+def _get_repo(name, repo_type, release=None):
+    resp = api.list_repositories(name, type=repo_type, release=release)
     repos = resp.json()
 
     if len(repos) == 0:
@@ -44,7 +44,7 @@ def _get_repo(name):
 def remove_vcurrent_packages(action):
     logging.info(f"Removing package from vcurent {action.repo_name} repo: {action.packages}.")
 
-    if not (repo := _get_repo(action.repo_name)):
+    if not (repo := _get_repo(action.repo_name, action.repo_type, action.release)):
         logging.warn(f"Skipping removal action. Repo '{action.repo_name}' not found.")
         return
 
@@ -58,7 +58,7 @@ def remove_vcurrent_packages(action):
         logging.info(f"Removed packages from repo {action.repo_name}.")
     elif response.status_code == 404:
         # we don't push package uploaded in vnext back to vcurrent so a 404 is possible
-        logging.info("No packages found for removal from repo {action.repo_name]}.")
+        logging.info(f"No packages found for removal from repo {action.repo_name}.")
     else:
         logging.exception(f"Failed to delete packages: ({response.status_code}): {response.text}.")
         raise Exception("Failed to delete packages.")
