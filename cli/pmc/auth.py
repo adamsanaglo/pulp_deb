@@ -24,10 +24,10 @@ class pmcauth:
         """
         Initialize an instance of pmcauth
         """
-        if msal_cert_path:
-            self.client_certificate_contents = msal_cert_path.expanduser().read_text()
-        elif msal_cert:
+        if msal_cert:
             self.client_certificate_contents = msal_cert
+        elif msal_cert_path:
+            self.client_certificate_contents = msal_cert_path.expanduser().read_text()
         else:
             raise AuthenticationError("No MSAL cert path or cert set for authentication.")
 
@@ -76,11 +76,11 @@ class pmcauth:
 
     def find_leaf_cert(self) -> str:
         """
-        From the certificate contents that were read by the client,
+        From the certificate contents that were obtained by the client,
         find the leaf cert.
         :returns str: leaf cert in str/PEM form
         """
-        certs = self._parse_certs_from_text()
+        certs = self._parse_certs_from_text(self.client_certificate_contents)
         if len(certs) == 0:
             # No certs present - could be a private key or invalid cert
             raise AuthenticationError(
@@ -93,13 +93,14 @@ class pmcauth:
         # Only one cert present - must be the leaf cert
         return dump_certificate(FILETYPE_PEM, certs[0]).decode("utf-8")
 
-    def _parse_certs_from_text(self) -> List[X509]:
+    @staticmethod
+    def _parse_certs_from_text(client_certificate_contents: str) -> List[X509]:
         """
         Given one or more certificates in string/PEM form,
         parse them to a list of X509 objects
         :returns: list of one or more X509 certificate objects
         """
-        lines = self.client_certificate_contents.split("\n")
+        lines = client_certificate_contents.splitlines()
         certs = []
         cert_tmp = []
         for line in lines:
