@@ -33,6 +33,9 @@ After you have set up your Azure Artifact feed, you can use [the PipAuthenticate
 authenticate and then download the pmc-cli
 client](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/pip-authenticate-v1).
 
+If you encounter any problems, [reach out to the Azure Artifacts team for
+help](https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/azure-artifacts/office-hours).
+
 ### Installing directly
 
 If you aren't using ADO, then you can install the pmc-cli directly.
