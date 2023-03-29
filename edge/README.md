@@ -50,9 +50,10 @@ Set a flag on the target such that the next APT metadata update cycle will do a 
 
 ## Edge files
 
-Files installed on edge servers fall in three buckets:
+Files installed on edge servers fall in four buckets:
 
 1) Scripts invoked by tools running on the jumpbox
+1) Configuration files for various services
 1) Scripts triggered by cron jobs or systemd
 1) Monitoring scripts to be run on the server or from the jumpbox remotely
 
@@ -61,19 +62,29 @@ Files installed on edge servers fall in three buckets:
 - `config-activate.sh` changes the enabled nginx config and restarts nginx.
 - `config-install.sh` is obsolete; it was used for initial deployment of the vNext config on the edge mirrors.
 
+### Configuration files
+
+- nginx configurations (installed under `/etc/nginx`)
+  - `etc_nginx.conf` is a modified version of the default base config file for nginx with all logging configuration removed. Replaces `/etc/nginx/nginx.conf`.
+  - `logging.conf` contains the logging configuration for nginx. Copied to `.../conf.d/`.
+  - `sites-available/` contains the content-specific configurations for vCurrent and vNext. The `config-activate.sh` script copies the requested config from this directory into `sites-enabled` and removes any other config from there.
+- systemd settings for nginx (installed in `/etc/systemd/system/nginx.service.d/`)
+  - `override.conf` contains settings for nginx which override normal systemd defaults.
+  - `restart.conf` defines the unix dependencies and restart behavior for the nginx service unit.
+- Other systemd configuration files
+  - `pmc-restart.service` is a systemd unit file for a oneshot service invoked if nginx fails too often in a small window of time. Copied to `/etc/systemd/system/`.
+
 ### Scripts triggered by cron or systemd
 
 - crontab (deployed to /etc/cron.d/update_meta) invokes update_meta.sh as user www-data every 5 minutes.
 - update_meta.sh refreshes /var/pmc/apt-repos.txt, and then it invokes fetch-apt-metadata.py on each pocket.
 - fetch-apt-metadata.py updates the locally-cached metadata for a pocket.
-- restart.conf is a systemd "drop-in" file applied to the nginx.service unit; it enables autorestart of nginx.
-- pmc-restart.service is a systemd unit file for a oneshot service invoked if nginx fails too often in a small window of time.
 - restart-nginx.sh is invoked by the pmc-restart oneshot service. It logs the fact that multiple restarts were required, resets the nginx service, and triggers a new restart cycle of the nginx service.
 
 ### Monitoring scripts
 
 ```bash
-watch.sh 404|access|dist|fetch
+$ watch.sh 404|access|dist|fetch
 ```
 
 Watches log files in realtime for particular events.
