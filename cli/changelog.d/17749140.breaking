@@ -1,0 +1,2 @@
+Results are now always a comma-separated list when using the `--id-only` option. These results can
+be passed to other commands such as `pmc repo package update`.

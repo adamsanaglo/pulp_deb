@@ -16,7 +16,11 @@ NO_COLOR_OPT = typer.Option(False, "--no-color", help="Suppress color output if 
 PAGER_OPT = typer.Option(
     False, "--pager", help="Display output using a pager when it exceeds console height."
 )
-ID_ONLY_OPT = typer.Option(False, "--id-only", help="Show ids instead of full responses.")
+ID_ONLY_OPT = typer.Option(
+    False,
+    "--id-only",
+    help="Show a comma-separated list of ids instead of full responses.",
+)
 DEBUG_OPT = typer.Option(False, "--debug", "-d", help="Show debug output.")
 QUIET_OPT = typer.Option(
     False,

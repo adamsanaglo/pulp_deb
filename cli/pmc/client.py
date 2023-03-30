@@ -9,6 +9,7 @@ import click
 import httpx
 import typer
 
+from .constants import LIST_SEPARATOR
 from .context import PMCContext
 from .schemas import FINISHED_TASK_STATES
 
@@ -103,9 +104,9 @@ def create_client(ctx: PMCContext) -> httpx.Client:
 def _extract_ids(resp_json: Any) -> Union[str, List[str], None]:
     if isinstance(resp_json, dict):
         if id := resp_json.get("id"):
-            return str(id)
+            return [str(id)]
         elif task_id := resp_json.get("task"):
-            return str(task_id)
+            return [str(task_id)]
         elif results := resp_json.get("results"):
             return [r["id"] for r in results]
     elif isinstance(resp_json, list):
@@ -147,8 +148,8 @@ def poll_task(task_id: str, task_handler: TaskHandler = None, quiet: bool = Fals
 
 
 def output_json(ctx: PMCContext, output: Any, suppress_pager: bool = False) -> None:
-    if ctx.id_only and (id := _extract_ids(output)):
-        typer.echo(id, nl=ctx.isatty)
+    if ctx.id_only and (ids := _extract_ids(output)):
+        typer.echo((LIST_SEPARATOR).join(ids), nl=ctx.isatty)
     else:
         json_output = json.dumps(output, indent=3)
 
