@@ -39,8 +39,12 @@ def create(
     name: str = typer.Argument(..., help="Name under which to distribute release."),
     codename: Optional[str] = typer.Argument(None, help="Codename for the release."),
     suite: Optional[str] = typer.Argument(None, help="Suite for the release (e.g. stable)."),
-    components: str = typer.Option(None, help="Semicolon-separated list of components."),
-    architectures: str = typer.Option(None, help="Semicolon-separated list of architectures."),
+    components: str = typer.Option(
+        None, help=f"{LIST_SEPARATOR.title}-separated list of components."
+    ),
+    architectures: str = typer.Option(
+        None, help=f"{LIST_SEPARATOR.title}-separated list of architectures."
+    ),
 ) -> None:
     """Create a release for a repository."""
     data: Dict[str, Union[str, List[str]]] = {"name": name}

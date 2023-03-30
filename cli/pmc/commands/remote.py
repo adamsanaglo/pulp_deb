@@ -10,9 +10,9 @@ from pmc.utils import UserFriendlyTyper, id_or_name
 
 app = UserFriendlyTyper()
 
-DISTRIBUTIONS_HELP = "Semicolon-separated list of releases/dists."
-COMPONENTS_HELP = "Semicolon separated list of comps."
-ARCHITECTURES_HELP = "Semicolon-separated list of architectures."
+DISTRIBUTIONS_HELP = f"{LIST_SEPARATOR.title}-separated list of releases/dists."
+COMPONENTS_HELP = f"{LIST_SEPARATOR.title}-separated list of comps."
+ARCHITECTURES_HELP = f"{LIST_SEPARATOR.title}-separated list of architectures."
 
 
 @app.command()

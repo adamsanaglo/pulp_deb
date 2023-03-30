@@ -22,8 +22,8 @@ app.add_typer(packages, name="package")
 app.add_typer(releases, name="release")
 app.add_restricted_typer(version, name="version")
 
-ADD_PACKAGES_HELP = "Semicolon-separated list of package ids to add."
-REMOVE_PACKAGES_HELP = "Semicolon-separated list of package ids to remove."
+ADD_PACKAGES_HELP = f"{LIST_SEPARATOR.title}-separated list of package ids to add."
+REMOVE_PACKAGES_HELP = f"{LIST_SEPARATOR.title}-separated list of package ids to remove."
 RELEASE_HELP = (
     "Name of the apt release whose packages you're managing. "
     "Release is required if you're adding packages to an apt repo, or removing packages from a "
@@ -83,10 +83,10 @@ def create(
         "remotes", typer.Option(None, help="Remote id or name to use for sync.")
     ),
     releases: Optional[str] = typer.Option(
-        None, help=f"Create releases with names separated by {LIST_SEPARATOR}"
+        None, help=f"{LIST_SEPARATOR.title}-separated list of release names"
     ),
     paths: Optional[str] = typer.Option(
-        None, help=f"Create distributions with paths separated by {LIST_SEPARATOR}"
+        None, help=f"{LIST_SEPARATOR.title}-separated list of distribution paths"
     ),
     sqlite_metadata: Optional[bool] = sqlite_metadata_option,
     retain_repo_versions: Optional[int] = typer.Option(None, help=RETAIN_REPO_VERSIONS_HELP),

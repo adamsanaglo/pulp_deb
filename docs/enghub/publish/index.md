@@ -64,7 +64,7 @@ The next step is to associate the package(s) with a repository. Internally, each
 # This step uses the ID(s) of the package(s) uploaded in the previous step
 $ pmc repo package update --add-packages $PKG_ID $REPO_NAME
 
-# Specify more than one package by separating the ID's with a semi-colon
+# Specify more than one package by separating the ID's with a comma
 $ pmc repo package update --add-packages $PKG_ID1,$PKG_ID2 $REPO_NAME
 
 # For apt repos, you must specify the "release" into which the package will be published

@@ -12,10 +12,14 @@ package = UserFriendlyTyper()
 app.add_typer(repo, name="repo", help="Manage repo access")
 app.add_typer(package, name="package", help="Manage package")
 
-ACCOUNT_NAMES_HELP = "Semicolon-separated list of account names you want to operate on."
+ACCOUNT_NAMES_HELP = (
+    f"{LIST_SEPARATOR.title}-separated list of account names you want to operate on."
+)
 REPO_REGEX_HELP = "A regular expression that matches the names of the repos."
 REPO_OPERATOR_HELP = "Whether or not to grant the Repo Operator special role."
-PACKAGE_NAMES_HELP = "Semicolon-separated list of package names you want to operate on."
+PACKAGE_NAMES_HELP = (
+    f"{LIST_SEPARATOR.title}-separated list of package names you want to operate on."
+)
 REPO_CLONE_HELP = "Repository id or name to clone permissions %s"
 
 
