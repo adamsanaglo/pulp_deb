@@ -38,13 +38,17 @@ Packages must be signed prior to upload, otherwise they'll be rejected.
 ```
 ## Publishing the Package
 This section summarizes the steps for publishing to a repo. More details on the pmc cli can be found [here](https://eng.ms/docs/cloud-ai-platform/azure-core/azure-management-and-platforms/control-plane-bburns/pmc-package-ingestion/pmc-onboardingreference/pmctool) or by running `pmc --help`.
+
 ### Upload the package
 The first step in publishing is to upload the package.
+
 ```bash
 # Upload a single file
 $ pmc package upload $FILE
+
 # This operation also supports batch uploading an entire directory of packages
 $ pmc package upload $DIRECTORY
+
 # Optionally, use the --id-only option, which returns just the package ID(s)
 $ pmc --id-only package upload $FILE
 ```
@@ -55,17 +59,21 @@ The next step is to associate the package(s) with a repository. Internally, each
 **Note** the following commands accept either the repo **name** or the repo **id**. However, note that the repo name will have a suffix indicating the *type* of repo. This is to differentiate apt and yum repos with overlapping names.
 - `azurecore-apt` Is the [*apt/deb* repo named azurecore](https://packages.microsoft.com/repos/azurecore/).
 - `azurecore-yum` Is the [*yum/rpm* repo for azurecore](https://packages.microsoft.com/yumrepos/azurecore/).
+
 ```bash
 # This step uses the ID(s) of the package(s) uploaded in the previous step
 $ pmc repo package update --add-packages $PKG_ID $REPO_NAME
+
 # Specify more than one package by separating the ID's with a semi-colon
 $ pmc repo package update --add-packages $PKG_ID1,$PKG_ID2 $REPO_NAME
+
 # For apt repos, you must specify the "release" into which the package will be published
 $ pmc repo package update --add-packages $PKG_ID $REPO_NAME $RELEASE
 ```
 
 ### Publish the Repository
 In order for the changes to take effect, the repo must be published. This will cause metadata to be generated and signed. The new content will then be made available publicly.
+
 ```bash
 $ pmc repo publish $REPO_NAME
 ```

@@ -119,15 +119,7 @@ pmc repo list --offset 100
 pmc repo list --limit 50
 ```
 
-### Add/Remove Packages
+### Publishing packages
 
-```bash
-# Upload a package
-pmc package upload [FILE]
-
-# Add one or more packages to a repo
-pmc repo package update --add-packages $PKG_ID,... $REPO_MAME [$RELEASE]
-
-# Remove one or more packages from a repo
-pmc repo package update --remove-packages $PKG_ID,... $REPO_NAME [$RELEASE]
-```
+For information on how to publish packages with the CLI, see [the Publishing
+page](https://eng.ms/docs/cloud-ai-platform/azure-core/azure-management-and-platforms/control-plane-bburns/pmc-package-ingestion/pmc-onboardingreference/publish#publishing-the-package).
