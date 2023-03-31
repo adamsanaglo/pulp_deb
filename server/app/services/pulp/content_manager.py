@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException
 
-from app.core.schemas import ContentId, PackageId, ReleaseId, RepoId, RepoType
+from app.core.schemas import ContentId, PackageId, PackageType, ReleaseId, RepoId, RepoType
 from app.services.pulp.api import (
     PackageReleaseComponentApi,
     ReleaseApi,
@@ -65,7 +65,12 @@ class ContentManager:
 
     async def remove_release(self, release_id: ReleaseId) -> Any:
         """Remove a Release and all its various related Content/Packages."""
-        packages = await package_lookup(repo=self.id, release=release_id)
+        packages = await package_lookup(
+            repo=self.id, package_type=PackageType.deb, release=release_id
+        )
+        packages += await package_lookup(
+            repo=self.id, package_type=PackageType.deb_src, release=release_id
+        )
         package_ids = [pkg["id"] for pkg in packages]
         await self._translate_packages(remove_packages=package_ids)
 
@@ -165,11 +170,11 @@ class ContentManager:
 
     @staticmethod
     async def _find_or_create_prc(package_id: ContentId, component_id: ContentId) -> ContentId:
-        return await PackageReleaseComponentApi.find_or_create(package_id, component_id)
+        return await PackageReleaseComponentApi.find_or_create(PackageId(package_id), component_id)
 
     @staticmethod
     async def _find_prc(package_id: ContentId, component_id: ContentId) -> Optional[ContentId]:
-        return await PackageReleaseComponentApi.find(package_id, component_id)
+        return await PackageReleaseComponentApi.find(PackageId(package_id), component_id)
 
     async def _update_pulp(self) -> Any:
         return await RepositoryApi.update_content(self.id, self.add_content, self.remove_content)

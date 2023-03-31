@@ -74,11 +74,11 @@ def _assert_expected_packages(
 async def test_package_lookup_all(package_api, repository_api, repo_type):
     """Test that package_lookup returns all packages in the repo when asked."""
     repo_id = gen_repo_id(repo_type)
-    package_type = repo_type.package_type
+    package_type = repo_type.package_types[0]
     packages, _, expd_ids, expd_names, expd_filenames, _ = _gen_packages(package_type, 15, 15)
     package_api.list.return_value = gen_list_attrs(packages)
 
-    found = await package_lookup_module.package_lookup(repo=repo_id)
+    found = await package_lookup_module.package_lookup(repo=repo_id, package_type=package_type)
 
     _assert_expected_packages(package_type, found, expd_ids, expd_names, expd_filenames)
 
@@ -89,15 +89,19 @@ async def test_package_lookup_small(package_api, repository_api, lookup_type):
     by_id = lookup_type == "by_id"
     repo_type = RepoType("apt" if by_id else lookup_type)
     repo_id = gen_repo_id(repo_type)
-    package_type = repo_type.package_type
+    package_type = repo_type.package_types[0]
     _, expd_pkgs, expd_ids, expd_names, expd_filenames, queries = _gen_packages(package_type, 15, 3)
     package_api.list.side_effect = [gen_list_attrs([p]) for p in expd_pkgs]
     package_api.read.side_effect = [p for p in expd_pkgs]
 
     if by_id:
-        found = await package_lookup_module.package_lookup(repo=repo_id, package_ids=list(expd_ids))
+        found = await package_lookup_module.package_lookup(
+            repo=repo_id, package_type=package_type, package_ids=list(expd_ids)
+        )
     else:
-        found = await package_lookup_module.package_lookup(repo=repo_id, package_queries=queries)
+        found = await package_lookup_module.package_lookup(
+            repo=repo_id, package_type=package_type, package_queries=queries
+        )
 
     if by_id:
         assert package_api.list.call_count == 0
@@ -114,13 +118,17 @@ async def test_package_lookup_large(package_api, repository_api, lookup_type):
     by_id = lookup_type == "by_id"
     repo_type = RepoType("apt" if by_id else lookup_type)
     repo_id = gen_repo_id(repo_type)
-    package_type = repo_type.package_type
+    package_type = repo_type.package_types[0]
     packages, _, expd_ids, expd_names, expd_filenames, queries = _gen_packages(package_type, 15, 12)
     package_api.list.return_value = gen_list_attrs(packages)
 
     if by_id:
-        found = await package_lookup_module.package_lookup(repo=repo_id, package_ids=list(expd_ids))
+        found = await package_lookup_module.package_lookup(
+            repo=repo_id, package_type=package_type, package_ids=list(expd_ids)
+        )
     else:
-        found = await package_lookup_module.package_lookup(repo=repo_id, package_queries=queries)
+        found = await package_lookup_module.package_lookup(
+            repo=repo_id, package_type=package_type, package_queries=queries
+        )
 
     _assert_expected_packages(package_type, found, expd_ids, expd_names, expd_filenames)

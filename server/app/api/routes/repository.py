@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Any, List, MutableSet, Optional, Union
+from typing import Any, Dict, List, MutableSet, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -16,6 +16,9 @@ from app.core.db import AsyncSession, get_session
 from app.core.models import Account, OwnedPackage, RepoAccess, Role
 from app.core.schemas import (
     NoOpTask,
+    PackageId,
+    PackageQuery,
+    PackageType,
     Pagination,
     PublishRequest,
     RemoteId,
@@ -102,34 +105,43 @@ async def update_packages(
     # First we must convert the package *ids* sent to us into *names*.
     add_names, remove_names = set(), set()
     remove_filenames: List[str] = []  # TODO: [MIGRATE] remove
-    package_type = id.package_type
     if repo_update.add_packages:
-        packages = await package_lookup(
-            repo=id, release=repo_update.release, package_ids=repo_update.add_packages
-        )
-        add_names = {x[package_type.pulp_name_field] for x in packages}
-        # TODO: [MIGRATE] remove
-        # If someone is manipulating repo package associations in vNext we always want to remove the
-        # packages in vCurrent. If we're removing packages from a repo then obviously we want to
-        # mirror that change in vCurrent. However even if we're adding packages in vNext we want to
-        # remove in vCurrent; this is because the package being added in vNext might be a different
-        # build from the one in vCurrent but have the same NVA / NEVRA, and we don't want a future
-        # sync to overwrite the copy that the Publisher explicitly added to the repo. Once
-        # Publishers migrate to the vNext api / cli they should continue to use it, not switch back
-        # and forth.
-        remove_filenames.extend(
-            [x[package_type.pulp_filename_field].split("/")[-1] for x in packages]
-        )
-        # END [MIGRATE]
+        package_types_to_ids = _package_type_to_ids(repo_update.add_packages)
+        for package_type, package_ids in package_types_to_ids.items():
+            packages = await package_lookup(
+                repo=id,
+                package_type=package_type,
+                release=repo_update.release,
+                package_ids=package_ids,
+            )
+            add_names.update({x[package_type.pulp_name_field] for x in packages})
+            # TODO: [MIGRATE] remove
+            # If someone is manipulating repo package associations in vNext we always want to
+            # remove the packages in vCurrent. If we're removing packages from a repo then
+            # obviously we want to mirror that change in vCurrent. However even if we're adding
+            # packages in vNext we want to remove in vCurrent; this is because the package being
+            # added in vNext might be a different build from the one in vCurrent but have the same
+            # NVA / NEVRA, and we don't want a future sync to overwrite the copy that the
+            # Publisher explicitly added to the repo. Once Publishers migrate to the vNext
+            # api / cli they should continue to use it, not switch back and forth.
+            remove_filenames.extend(
+                [x[package_type.pulp_filename_field].split("/")[-1] for x in packages]
+            )
+            # END [MIGRATE]
     if repo_update.remove_packages:
-        packages = await package_lookup(
-            repo=id, release=repo_update.release, package_ids=repo_update.remove_packages
-        )
-        remove_names = {x[package_type.pulp_name_field] for x in packages}
-        # TODO: [MIGRATE] remove
-        remove_filenames.extend(
-            [x[package_type.pulp_filename_field].split("/")[-1] for x in packages]
-        )
+        package_types_to_ids = _package_type_to_ids(repo_update.remove_packages)
+        for package_type, package_ids in package_types_to_ids.items():
+            packages = await package_lookup(
+                repo=id,
+                package_type=package_type,
+                release=repo_update.release,
+                package_ids=package_ids,
+            )
+            remove_names.update({x[package_type.pulp_name_field] for x in packages})
+            # TODO: [MIGRATE] remove
+            remove_filenames.extend(
+                [x[package_type.pulp_filename_field].split("/")[-1] for x in packages]
+            )
 
     return await _update_packages(
         id,
@@ -140,6 +152,51 @@ async def update_packages(
         remove_names,
         remove_filenames,
     )
+
+
+def _package_type_to_ids(ids: List[PackageId]) -> Dict[PackageType, List[PackageId]]:
+    """
+    Builds a dictionary where the keys are PackageType and the values are lists of package
+    ids of the same type. The package types must all be homogeneous (i.e. can live in
+    the same repo).
+    """
+
+    if not len(ids):
+        return dict()
+    types = defaultdict(list)
+    base_package_id = ids[0]
+    base_type = base_package_id.type
+    types[base_type].append(base_package_id)
+    for id in ids[1:]:
+        if id.type.is_homogeneous(base_type):
+            types[id.type].append(id)
+        else:
+            raise HTTPException(
+                status_code=422, detail="All packages must be of homogeneous types."
+            )
+    return types
+
+
+def _package_type_to_queries(packages: List[PackageQuery]) -> Dict[PackageType, List[PackageQuery]]:
+    """
+    Builds a dictionary where the keys are PackageType and the values are lists of package
+    queries of the same type. The package types must all be homogeneous (i.e. can live in
+    the same repo).
+    """
+    if not packages or not len(packages):
+        return dict()
+    types = defaultdict(list)
+    base_package = packages[0]
+    base_type = base_package.package_type()
+    types[base_type].append(base_package)
+    for package in packages[1:]:
+        if package.package_type().is_homogeneous(base_type):
+            types[package.package_type()].append(package)
+        else:
+            raise HTTPException(
+                status_code=422, detail="All packages must be of homogeneous types."
+            )
+    return types
 
 
 @router.patch("/repositories/{id}/bulk_delete/")
@@ -167,16 +224,23 @@ async def bulk_delete(
     # restrictions in our downstream code. That also would wipe out all Releases / Components in
     # deb repos, which is probably not what the user intends.
 
-    packages = await package_lookup(id, delete_cmd.release, package_queries=delete_cmd.packages)
-    ids, names, filenames = [], set(), []
-    name_field = id.package_type.pulp_name_field
-    filename_field = id.package_type.pulp_filename_field
-    for package in packages:
-        ids.append(package["id"])
-        names.add(package[name_field])
-        # TODO: [MIGRATE] remove this
-        filenames.append(package[filename_field].split("/")[-1])
-        # END [MIGRATE]
+    type_to_queries = _package_type_to_queries(delete_cmd.packages)
+    if not type_to_queries and delete_cmd.all:
+        type_to_queries = dict.fromkeys(id.package_types, [])
+
+    packages, ids, names, filenames = list(), [], set(), []
+    for type, package_queries in type_to_queries.items():
+        packages += await package_lookup(
+            id, type, delete_cmd.release, package_queries=package_queries
+        )
+        name_field = type.pulp_name_field
+        filename_field = type.pulp_filename_field
+        for package in packages:
+            ids.append(package["id"])
+            names.add(package[name_field])
+            # TODO: [MIGRATE] remove this
+            filenames.append(package[filename_field].split("/")[-1])
+            # END [MIGRATE]
 
     if not ids:
         # Nothing to delete found, probably previous request succeeded.

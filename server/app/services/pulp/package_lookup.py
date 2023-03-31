@@ -6,9 +6,11 @@ from fastapi import HTTPException
 
 from app.core.schemas import (
     PackageId,
+    PackageType,
     ReleaseId,
     RepoId,
     StrictDebPackageQuery,
+    StrictDebSourcePackageQuery,
     StrictFilePackageQuery,
     StrictPythonPackageQuery,
     StrictRpmPackageQuery,
@@ -21,12 +23,14 @@ logger = logging.getLogger(__name__)
 
 async def package_lookup(
     repo: RepoId,
+    package_type: PackageType,
     release: Union[str, ReleaseId, None] = None,
     package_ids: Optional[List[PackageId]] = None,
     package_queries: Optional[
         List[
             Union[
                 StrictDebPackageQuery,
+                StrictDebSourcePackageQuery,
                 StrictRpmPackageQuery,
                 StrictPythonPackageQuery,
                 StrictFilePackageQuery,
@@ -54,9 +58,10 @@ async def package_lookup(
     request_size = len(package_queries + package_ids)
     params = {}
     ret = []
-    type = repo.package_type
     # Let's only bother loading the id, filename, and identifying fields of the package here.
-    params["fields"] = ",".join(type.natural_key_fields + ["pulp_href", type.pulp_filename_field])
+    params["fields"] = ",".join(
+        package_type.natural_key_fields + ["pulp_href", package_type.pulp_filename_field]
+    )
     # Look up the current repo version once so we don't have to do it for each package list page.
     params["repository_version"] = await RepositoryApi.latest_version_href(repo)
     if release:
@@ -84,7 +89,7 @@ async def package_lookup(
             else:
                 query = params.copy()
                 query.update(thing.dict(exclude_none=True))
-                results = await PackageApi.list(params=query, type=type)
+                results = await PackageApi.list(params=query, type=package_type)
                 if not results["results"]:
                     logger.warning(f"package_lookup was not found for {query}!")
                     continue
@@ -97,13 +102,13 @@ async def package_lookup(
         found_ids = set()
         found_names = set()
         packages_by_name = defaultdict(list)
-        name_field = type.pulp_name_field
+        name_field = package_type.pulp_name_field
         for query in package_queries:
             package = query.dict(exclude_none=True)
             packages_by_name[package[name_field]].append(package)
 
         # List the repo and match.
-        async for package in yield_all(PackageApi.list, params=params, type=type):
+        async for package in yield_all(PackageApi.list, params=params, type=package_type):
             if request_size == 0:  # they want all
                 ret.append(package)
             else:  # attempt to match the desired packages with the repo list
@@ -115,10 +120,10 @@ async def package_lookup(
                     for potential_match in packages_by_name[package[name_field]]:
                         if all(
                             potential_match[field] == package[field]
-                            for field in type.natural_key_fields
+                            for field in package_type.natural_key_fields
                         ):
                             ret.append(package)
-                            found_names.add(potential_match[type.pulp_name_field])
+                            found_names.add(potential_match[package_type.pulp_name_field])
                             break
 
         missing_packages = []

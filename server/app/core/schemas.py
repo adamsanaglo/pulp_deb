@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from datetime import datetime
 from enum import Enum
@@ -111,6 +113,17 @@ class PackageType(str, Enum):
         return self.natural_key_fields[0]
 
     @property
+    def repo_type(self) -> RepoType:
+        types = {
+            "deb": RepoType.apt,
+            "deb_src": RepoType.apt,
+            "rpm": RepoType.yum,
+            "python": RepoType.python,
+            "file": RepoType.file,
+        }
+        return types[self.value]
+
+    @property
     def natural_key_fields(self) -> List[str]:
         fields = {
             "deb": ["package", "version", "architecture"],
@@ -138,6 +151,9 @@ class PackageType(str, Enum):
             return "DebSourcePackageResponse"
         return self.title() + "PackageResponse"
 
+    def is_homogeneous(self, other: PackageType) -> bool:
+        return self.repo_type == other.repo_type
+
 
 class RepoType(str, Enum):
     """Type for a repository."""
@@ -148,12 +164,12 @@ class RepoType(str, Enum):
     file = "file"
 
     @property
-    def package_type(self) -> PackageType:
+    def package_types(self) -> List[PackageType]:
         types = {
-            "apt": PackageType.deb,
-            "yum": PackageType.rpm,
-            "python": PackageType.python,
-            "file": PackageType.file,
+            "apt": [PackageType.deb, PackageType.deb_src],
+            "yum": [PackageType.rpm],
+            "python": [PackageType.python],
+            "file": [PackageType.file],
         }
         return types[self.value]
 
@@ -252,8 +268,11 @@ class RepoId(Identifier):
         return RepoType(normalize_type(self._pieces.group("type")))
 
     @property
-    def package_type(self) -> PackageType:
-        return PackageType(self._pieces.group("plugin"))
+    def package_types(self) -> List[PackageType]:
+        plugin = self._pieces.group("plugin")
+        if plugin == "deb":
+            return [PackageType.deb, PackageType.deb_src]
+        return [PackageType(self._pieces.group("plugin"))]
 
     @property
     def publication_type(self) -> PublicationType:
@@ -573,6 +592,11 @@ class PackageQuery(BaseModel):
     sha256: Optional[str]
     ordering: Optional[str]
 
+    @staticmethod
+    def package_type() -> PackageType:
+        """Specifies the package type for the query."""
+        raise NotImplementedError
+
 
 class FilePackageResponse(BasePackageResponse):
     relative_path: str
@@ -584,6 +608,10 @@ class FullFilePackageResponse(FilePackageResponse):
 
 class StrictFilePackageQuery(PackageQuery):
     relative_path: str
+
+    @staticmethod
+    def package_type() -> PackageType:
+        return PackageType.file
 
 
 class FilePackageQuery(StrictFilePackageQuery, metaclass=OptionalFieldsMeta):
@@ -684,20 +712,29 @@ class StrictDebPackageQuery(PackageQuery):
     version: str
     architecture: str
 
+    @staticmethod
+    def package_type() -> PackageType:
+        return PackageType.deb
+
 
 class DebPackageQuery(StrictDebPackageQuery, metaclass=OptionalFieldsMeta):
     release: Optional[ReleaseId]
     relative_path: Optional[str]
 
 
-class DebSourcePackageQuery(BaseModel):
-    source: Optional[str]
-    version: Optional[str]
+class StrictDebSourcePackageQuery(PackageQuery):
+    source: str
+    version: str
+
+    @staticmethod
+    def package_type() -> PackageType:
+        return PackageType.deb_src
+
+
+class DebSourcePackageQuery(StrictDebSourcePackageQuery, metaclass=OptionalFieldsMeta):
     architecture: Optional[str]
     relative_path: Optional[str]
-    repository: Optional[RepoId]
     release: Optional[ReleaseId]
-    ordering: Optional[str]
 
 
 class DebPackageListResponse(ListResponse):
@@ -765,6 +802,10 @@ class StrictRpmPackageQuery(PackageQuery):
     release: str
     arch: str
 
+    @staticmethod
+    def package_type() -> PackageType:
+        return PackageType.rpm
+
 
 class RpmPackageQuery(StrictRpmPackageQuery, metaclass=OptionalFieldsMeta):
     pass
@@ -802,6 +843,10 @@ class FullPythonPackageResponse(PythonPackageResponse):
 class StrictPythonPackageQuery(PackageQuery):
     name: str
     filename: str
+
+    @staticmethod
+    def package_type() -> PackageType:
+        return PackageType.python
 
 
 class PythonPackageQuery(StrictPythonPackageQuery, metaclass=OptionalFieldsMeta):
@@ -846,6 +891,7 @@ class RepositoryBulkDelete(BaseModel):
             Union[
                 StrictRpmPackageQuery,
                 StrictDebPackageQuery,
+                StrictDebSourcePackageQuery,
                 StrictPythonPackageQuery,
                 StrictFilePackageQuery,
             ]

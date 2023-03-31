@@ -98,9 +98,13 @@ class PulpApi:
         return translate_response(resp.json())
 
     @classmethod
-    async def create(cls, data: Dict[str, Any]) -> Any:
+    async def create(
+        cls,
+        data: Dict[str, Any],
+        **endpoint_args: Any,
+    ) -> Any:
         """Call the create endpoint."""
-        resp = await cls.post(cls.endpoint("create"), json=data)
+        resp = await cls.post(cls.endpoint("create", **endpoint_args), json=data)
         return translate_response(resp.json())
 
     @classmethod
@@ -183,7 +187,7 @@ class RepositoryApi(PulpApi):
         _translate_key(RepositoryApi.MSS)
 
     @classmethod
-    async def create(cls, data: Dict[str, Any]) -> Any:
+    async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Call the create endpoint."""
         type = data.pop("type")
         if type in [RepoType.yum, RepoType.apt]:
@@ -344,7 +348,7 @@ class PublicationApi(PulpApi):
         return await super().list(pagination, params, **endpoint_args)
 
     @classmethod
-    async def create(cls, data: Dict[str, Any]) -> Any:
+    async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Call the create endpoint."""
         repo_id = data.pop("repository")
         type = RepoId(repo_id).publication_type
@@ -398,7 +402,7 @@ class RemoteApi(PulpApi):
         return data
 
     @classmethod
-    async def create(cls, data: Dict[str, Any]) -> Any:
+    async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Override the distro create method to set repository."""
         type = data.pop("type")
         data = cls._translate_apt_fields(data)
@@ -437,7 +441,7 @@ class RemoteApi(PulpApi):
 
 class DistributionApi(PulpApi):
     @classmethod
-    async def create(cls, data: Dict[str, Any]) -> Any:
+    async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Override the distro create method to set repository."""
         if "repository" in data:
             data["repository"] = id_to_pulp_href(data["repository"])
@@ -483,7 +487,7 @@ class DistributionApi(PulpApi):
 
 class ArtifactApi(PulpApi):
     @classmethod
-    async def create(cls, data: Dict[str, Any]) -> Any:
+    async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Call the artifact create endpoint."""
         file = data.pop("file")
         path = cls.endpoint("create")
@@ -521,7 +525,7 @@ class ArtifactApi(PulpApi):
 
 class PackageApi(PulpApi):
     @classmethod
-    async def create(cls, data: Dict[str, Any]) -> Any:
+    async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Call the package create endpoint."""
         logger.debug(f"Pulp Request data {data}")
         file = data.pop("file")
@@ -560,7 +564,9 @@ class PackageApi(PulpApi):
             repo_id = RepoId(repository)
             params["repository_version"] = await RepositoryApi.latest_version_href(repo_id)
 
-        if endpoint_args["type"] == PackageType.deb and (release := params.get("release", None)):
+        if endpoint_args["type"] in [PackageType.deb, PackageType.deb_src] and (
+            release := params.get("release", None)
+        ):
             if "repository_version" not in params:
                 raise ValueError("Must supply repository when filtering by release.")
             params["release"] = f"{release.uuid},{params['repository_version']}"
@@ -608,20 +614,21 @@ class PackageReleaseComponentApi(PulpApi):
     """Api for association between packages and release components."""
 
     @classmethod
-    async def find(cls, package_id: ContentId, comp_id: ContentId) -> Optional[ContentId]:
+    async def find(cls, package_id: PackageId, comp_id: ContentId) -> Optional[ContentId]:
         """Find a package release component, if it exists."""
         resp = await cls.list(
             params={
-                "package": id_to_pulp_href(package_id),
+                cls.package_key(package_id.type): id_to_pulp_href(package_id),
                 "release_component": id_to_pulp_href(comp_id),
-            }
+            },
+            type=package_id.type,
         )
         if resp["count"] > 0:
             return ContentId(resp["results"][0]["id"])
         return None
 
     @classmethod
-    async def find_or_create(cls, package_id: ContentId, comp_id: ContentId) -> ContentId:
+    async def find_or_create(cls, package_id: PackageId, comp_id: ContentId) -> ContentId:
         """Find or create a package release component."""
         prc_id = await cls.find(package_id, comp_id)
         if prc_id:
@@ -629,15 +636,28 @@ class PackageReleaseComponentApi(PulpApi):
 
         package = id_to_pulp_href(package_id)
         comp = id_to_pulp_href(comp_id)
-        prc = await cls.create(data={"package": package, "release_component": comp})
+        prc = await cls.create(
+            data={cls.package_key(package_id.type): package, "release_component": comp},
+            type=package_id.type,
+        )
         return ContentId(prc["id"])
 
     @staticmethod
     def endpoint(action: str, **kwargs: Any) -> str:
         if action in ["create", "list"]:
-            return "/content/deb/package_release_components/"
-        else:
-            raise ValueError(f"Could not construct endpoint for '{kwargs}'.")
+            assert isinstance((type := kwargs["type"]), PackageType)
+            if type == PackageType.deb:
+                return "/content/deb/package_release_components/"
+            if type == PackageType.deb_src:
+                return "/content/deb/source_release_components/"
+
+        raise ValueError(f"Could not construct endpoint for '{kwargs}'.")
+
+    @staticmethod
+    def package_key(type: PackageType) -> str:
+        if type == PackageType.deb_src:
+            return "source_package"
+        return "package"
 
 
 class ReleaseArchitectureApi(PulpApi):
@@ -731,7 +751,7 @@ class ReleaseApi(PulpApi):
         return await cls._add_items(ReleaseArchitectureApi, "architecture", release, components)
 
     @classmethod
-    async def create(cls, data: Dict[str, Any]) -> Any:
+    async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Find or create the release and add it to our repo."""
         components = data.pop("components")
         architectures = data.pop("architectures")

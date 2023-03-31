@@ -553,7 +553,7 @@ index 8b5ef65..533931b 100644
  class InstallerFileIndexSerializer(MultipleArtifactContentSerializer):
      """
      A serializer for InstallerFileIndex.
-@@ -715,3 +704,410 @@ class PackageReleaseComponentSerializer(NoArtifactContentSerializer):
+@@ -715,3 +704,411 @@ class PackageReleaseComponentSerializer(NoArtifactContentSerializer):
      class Meta(NoArtifactContentSerializer.Meta):
          model = PackageReleaseComponent
          fields = NoArtifactContentSerializer.Meta.fields + ("package", "release_component")
@@ -841,7 +841,8 @@ index 8b5ef65..533931b 100644
 +    def __init__(self, *args, **kwargs):
 +        """Initializer for DscFileSerializer."""
 +        super().__init__(*args, **kwargs)
-+        self.fields["artifacts"].read_only = True
++        if "artifact" in self.fields:
++            self.fields["artifacts"].read_only = True
 +
 +    def create(self, validated_data):
 +        """Create DscFileSerializer"""
@@ -1322,7 +1323,7 @@ index a2e14d5..796dbe0 100644
  class InstallerFileIndexFilter(ContentFilter):
      """
      FilterSet for InstallerFileIndex.
-@@ -455,3 +353,82 @@ class PackageReleaseComponentViewSet(ContentViewSet):
+@@ -455,3 +353,83 @@ class PackageReleaseComponentViewSet(ContentViewSet):
      queryset = models.PackageReleaseComponent.objects.all()
      serializer_class = serializers.PackageReleaseComponentSerializer
      filterset_class = PackageReleaseComponentFilter

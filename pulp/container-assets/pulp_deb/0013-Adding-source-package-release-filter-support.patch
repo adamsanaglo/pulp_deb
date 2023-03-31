@@ -1,0 +1,104 @@
+From 1a8792ecad1040867d7a5f08d0e10df340f51f39 Mon Sep 17 00:00:00 2001
+From: Moustafa Moustafa <momousta@microsoft.com>
+Date: Tue, 28 Mar 2023 13:22:45 -0500
+Subject: [PATCH] Adding source package release filter support
+
+---
+ pulp_deb/app/viewsets/content.py | 34 ++++++++++++++++++++++++++------
+ 1 file changed, 28 insertions(+), 6 deletions(-)
+
+diff --git a/pulp_deb/app/viewsets/content.py b/pulp_deb/app/viewsets/content.py
+index c957ebb..a9034c3 100644
+--- a/pulp_deb/app/viewsets/content.py
++++ b/pulp_deb/app/viewsets/content.py
+@@ -115,16 +115,19 @@ class ContentRelationshipFilter(Filter):
+ 
+         repo_version = NamedModelViewSet.get_resource(repo_version_href, RepositoryVersion)
+         prc_qs = models.PackageReleaseComponent.objects.filter(pk__in=repo_version.content)
++        sprc_qs = models.SourcePackageReleaseComponent.objects.filter(pk__in=repo_version.content)
+ 
+-        return self._filter(qs, my_value, prc_qs)
++        return self._filter(qs, my_value, prc_qs, sprc_qs)
+ 
+-    def _filter(self, qs, value, prc_qs):
++    def _filter(self, qs, value, prc_qs, sprc_qs):
+         """
+         Args:
+             qs (django.db.models.query.QuerySet): The Content Queryset
+             value (string): The values to filter by
+             prc_qs (django.db.models.query.QuerySet): QuerySet of PackageReleaseComponents in
+                 requested RepositoryVersion
++            sprc_qs (django.db.models.query.QuerySet): QuerySet of SourcePackageReleaseComponents
++                in requested RepositoryVersion
+         """
+         raise NotImplementedError
+ 
+@@ -132,7 +135,7 @@ class ContentRelationshipFilter(Filter):
+ class PackageToReleaseComponentFilter(ContentRelationshipFilter):
+     HELP = "(ReleaseComponent uuid) Filter results where Package in ReleaseComponent"
+ 
+-    def _filter(self, qs, value, prc_qs):
++    def _filter(self, qs, value, prc_qs, sprc_qs):
+         prc_qs = prc_qs.filter(release_component=value)
+         return qs.filter(deb_packagereleasecomponent__in=prc_qs)
+ 
+@@ -140,11 +143,27 @@ class PackageToReleaseComponentFilter(ContentRelationshipFilter):
+ class PackageToReleaseFilter(ContentRelationshipFilter):
+     HELP = "(Release uuid) Filter results where Package in Release"
+ 
+-    def _filter(self, qs, value, prc_qs):
++    def _filter(self, qs, value, prc_qs, sprc_qs):
+         prc_qs = prc_qs.filter(release_component__release=value)
+         return qs.filter(deb_packagereleasecomponent__in=prc_qs)
+ 
+ 
++class SourcePackageToReleaseComponentFilter(ContentRelationshipFilter):
++    HELP = "(ReleaseComponent uuid) Filter results where SourcePackage in ReleaseComponent"
++
++    def _filter(self, qs, value, prc_qs, sprc_qs):
++        sprc_qs = sprc_qs.filter(release_component=value)
++        return qs.filter(deb_sourcepackagereleasecomponent__in=sprc_qs)
++
++
++class SourcePackageToReleaseFilter(ContentRelationshipFilter):
++    HELP = "(Release uuid) Filter results where Package in Release"
++
++    def _filter(self, qs, value, prc_qs, sprc_qs):
++        sprc_qs = sprc_qs.filter(release_component__release=value)
++        return qs.filter(deb_sourcepackagereleasecomponent__in=sprc_qs)
++
++
+ class PackageFilter(ContentFilter):
+     """
+     FilterSet for Package.
+@@ -360,7 +379,7 @@ class InstallerFileIndexViewSet(ContentViewSet):
+ class ReleaseToPackageFilter(ContentRelationshipFilter):
+     HELP = "(Package uuid) Filter results where Release contains Package"
+ 
+-    def _filter(self, qs, value, prc_qs):
++    def _filter(self, qs, value, prc_qs, sprc_qs):
+         prc_qs = prc_qs.filter(package=value)
+         return qs.filter(deb_releasecomponent__deb_packagereleasecomponent__in=prc_qs)
+ 
+@@ -427,7 +446,7 @@ class ReleaseArchitectureViewSet(ContentViewSet):
+ class ReleaseComponentToPackageFilter(ContentRelationshipFilter):
+     HELP = "(Package uuid) Filter results where ReleaseComponent contains Package"
+ 
+-    def _filter(self, qs, value, prc_qs):
++    def _filter(self, qs, value, prc_qs, sprc_qs):
+         prc_qs = prc_qs.filter(package=value)
+         return qs.filter(deb_packagereleasecomponent__in=prc_qs)
+ 
+@@ -492,6 +511,9 @@ class SourcePackageFilter(ContentFilter):
+     FilterSet for Debian Source Packages.
+     """
+ 
++    release_component = SourcePackageToReleaseComponentFilter()
++    release = SourcePackageToReleaseFilter()
++
+     class Meta:
+         model = models.SourcePackage
+         fields = [
+-- 
+2.25.1
+

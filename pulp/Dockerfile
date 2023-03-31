@@ -123,6 +123,7 @@ RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0009-Prevent-
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0010-Store-release-signing-overrides-on-repo-to-avoid-syn.patch # https://github.com/pulp/pulp_deb/pull/689
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0011-Add-repo_key_fields-constraint-to-PackageReleaseComp.patch # https://github.com/pulp/pulp_deb/pull/705
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0012-Initial-source-package-and-source-indices-support.patch # https://github.com/pulp/pulp_deb/pull/295
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0013-Adding-source-package-release-filter-support.patch
 
 # Apply our pulp_rpm patches until upstream accepts/releases our merge requests
 COPY container-assets/pulp_rpm /tmp/pulp_rpm

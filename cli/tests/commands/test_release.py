@@ -107,7 +107,13 @@ def test_dupe_release_another_repo(release: Any) -> None:
             invoke_command(["repo", "delete", repo["id"]])
 
 
-def test_remove_releases(apt_repo: Any, deb_package: Any) -> None:
+def _validate_package_exists_in_repo(repo_id: str, exists: bool) -> None:
+    for package_type in ("deb", "debsrc"):
+        result = invoke_command(["package", package_type, "list", "--repo", repo_id])
+        assert json.loads(result.stdout)["count"] == (1 if exists else 0)
+
+
+def test_remove_releases(apt_repo: Any, deb_package: Any, deb_src_package: Any) -> None:
     become(Role.Repo_Admin)
     cmd = [
         "repo",
@@ -128,12 +134,12 @@ def test_remove_releases(apt_repo: Any, deb_package: Any) -> None:
         apt_repo["id"],
         "jammy",
         "--add-packages",
-        deb_package["id"],
+        f"{deb_package['id']},{deb_src_package['id']}",
     ]
     result = invoke_command(cmd)
     assert result.exit_code == 0
-    result = invoke_command(["package", "deb", "list", "--repo", apt_repo["id"]])
-    assert json.loads(result.stdout)["count"] == 1
+
+    _validate_package_exists_in_repo(apt_repo["id"], True)
 
     # remove kinetic. repo should still have the package and jammy release.
     result = invoke_command(["repo", "release", "delete", apt_repo["id"], "kinetic"])
@@ -142,8 +148,7 @@ def test_remove_releases(apt_repo: Any, deb_package: Any) -> None:
     result = invoke_command(["repo", "release", "list", apt_repo["id"]])
     assert json.loads(result.stdout)["count"] == 1
 
-    result = invoke_command(["package", "deb", "list", "--repo", apt_repo["id"]])
-    assert json.loads(result.stdout)["count"] == 1
+    _validate_package_exists_in_repo(apt_repo["id"], True)
 
     # now remove jammy. repo should have no release, no packages.
     result = invoke_command(["repo", "release", "delete", apt_repo["id"], "jammy"])
@@ -152,5 +157,4 @@ def test_remove_releases(apt_repo: Any, deb_package: Any) -> None:
     result = invoke_command(["repo", "release", "list", apt_repo["id"]])
     assert json.loads(result.stdout)["count"] == 0
 
-    result = invoke_command(["package", "deb", "list", "--repo", apt_repo["id"]])
-    assert json.loads(result.stdout)["count"] == 0
+    _validate_package_exists_in_repo(apt_repo["id"], False)
