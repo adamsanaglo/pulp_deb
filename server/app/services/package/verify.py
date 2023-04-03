@@ -14,12 +14,12 @@ class UnsupportedFiletype(Exception):
 
 
 class PackageSignatureError(Exception):
-    def __init__(self, msg: Optional[str] = None) -> None:
+    def __init__(self, msg: Optional[str] = None, filename: Optional[str] = None) -> None:
         if not msg:
-            msg = (
-                "Package signature verification failed. "
-                "Microsoft policy requires all packages to be signed by ESRP."
-            )
+            msg = "Package signature verification failed"
+            if filename:
+                msg += f" for {filename}"
+            msg += ". Microsoft policy requires all packages to be signed by ESRP."
         super().__init__(msg)
 
 
@@ -56,7 +56,7 @@ def _verify_rpm_signature(file: UploadFile) -> None:
         shutil.copyfileobj(file.file, f)
         result = subprocess.run(rpm_cmd + ["--checksig", f.name])
         if result.returncode != 0:
-            raise PackageSignatureError
+            raise PackageSignatureError(filename=file.filename)
 
 
 def _verify_deb_signature(file: UploadFile) -> None:
@@ -77,7 +77,9 @@ def _verify_deb_signature(file: UploadFile) -> None:
         # unpack the archive
         res = subprocess.run(["/usr/bin/ar", "x", "original"], cwd=td)
         if res.returncode != 0:
-            raise PackageSignatureError("Failed to read package. Please check the package.")
+            raise PackageSignatureError(
+                f"Failed to read package {file.filename}. Please check the package."
+            )
 
         # cat the unpacked archive bits together
         with (dir / "combined").open("wb") as combined:
@@ -91,4 +93,4 @@ def _verify_deb_signature(file: UploadFile) -> None:
         # ask gpg if it's signed correctly
         result = subprocess.run(gpg_cmd + ["--verify", "_gpgorigin", "combined"], cwd=td)
         if result.returncode != 0:
-            raise PackageSignatureError
+            raise PackageSignatureError(filename=file.filename)
