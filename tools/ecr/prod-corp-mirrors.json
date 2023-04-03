@@ -1,0 +1,6 @@
+{
+    "apt-repo": [
+        "apt-ssl-euap",
+        "apt-ssl-new"
+    ]
+}

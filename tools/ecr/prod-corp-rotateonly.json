@@ -1,0 +1,8 @@
+{
+    "apt-repo": [
+        "apt-gcs",
+        "esrp-auth",
+        "esrp-codesign",
+        "repoadmin"
+    ]
+}

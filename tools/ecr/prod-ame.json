@@ -1,0 +1,16 @@
+{
+    "pmcprod": [
+        "accountAdmin",
+        "deploy",
+        "esrp-auth-prod",
+        "esrp-sign-prod",
+        "migrationAccount",
+        "packageAdmin",
+        "pmcDistroTLS",
+        "pmcIngestTLS",
+        "repoAdmin"
+    ],
+    "pmcprod-publisher": [
+        "pmcCliPublisher"
+    ]
+}

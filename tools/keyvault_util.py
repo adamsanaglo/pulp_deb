@@ -1,5 +1,6 @@
 
 import json
+import time
 from typing import Tuple
 from urllib.parse import ParseResult, urlunparse
 
@@ -15,7 +16,7 @@ class keyvault_util:
     A simple class for handling basic KeyVault functionality
     """
 
-    def __init__(self, suffix: str = 'vault.azure.net', client_id: str = ''):
+    def __init__(self, suffix: str = 'vault.azure.net', client_id: str = '', token: str = ''):
         """
         Create a KeyVaultClient using credentials
         received from MSI.
@@ -24,6 +25,10 @@ class keyvault_util:
         self.max_retries = 6
         self._set_https_session()
         self.client_id = client_id
+        if token:
+            # User supplied token
+            self.token = token
+            return
 
         success, msg = self._try_get_identity_token()
         if success:
@@ -77,26 +82,48 @@ class keyvault_util:
         """
         Gets the specified URL from KeyVault using the auth token
         """
-        msg_template = 'Connection Error while getting'
+        return self._query_url(vault_url, "get")
+
+    def _post_url(self, vault_url: str, data: dict) -> dict:
+        """
+        Posts to the specifiec KeyVault URL using the auth token
+        """
+        return self._query_url(vault_url, "post", data)
+
+    def _query_url(self, vault_url: str, operation: str = "get", data: dict = None) -> dict:
+        """
+        Perform arbitrary HTTP operation against KeyVault using the auth token
+        """
+        msg_template = "Connection Error reaching"
+        allowed_responses = {
+            "get": [200],
+            "post": [202]
+        }
+        if operation not in allowed_responses:
+            # Request is neither get nor post
+            raise Exception(f"Operation {operation} is not valid [{','.join(allowed_responses)}]")
         try:
-            resp = self.session.get(vault_url, headers={'Authorization': f'Bearer {self.token}'})
+            if operation == "post":
+                resp = self.session.post(vault_url, headers={'Authorization': f'Bearer {self.token}'}, json = data)
+            else:
+                resp = self.session.get(vault_url, headers={'Authorization': f'Bearer {self.token}'})
         except ConnectionError as ex:
             raise ConnectionError(f'{msg_template} {vault_url}: {ex}')
-        if resp.status_code != 200:
+        if resp.status_code not in allowed_responses[operation]:
             detail = f'Status code: {resp.status_code}'
             raise Exception(f'{msg_template} {vault_url}: {detail}')
         return json.loads(resp.text)
 
-    def _get_secret_path(self, vault: str, secret: str, version) -> str:
+    def _get_secret_path(self, vault: str, secret: str, version: str, secret_type: str = 'secrets', api_version: str = "7.3") -> str:
         """
-        Return the full URL for the specified secret
+        Return the full URL for the specified secret/certificate
         """
         secret_version = '/' + version if version else ''
-        path = f'secrets/{secret}{secret_version}'
+        path = f'{secret_type}/{secret}{secret_version}'
         parsed = ParseResult(scheme='https',
                              netloc=f'{vault}.{self.suffix}',
                              path=path,
-                             query='api-version=2016-10-01',
+                             query=f'api-version={api_version}',
                              params='',
                              fragment='')
         return urlunparse(parsed)
@@ -115,3 +142,36 @@ class keyvault_util:
         from the specified KeyVault.
         """
         return self._get_secret(vault, secret, version)['value']
+    
+    def get_cert_policy(self, vault: str, cert_name: str):
+        """
+        Fetch the certificate issuance policy, which is required
+        to rotate the cert.
+        """
+        url = self._get_secret_path(vault, cert_name, 'policy', 'certificates')
+        res = self._get_url(url)
+        return res
+
+    def rotate_cert(self, vault: str, cert_name: str):
+        """
+        Generate a new cert using the existing issuance policy
+        """
+        # Retrieve the issuance policy for this cert
+        cert_policy = self.get_cert_policy(vault, cert_name)
+        url = self._get_secret_path(vault, cert_name, 'create', 'certificates')
+        data = {
+            "policy": cert_policy
+        }
+        # Request a new cert
+        res = self._post_url(url, data)
+        url = self._get_secret_path(vault, cert_name, 'pending', 'certificates')
+        status = res["status"]
+        # Poll for completion
+        while status == "inProgress":
+            time.sleep(5)
+            res = self._get_url(url)
+            status = res["status"]
+        if status == "completed":
+            # Success
+            return
+        raise Exception(f"Unable to rotate cert {vault}/{cert_name}: {res[status_details]}")
