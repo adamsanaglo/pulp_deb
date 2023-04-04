@@ -54,6 +54,7 @@ def _verify_rpm_signature(file: UploadFile) -> None:
     """
     with NamedTemporaryFile() as f:
         shutil.copyfileobj(file.file, f)
+        f.flush()
         result = subprocess.run(rpm_cmd + ["--checksig", f.name])
         if result.returncode != 0:
             raise PackageSignatureError(filename=file.filename)
