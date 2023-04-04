@@ -6,6 +6,7 @@ This guide explains how to publish packages to packages.microsoft.com (PMC). Cur
 - [Sign the Package](#sign-the-package)
 - [Publish the Package](#publishing-the-package)
     - [Upload the package](#upload-the-package)
+    - [Upload the sources for Debian packages](#Upload-the-sources-for-Debian-packages)
     - [Add the uploaded package(s) to a repository](#add-uploaded-packages-to-a-repository)
     - [Publish the Repository](#publish-the-repository)
 
@@ -51,6 +52,18 @@ $ pmc package upload $DIRECTORY
 
 # Optionally, use the --id-only option, which returns just the package ID(s)
 $ pmc --id-only package upload $FILE
+```
+
+### Upload the sources for Debian packages
+PMC now supports uploading deb source, which is critical for complying with certain OSS licenses. For any OSS debs that are published, the source should be uploaded along side it in the same repo.
+Find more about Debian source packages and how to build them from [https://www.debian.org/doc/debian-policy/ch-source.html](https://www.debian.org/doc/debian-policy/ch-source.html).
+
+```bash
+# For debian source packages, specify the source files using the --source-artifact option
+$ pmc package upload $DSC_FILE --source-artifact $ARTIFACT_1 --source-artifact $ARTIFACT_2
+
+# This operation also supports uploading a directory of source packages and/or a directory of associated source files
+$ pmc package upload $DSC_DIRECTORY --source-artifact $ARTIFACT_DIRECTORY
 ```
 
 ### Add uploaded package(s) to a repository

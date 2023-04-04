@@ -17,7 +17,7 @@ python = UserFriendlyTyper()
 file = UserFriendlyTyper()
 
 app.add_typer(deb, name="deb", help="Manage deb packages")
-app.add_typer(deb_src, name="debsrc", help="Manage deb source packages", hidden=True)
+app.add_typer(deb_src, name="debsrc", help="Manage deb source packages")
 app.add_typer(rpm, name="rpm", help="Manage rpm packages")
 app.add_restricted_typer(python, name="python", help="Manage python packages")
 app.add_restricted_typer(file, name="file", help="Manage files")
@@ -236,7 +236,6 @@ def upload(
     source_artifact: Optional[List[str]] = typer.Option(
         None,
         help="URL to an artifact, path to an artifact, or path to a directory of artifacts.",
-        hidden=True,
     ),
 ) -> None:
     """Upload a package."""

@@ -14,12 +14,15 @@ pmc repo releases create myrepo-apt jammy
 # create a distro
 pmc distro create mydistro-apt apt "some/path" --repository myrepo-apt
 
-# upload a package
-cp tests/assets/signed-by-us.deb .
-PACKAGE_ID=$(pmc --id-only package upload cli/tests/assets/signed-by-us.deb)
+ASSETS_PATH=cli/tests/assets
+# upload a binary package
+DEB_PACKAGE_ID=$(pmc --id-only package upload $ASSETS_PATH/signed-by-us.deb)
+
+# upload a source package
+DEBSRC_PACKAGE_ID=$(pmc --id-only package upload $ASSETS_PATH/hello_2.10-2ubuntu2.dsc --source-artifact $ASSETS_PATH/hello_2.10.orig.tar.gz --source-artifact $ASSETS_PATH/hello_2.10-2ubuntu2.debian.tar.xz)
 
 # add our package to the repo release
-pmc repo packages update myrepo-apt jammy --add-packages $PACKAGE_ID
+pmc repo packages update myrepo-apt jammy --add-packages $DEB_PACKAGE_ID,$DEBSRC_PACKAGE_ID
 
 # publish the repo
 pmc repo publish myrepo-apt
