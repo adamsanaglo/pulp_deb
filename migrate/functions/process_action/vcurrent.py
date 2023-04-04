@@ -13,22 +13,26 @@ AAD_TENANT = os.environ["AAD_TENANT"]
 AAD_AUTHORITY_URL = os.environ["AAD_AUTHORITY_URL"]
 DISABLE_SSL_VERIFY = os.getenv("DISABLE_SSL_VERIFY", False)
 
-api = repolib(
-    VCURRENT_SERVER,
-    VCURRENT_PORT,
-    AAD_CLIENT_ID,
-    AAD_RESOURCE,
-    AAD_TENANT,
-    AAD_AUTHORITY_URL,
-    AAD_CLIENT_SECRET,
-    version="v3",
-)
 
-if DISABLE_SSL_VERIFY:
-    api.disable_ssl_verification()
+def _get_api():
+    api = repolib(
+        VCURRENT_SERVER,
+        VCURRENT_PORT,
+        AAD_CLIENT_ID,
+        AAD_RESOURCE,
+        AAD_TENANT,
+        AAD_AUTHORITY_URL,
+        AAD_CLIENT_SECRET,
+        version="v3",
+    )
+
+    if DISABLE_SSL_VERIFY:
+        api.disable_ssl_verification()
+
+    return api
 
 
-def _get_repo(name, repo_type, release=None):
+def _get_repo(api, name, repo_type, release=None):
     resp = api.list_repositories(name, type=repo_type, release=release)
     repos = resp.json()
 
@@ -44,7 +48,9 @@ def _get_repo(name, repo_type, release=None):
 def remove_vcurrent_packages(action):
     logging.info(f"Removing package from vcurent {action.repo_name} repo: {action.packages}.")
 
-    if not (repo := _get_repo(action.repo_name, action.repo_type, action.release)):
+    api = _get_api()
+
+    if not (repo := _get_repo(api, action.repo_name, action.repo_type, action.release)):
         logging.warn(f"Skipping removal action. Repo '{action.repo_name}' not found.")
         return
 
