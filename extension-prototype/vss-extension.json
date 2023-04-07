@@ -1,6 +1,6 @@
 {
     "manifestVersion": 1,
-    "id": "build-release-task",
+    "id": "publish-linux-packages",
     "name": "Publish Linux Packages (PMC)",
     "version": "0.0.1",
     "publisher": "aztuxrepo@microsoft.com",
@@ -14,6 +14,9 @@
     "categories": [
         "Azure Pipelines"
     ],
+    "icons": {
+        "default": "images/extension-icon.png"
+    },
     "files": [
         {
             "path": "buildandrelease"
@@ -27,7 +30,7 @@
                 "ms.vss-distributed-task.tasks"
             ],
             "properties": {
-                "name": "buildandreleasetask"
+                "name": "buildandrelease"
             }
         }
     ]

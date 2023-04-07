@@ -17,11 +17,25 @@ With this tool, publishers no longer need to do all of that. The following confi
 - package path (local from root)
 - repository name in PMC
 
+## For Publishers: How to use in Azure Pipeline
+
+*Prerequisite: Your repository's organization must have "Publish Linux Packages (PMC)" installed from Marketplace as a usable task.
+
+1. Use the Azure Key Vault task to download your publisher cert.
+
+2. Find "Publish Linux Packages (PMC)" in your organization's task library and select it.
+
+3. Enter all the information needed in the input fields. For `Publisher Cert`, enter the name of the cert downloaded from KeyVault, formatted as `$(YOUR_SECRETS_FILTER_NAME)`. Then click `Add`.
+
+4. The extension along with its inputs should show up within your `.yaml`. Please be sure to remove the single quotation marks around `$(YOUR_SECRETS_FILTER_NAME)`. If this isn't done, the cert's contents will not be passed into the extension and the build will fail.
+
+5. Set up any other remaining tasks and you should be able to save and run the pipeline.
+
 ## For Developers: Setting Up for Use Locally
 
-*This is for pre-image upload. Instructions will be updated once the image is hosted on MCR. A comprehensive page of instructions can be found here: <https://learn.microsoft.com/en-us/azure/devops/extend/develop/add-build-task?toc=%2Fazure%2Fdevops%2Fmarketplace-extensibility%2Ftoc.json&view=azure-devops>
+To run this extension locally, NodeJS, Docker Desktop, and TypeScript must be installed. This repository should also be cloned, as you will need `main.ts` along with the `Dockerfile` in `/Compute-PMC/cli`. Please also make sure to have your publisher cert downloaded somewhere locally as there will be no KeyVault access.
 
-To run this extension locally, NodeJS, Docker Desktop, and TypeScript must be installed. This repository should also be cloned, as you will need `main.ts` along with the `Dockerfile` in `/Compute-PMC/cli`.
+Before running the last step, you must have Docker Desktop running. You should also be connected to MSFTVPN.
 
 A guide for NodeJS (and WSL2 if not already installed): <https://learn.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-wsl>
 
@@ -41,26 +55,27 @@ After installation, the following must be done:
 
     `npm i` or `npm install`
 
-4. Build the Docker image from the Dockerfile
-
-    `docker build -t extension-image ~/Compute-PMC/cli`
+4. Run `tsc` in terminal within `buildandrelease` so that a new `main.js` can be generated to use.
 
 5. Create a `.env` file within `buildandrelease` and set the following:
 
 ```text
 INPUT_PROFILE="ppe"
-INPUT_MSAL_CLIENT_ID="YOURCLIENTID"
-INPUT_MSAL_CERT_PATH="YOURCERTPATH"
+INPUT_MSAL_CLIENT_ID="YOUR_CLIENT_ID"
 INPUT_MSAL_SNIAUTH="no-msal-sniauth"
-INPUT_PACKAGE_PATH="YOURPACKAGEPATH"
-INPUT_REPOSITORY="YOURTARGETREPOSITORY"
+INPUT_PACKAGE_PATH="YOUR_PACKAGE_DIRECTORY_PATH"
+INPUT_REPOSITORY="YOUR_TARGET_REPOSITORY_NAME"
 ```
 
-1. Load the variables in the .env into the WSL2 environment.
+6. Load the variables in the .env into the WSL2 environment.
 
     `export $(xargs < .env)`
 
-2. Run the code
+7. Load your cert contents into the WSL2 environment.
+
+    `export INPUT_MSAL_CERT=$(cat YOUR_CERT_FILE_PATH)`
+
+8. Run the code
 
     `node main.js`
 
