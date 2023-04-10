@@ -1,3 +1,4 @@
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -14,12 +15,16 @@ class UnsupportedFiletype(Exception):
 
 
 class PackageSignatureError(Exception):
-    def __init__(self, msg: Optional[str] = None, filename: Optional[str] = None) -> None:
+    def __init__(
+        self, msg: Optional[str] = None, filename: Optional[str] = None, error: Optional[str] = None
+    ) -> None:
         if not msg:
             msg = "Package signature verification failed"
             if filename:
                 msg += f" for {filename}"
             msg += ". Microsoft policy requires all packages to be signed by ESRP."
+            if error:
+                msg += " Specific error: " + error
         super().__init__(msg)
 
 
@@ -50,14 +55,24 @@ async def verify_signature(file: UploadFile, file_type: PackageType) -> None:
 def _verify_rpm_signature(file: UploadFile) -> None:
     """
     Call out to rpmkeys (which is what the signature-oriented options of "rpm" are aliases of)
-    to ensure the rpm is signed by one of the keys in gpg's keyring.
+    to ensure the rpm is signed by one of the keys in the keyring.
     """
     with NamedTemporaryFile() as f:
         shutil.copyfileobj(file.file, f)
         f.flush()
-        result = subprocess.run(rpm_cmd + ["--checksig", f.name])
-        if result.returncode != 0:
-            raise PackageSignatureError(filename=file.filename)
+        result = subprocess.run(rpm_cmd + ["--verbose", "--checksig", f.name], capture_output=True)
+        stdout = str(result.stdout)
+        count = 0
+        for match in re.finditer(r"Signature, key ID ([0-9a-fA-F]+): (OK|BAD|NOKEY)", stdout):
+            count += 1
+            if match.group(2) != "OK":
+                raise PackageSignatureError(
+                    filename=file.filename, error=f"Unrecognized key ID: {match.group(1)}"
+                )
+        if count == 0:
+            raise PackageSignatureError(filename=file.filename, error="No signature detected!")
+        if count != 2:  # Two because both the headers and the body should be signed.
+            raise PackageSignatureError(filename=file.filename, error=f"Unknown Error: {stdout}")
 
 
 def _verify_deb_signature(file: UploadFile) -> None:
