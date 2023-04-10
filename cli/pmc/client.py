@@ -9,7 +9,7 @@ import click
 import httpx
 import typer
 
-from .constants import LIST_SEPARATOR
+from .constants import CLI_VERSION, LIST_SEPARATOR
 from .context import PMCContext
 from .schemas import FINISHED_TASK_STATES
 
@@ -72,6 +72,8 @@ def _set_headers(ctx: PMCContext, request: httpx.Request) -> None:
         typer.echo("Failed to retrieve AAD token", err=True)
         raise
     request.headers["Authorization"] = f"Bearer {token}"
+
+    request.headers["pmc-cli-version"] = CLI_VERSION
 
 
 def _log_request(request: httpx.Request) -> None:

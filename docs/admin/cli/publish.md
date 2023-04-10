@@ -69,6 +69,8 @@ After you've set up your CLI:
 1. First, identify the version you want to publish and export it (`export VERSION="x.x.x"`)
 1. Open up pyproject.toml file and update the version field if necessary.
 1. Next, update the change log with `towncrier build --yes --version $VERSION`.
+1. Go to server/app/core/config.py and bump `MIN_CLI_VERSION` if necessary (e.g. if there's a
+   backwards incompatible server change or security fix)
 1. Open a PR with your changes and get it merged.
 1. Once the PR is merged, create a new cli-x.x.x tag at <https://msazure.visualstudio.com/One/_git/Compute-PMC/tags>
 1. Now monitor [the build pipeline](https://msazure.visualstudio.com/One/_build?definitionId=312903)
@@ -80,11 +82,11 @@ After you've set up your CLI:
    aren't able to promote the package version, see the setup section of this doc.
 1. Finally run the following commands to upload the package to packages.microsoft.com:
 
-```bash
-pip download --no-deps --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/simple/ "pmc-cli==$VERSION"
-PACKAGE_ID=$(pmc --id-only package upload pmc_cli-${VERSION}-py3-none-any.whl)
-pmc repo packages update pmc-cli-python --add-packages $PACKAGE_ID
-pmc repo publish pmc-cli-python
-```
+    ```bash
+    pip download --no-deps --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/simple/ "pmc-cli==$VERSION"
+    PACKAGE_ID=$(pmc --id-only package upload pmc_cli-${VERSION}-py3-none-any.whl)
+    pmc repo packages update pmc-cli-python --add-packages $PACKAGE_ID
+    pmc repo publish pmc-cli-python
+    ```
 
-Now check <https://packages.microsoft.com/pmc-cli/> to ensure the package is there.
+1. Now check <https://packages.microsoft.com/pmc-cli/> to ensure the package is there.

@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     APP_CLIENT_ID: str = ""
     TENANT_ID: str = ""
 
+    MIN_CLI_VERSION: str = "0.4.0"
+
     # TODO: [MIGRATE] Remove me.
     AF_QUEUE_ACTION_URL: str = ""
     AF_FAILURE_URL: str = ""

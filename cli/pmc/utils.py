@@ -10,8 +10,10 @@ import click
 import tomli
 import typer
 from click.exceptions import UsageError
+from packaging import version
 
 from pmc.client import client
+from pmc.constants import CLI_VERSION
 from pmc.schemas import CONFIG_PATHS, FileConfig
 
 PulpTask = Dict[str, Any]
@@ -191,6 +193,17 @@ def build_params(limit: int, offset: int, **kwargs: Any) -> Dict[str, Any]:
     kwargs["offset"] = offset
 
     return {key: val for key, val in kwargs.items() if val is not None}
+
+
+def check_version() -> None:
+    resp = client.get("/")
+    min_version = resp.json()["min_cli_version"]
+    if version.parse(CLI_VERSION) < version.parse(min_version):
+        typer.echo(
+            f"Warning!! Your current CLI version {CLI_VERSION} is older than the "
+            f"recommended minimum version {min_version}. Please upgrade your cli.",
+            err=True,
+        )
 
 
 class UserFriendlyTyper(typer.Typer):

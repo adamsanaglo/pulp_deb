@@ -51,12 +51,13 @@ app.add_middleware(ExceptionMiddleware, handlers={Exception: exception_handler})
 async def log_requests(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
+    start_time = time.time()
+
     if request.url.path != "/healthz/":
-        logger.info(
-            f"request from {request.client.host}:{request.client.port} - "  # type: ignore
-            f"'{request.method} {request.url.path}'."
-        )
-        start_time = time.time()
+        message = f"request from {request.client.host}:{request.client.port}"  # type: ignore
+        message += f" cli:{request.headers.get('pmc-cli-version')}"
+        message += f" - {request.method} {request.url.path}"
+        logger.info(message)
 
     response = await call_next(request)
 

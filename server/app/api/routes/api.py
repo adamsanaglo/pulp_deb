@@ -1,4 +1,7 @@
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends
+from fastapi.requests import Request
 
 from app.api import auth
 from app.api.routes import (
@@ -15,10 +18,18 @@ from app.api.routes import (
     repository,
     task,
 )
+from app.core.config import settings
 
 # get_active_account ensures the request is at least authenticated with an active Account.
 # For some routes that's all we care about, but that's the minimum.
 router = APIRouter(dependencies=[Depends(auth.get_active_account)])
+
+
+@router.get("/", status_code=200)
+def api_v4(request: Request) -> Dict[str, Any]:
+    return {"min_cli_version": settings.MIN_CLI_VERSION}
+
+
 router.include_router(distribution.router, tags=["distributions"])
 router.include_router(remote.router, tags=["remotes"])
 router.include_router(package.router, tags=["packages"])

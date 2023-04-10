@@ -1,3 +1,6 @@
+import pkg_resources
+
+
 class NamedString(str):
     name = ""
 
@@ -8,3 +11,5 @@ class NamedString(str):
 
 LIST_SEPARATOR = NamedString(",")
 LIST_SEPARATOR.name = "comma"
+
+CLI_VERSION = pkg_resources.get_distribution("pmc-cli").version
