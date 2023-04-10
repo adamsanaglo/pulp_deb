@@ -238,7 +238,7 @@ def main(
     client_context.set(create_client(ctx.obj))
 
     if debug:
-        typer.echo(f"Generated CID: {ctx.obj.cid.hex}")
+        typer.echo(f"Generated CID: {ctx.obj.cid}")
 
 
 def run() -> None:

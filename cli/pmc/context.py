@@ -9,7 +9,7 @@ from .schemas import Config
 
 class PMCContext:
     def __init__(self, config: Config, config_path: Optional[Path] = None):
-        self.cid = uuid4()
+        self.cid = uuid4().hex
         self.config = config
         self.config_path = config_path
         self.isatty = sys.stdout.isatty()
@@ -19,4 +19,4 @@ class PMCContext:
         try:
             return self.config.dict()[key]
         except ValueError:
-            raise AttributeError(f"PMCContext has not attribute '{key}'.")
+            raise AttributeError(f"PMCContext has no attribute '{key}'.")

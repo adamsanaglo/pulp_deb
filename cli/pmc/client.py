@@ -54,7 +54,18 @@ class ApiClient:
 client = ApiClient()
 
 
-def _set_auth_header(ctx: PMCContext, request: httpx.Request) -> None:
+def _set_headers(ctx: PMCContext, request: httpx.Request) -> None:
+    """
+    Auto-increment our correlation id for every request we make with this context.
+    This allows us to more easily trace through the server logs for a given request, but we can
+    still find related before-or-after requests if we need to.
+
+    The Auth token is pretty self-explanatory.
+    """
+    i = int(ctx.cid, 16)
+    ctx.cid = format(i + 1, "x")
+    request.headers["x-correlation-id"] = ctx.cid
+
     try:
         token = ctx.auth.acquire_token()
     except Exception:
@@ -81,10 +92,10 @@ def _raise_for_status(response: httpx.Response) -> None:
 
 
 def create_client(ctx: PMCContext) -> httpx.Client:
-    def _call_set_auth_header(request: httpx.Request) -> None:
-        _set_auth_header(ctx, request)
+    def _call_set_headers(request: httpx.Request) -> None:
+        _set_headers(ctx, request)
 
-    request_hooks = [_call_set_auth_header]
+    request_hooks = [_call_set_headers]
     response_hooks = [_raise_for_status]
 
     if ctx.debug:
@@ -94,7 +105,6 @@ def create_client(ctx: PMCContext) -> httpx.Client:
     client = httpx.Client(
         base_url=ctx.base_url,
         event_hooks={"request": request_hooks, "response": response_hooks},
-        headers={"x-correlation-id": ctx.cid.hex},
         timeout=None,
         verify=ctx.ssl_verify,
     )

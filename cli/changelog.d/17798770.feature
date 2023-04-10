@@ -1,0 +1,1 @@
+Auto-increment the client correlation_id with each request
