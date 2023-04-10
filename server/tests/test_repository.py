@@ -233,7 +233,7 @@ async def test_bulk_delete(
 ):
     """This test confirms that the wiring works, most work is done in package_lookup."""
     monkeypatch.setattr(repository_module, "_update_packages", get_async_mock(gen_task_attrs()))
-    package_type = repo_type.package_type
+    package_type = repo_type.package_types[0]
     packages = [gen_package_attrs(package_type) for _ in range(3)]
     expected_ids = [x["id"] for x in packages]
     expected_names = {x[package_type.pulp_name_field] for x in packages}
