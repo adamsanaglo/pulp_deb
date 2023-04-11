@@ -41,7 +41,6 @@ Once they're rotated, no further action is required.
 |pmcprod|pmcDistroTLS|TLS|No Impact (TLS)|
 |pmcprod|pmcIngestTLS|TLS|No Impact (TLS)|
 |pmcprod|repoAdmin|Admin Account|No Impact (SNI)|
-|pmcprod-publisher|pmcCliPublisher|Admin Account|No Impact (SNI)|
 
 ### Corp/Azure Linux Apt Repo (d7015505-773d-4c07-bbba-2ddf41b33414)
 |KeyVault|Cert Name|Purpose|Impact|
