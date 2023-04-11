@@ -18,7 +18,7 @@ index 000000000..33087e9f2
 --- /dev/null
 +++ b/CHANGES/3173.feature
 @@ -0,0 +1 @@
-+Content app now redirects requests without a trailing slash to a path with the trailing slash. 
++Content app now redirects requests without a trailing slash to a path with the trailing slash.
 diff --git a/pulpcore/content/handler.py b/pulpcore/content/handler.py
 index eff3f9a90..2a6eab898 100644
 --- a/pulpcore/content/handler.py
@@ -31,7 +31,7 @@ index eff3f9a90..2a6eab898 100644
      HTTPNotFound,
      HTTPRequestRangeNotSatisfiable,
  )
-@@ -278,6 +279,9 @@ class Handler:
+@@ -280,6 +281,9 @@ class Handler:
              DistroListings: when multiple matches are possible.
              PathNotResolved: when not matched.
          """
@@ -40,10 +40,10 @@ index eff3f9a90..2a6eab898 100644
 +            path = f"{path}/"
          base_paths = cls._base_paths(path)
          distro_model = cls.distribution_model or Distribution
-         try:
-@@ -292,8 +296,11 @@ class Handler:
-             if path.rstrip("/") in base_paths:
-                 distros = distro_model.objects.filter(base_path__startswith=path)
+         domain = get_domain()
+@@ -298,8 +302,11 @@ class Handler:
+                     pulp_domain=domain, base_path__startswith=path
+                 )
                  if distros.count():
 -                    raise DistroListings(path=path, distros=distros)
 -
@@ -55,7 +55,7 @@ index eff3f9a90..2a6eab898 100644
              log.debug(
                  _("Distribution not matched for {path} using: {base_paths}").format(
                      path=path, base_paths=base_paths
-@@ -444,10 +451,7 @@ class Handler:
+@@ -450,10 +457,7 @@ class Handler:
                      directory_list.add(name)
                      dates.update({name: ca.pulp_created})
  
@@ -67,15 +67,7 @@ index eff3f9a90..2a6eab898 100644
  
          return await sync_to_async(list_directory_blocking)()
  
-@@ -484,7 +488,6 @@ class Handler:
-             :class:`aiohttp.web.StreamResponse` or :class:`aiohttp.web.FileResponse`: The response
-                 streamed back to the client.
-         """
--
-         distro = await sync_to_async(self._match_distribution)(path)
- 
-         await sync_to_async(self._permit)(request, distro)
-@@ -493,6 +496,10 @@ class Handler:
+@@ -498,6 +502,10 @@ class Handler:
          rel_path = rel_path[len(distro.base_path) :]
          rel_path = rel_path.lstrip("/")
  
@@ -86,7 +78,7 @@ index eff3f9a90..2a6eab898 100644
          content_handler_result = await sync_to_async(distro.content_handler)(rel_path)
          if content_handler_result is not None:
              return content_handler_result
-@@ -529,25 +536,33 @@ class Handler:
+@@ -534,25 +542,33 @@ class Handler:
              await sync_to_async(get_latest_publication_or_version_blocking)()
  
          if publication:

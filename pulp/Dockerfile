@@ -92,7 +92,7 @@ RUN mkdir -p /etc/pulp \
 # https://github.com/python-ldap/python-ldap/issues/432#issuecomment-1016756358
 #RUN ln -s /usr/lib64/libldap.so /usr/lib64/libldap_r.so
 
-RUN pip install pulpcore==3.22.0  # pin for patches below
+RUN pip install pulpcore==3.23.1  # pin for patches below
 RUN pip install pulp-python~=3.8.0
 RUN pip install pulp-deb==2.20.0  # pin for patches below
 RUN pip install pulp-rpm==3.19.1 # pin for patches below
@@ -102,11 +102,9 @@ RUN pip install pulp-file~=1.11.2
 COPY container-assets/django_storages /tmp/django_storages
 RUN pip install /tmp/django_storages
 
-# Apply our pulpcore patch until pulp_deb orphan cleanup works
-# https://github.com/pulp/pulp_deb/issues/690
+# Apply our pulpcore patches until upstream accepts/releases our merge requests
 COPY container-assets/pulpcore /tmp/pulpcore
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulpcore/0001-Exclude-pulp_deb-s-ReleaseFile-from-orphan-cleanup.patch # https://github.com/pulp/pulp_deb/issues/690
-RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulpcore/0002-Pass-correlation-id-to-signing-script-through-ENV-va.patch # https://github.com/pulp/pulpcore/issues/3522
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulpcore/0003-Redirects-user-to-a-path-that-ends-in.patch # https://github.com/pulp/pulpcore/issues/3173
 
 # Apply our pulp_deb patches until upstream accepts/releases our merge requests
