@@ -1,24 +1,63 @@
-from typing import Optional
+import re
 
-import fastapi_microsoft_identity
-from fastapi import Depends, HTTPException, Request, Response
+import jwt
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm.exc import NoResultFound
 from sqlmodel import select
 
+from app.core.config import settings
 from app.core.db import AsyncSession, get_session
 from app.core.models import Account, RepoAccess, Role
 from app.core.schemas import RepoId
 
 SUPPORT = "Contact your team's PMC Account Admin or PMC Support for assistance."
+JWKS_URL = f"https://login.microsoftonline.com/{settings.TENANT_ID}/discovery/v2.0/keys"
+ISSUER = f"https://login.microsoftonline.com/{settings.TENANT_ID}/v2.0"
+ALGORITHMS = ["RS256"]
 
 
-@fastapi_microsoft_identity.requires_auth  # type: ignore
-async def authenticate(request: Request) -> Optional[Response]:
-    """
-    Does nothing but trigger requires_auth. The request arg must be passed as a kwarg.
-    :returns: a 401 Response object if requires_auth fails to authenticate, else None.
-    """
-    return None
+async def authenticate(request: Request) -> str:
+    """Authenticate a request and return the oid."""
+    jwks_client = jwt.PyJWKClient(JWKS_URL)
+    auth_header = request.headers.get("Authorization", "")
+
+    # parse the auth token
+    if not (match := re.match(r"^bearer\s+(.*)", auth_header, re.IGNORECASE)):
+        raise HTTPException(status_code=401, detail="Missing or invalid auth token.")
+    token = match.group(1)
+
+    # find the signing key
+    try:
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+    except jwt.DecodeError as e:
+        raise HTTPException(status_code=401, detail=f"Failed to parse auth token: {e}.")
+    except jwt.PyJWKClientError as e:
+        # TODO: once this PR is released update this to catch PyJWKClientConnectionError
+        # https://github.com/jpadilla/pyjwt/pull/876
+        if "Fail to fetch data from the url" in str(e):
+            # retry the request
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+        else:
+            raise HTTPException(status_code=401, detail=f"{e}")
+
+    # decode and validate the token
+    try:
+        data = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=ALGORITHMS,
+            audience=settings.APP_CLIENT_ID,
+            issuer=ISSUER,
+            options={"require": ["exp", "aud", "iss"]},
+        )
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failure: {e}.")
+
+    try:
+        assert isinstance(data["oid"], str)
+        return data["oid"]
+    except KeyError:
+        raise HTTPException(status_code=401, detail="Missing or invalid oid format.")
 
 
 async def get_active_account(
@@ -28,13 +67,9 @@ async def get_active_account(
     Authenticates the incoming request, looks them up in the db, and ensures the account is active.
     If any of these fail then raise an appropriate exception.
     """
-    unauthenticated_response = await authenticate(request=request)
-    if unauthenticated_response:
-        raise HTTPException(status_code=401, detail=unauthenticated_response.body.decode("utf-8"))
-
     # oid is a UUID for an account that we get from Azure Active Directory.
     # https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens#payload-claims
-    oid = fastapi_microsoft_identity.get_token_claims(request)["oid"]
+    oid = await authenticate(request)
 
     statement = select(Account).where(Account.oid == oid)
     try:

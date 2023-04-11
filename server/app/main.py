@@ -3,7 +3,6 @@ import logging.config
 import time
 from typing import Any, Awaitable, Callable, Dict
 
-import fastapi_microsoft_identity
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError as ValidationError
@@ -38,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 root_router = APIRouter()
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
-fastapi_microsoft_identity.initialize(settings.TENANT_ID, settings.APP_CLIENT_ID)
 
 # This is essentially the same thing that starlette does for you if you add an exception handler,
 # except that it behaves differently by default if you add one for Exception.
