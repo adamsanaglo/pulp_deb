@@ -9,19 +9,6 @@ While we publish the pmc-cli package to packages.microsoft.com, there is an empt
 to prevent a nefarious actor from publishing their own pmc-cli package which our publishers might
 accidentally install and use.
 
-## Server Setup
-
-These steps describe how to prepare the PMC server to distribute the CLI package. They assume that
-your pmc client is setup using the repo admin credentials and that you want to distribute the
-package at `pmc-cli`. They only need to be performed once per environment.
-
-```
-# create a repo named pmc-cli-python
-pmc repo create pmc-cli-python python
-
-# create a pypi distro called 'pmc-cli' that serves from a folder 'pmc-cli'
-pmc distro create pmc-cli pypi pmc-cli --repository pmc-cli-python
-```
 
 ## Publishing setup
 
@@ -41,27 +28,6 @@ are not on the PMC team or wish to customize your role/permissions, visit [the f
 setting page](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/settings/permissions).
 
 
-
-### packages.microsoft.com
-
-First, download the prod-publisher.pem cert from the production keyvault and then set up the following
-profile in your settings.toml:
-
-```
-[prod-publisher]
-base_url = "https://pmc-ingest.trafficmanager.net/api/v4"
-msal_client_id = "bfdb84f5-ca97-4f33-8b09-ea99412763de"
-msal_scope = "api://d48bb382-20ec-41b9-a0ea-07758a21ccd0/.default"
-msal_cert_path = "~/.config/pmc/prod-publisher.pem"
-msal_authority = "https://login.microsoftonline.com/MSAzureCloud.onmicrosoft.com"
-```
-
-Then you can either set `--profile prod-publisher` with each cli command or you can run:
-
-```
-export PMC_CLI_PROFILE="prod-publisher"
-```
-
 ## Packaging and Uploading
 
 After you've set up your CLI:
@@ -80,13 +46,3 @@ After you've set up your CLI:
    feed](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/versions/),
    find the latest version and click the "Promote" button to promote it to a "Release". If you
    aren't able to promote the package version, see the setup section of this doc.
-1. Finally run the following commands to upload the package to packages.microsoft.com:
-
-    ```bash
-    pip download --no-deps --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/simple/ "pmc-cli==$VERSION"
-    PACKAGE_ID=$(pmc --id-only package upload pmc_cli-${VERSION}-py3-none-any.whl)
-    pmc repo packages update pmc-cli-python --add-packages $PACKAGE_ID
-    pmc repo publish pmc-cli-python
-    ```
-
-1. Now check <https://packages.microsoft.com/pmc-cli/> to ensure the package is there.
