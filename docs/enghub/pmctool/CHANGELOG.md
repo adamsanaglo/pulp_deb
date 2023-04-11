@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 <!-- towncrier release notes start -->
 
+## [1.0.0](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/1.0.0) - 2023-04-11
+
+
+### Breaking changes
+
+- Results are now always a comma-separated list when using the `--id-only` option. These results can
+  be passed to other commands such as `pmc repo package update`. [#17749140](https://msazure.visualstudio.com/One/_workitems/edit/17749140)
+
+
+### Features
+
+- Added the support for uploading and publishing Debian source packages.
+  Introduced a `--source-artifact` parameter to the package upload command, which accepts a list
+  of files, folders or URLs for the source package artifact. [#13082573](https://msazure.visualstudio.com/One/_workitems/edit/13082573)
+- Added a feature to warn users if their CLI version is older than the recommended minimum version. [#17684846](https://msazure.visualstudio.com/One/_workitems/edit/17684846)
+- Auto-increment the client correlation_id with each request [#17798770](https://msazure.visualstudio.com/One/_workitems/edit/17798770)
+
+
+### Bug fixes
+
+- Tolerate CR/LF line endings in pem-format certificate. [#17729715](https://msazure.visualstudio.com/One/_workitems/edit/17729715)
+- Fixed outdated references to using semicolons to separate lists of values. [#17749074](https://msazure.visualstudio.com/One/_workitems/edit/17749074)
+
+
 ## [0.4.0](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/0.4.0) - 2023-03-23
 
 
