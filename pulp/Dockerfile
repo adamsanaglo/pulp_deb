@@ -95,7 +95,7 @@ RUN mkdir -p /etc/pulp \
 RUN pip install pulpcore==3.23.1  # pin for patches below
 RUN pip install pulp-python~=3.8.0
 RUN pip install pulp-deb==2.20.0  # pin for patches below
-RUN pip install pulp-rpm==3.19.1 # pin for patches below
+RUN pip install pulp-rpm==3.19.4 # pin for patches below
 RUN pip install pulp-file~=1.11.2
 
 # Enable use of cloud storage using vendored clone of github.com/jasonzio/django_storages
