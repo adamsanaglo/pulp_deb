@@ -5,7 +5,7 @@ ARG gid=1000
 ARG dev=0
 ENV dev $dev
 
-RUN tdnf install -y binutils postgresql shadow-utils util-linux vim
+RUN tdnf install -y binutils postgresql shadow-utils util-linux vim ca-certificates
 
 RUN groupadd -g $gid pmc
 RUN useradd -r -m -u $uid -g $gid pmc
