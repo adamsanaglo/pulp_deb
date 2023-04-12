@@ -18,6 +18,7 @@ repo_option = id_or_name(
 @app.command()
 def list(
     ctx: typer.Context,
+    repository: Optional[str] = repo_option,
     name: str = typer.Option(None, help="Filter by name"),
     name_contains: str = typer.Option(None, help="Filter distros whose names contain string"),
     base_path: str = typer.Option(None, help="Filter by base_path"),
@@ -33,6 +34,7 @@ def list(
         limit,
         offset,
         ordering=ordering,
+        repository=repository,
         name=name,
         name__contains=name_contains,
         base_path=base_path,

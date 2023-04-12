@@ -441,6 +441,22 @@ class RemoteApi(PulpApi):
 
 class DistributionApi(PulpApi):
     @classmethod
+    async def list(
+        cls,
+        pagination: Optional[Pagination] = None,
+        params: Optional[Dict[str, Any]] = None,
+        **endpoint_args: Any,
+    ) -> Any:
+        """Call the list endpoint."""
+        if not params:
+            params = {}
+
+        if repository := params.pop("repository", None):
+            params["repository"] = id_to_pulp_href(repository)
+
+        return await super().list(pagination, params, **endpoint_args)
+
+    @classmethod
     async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Override the distro create method to set repository."""
         if "repository" in data:

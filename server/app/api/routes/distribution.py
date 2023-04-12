@@ -10,6 +10,7 @@ from app.core.schemas import (
     DistributionUpdate,
     DistroId,
     Pagination,
+    RepoId,
     TaskResponse,
 )
 from app.services.pulp.api import DistributionApi
@@ -20,6 +21,7 @@ router = APIRouter()
 @router.get("/distributions/")
 async def list_distros(
     pagination: Pagination = Depends(Pagination),
+    repository: Optional[RepoId] = None,
     name: Optional[str] = None,
     name__contains: Optional[str] = None,
     base_path: Optional[str] = None,
@@ -29,6 +31,7 @@ async def list_distros(
     return await DistributionApi.list(
         pagination,
         params={
+            "repository": repository,
             "name": name,
             "name__contains": name__contains,
             "base_path": base_path,
