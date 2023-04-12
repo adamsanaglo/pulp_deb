@@ -36,11 +36,10 @@ from .commands.config import (
 from .constants import CLI_VERSION
 from .context import PMCContext
 from .schemas import CONFIG_PATHS, Config, Format
-from .utils import (
+from .utils import (  # check_version,
     DecodeError,
     PulpTaskFailure,
     UserFriendlyTyper,
-    check_version,
     parse_config,
     resolve_config_path,
     validate_config_file,
@@ -238,7 +237,8 @@ def main(
     ctx.obj = PMCContext(config=config, config_path=config_path)
     client_context.set(create_client(ctx.obj))
 
-    check_version()
+    # TODO: Uncomment this line when the server is reporting recommended version
+    # check_version()
 
     if debug:
         typer.echo(f"Generated CID: {ctx.obj.cid}")

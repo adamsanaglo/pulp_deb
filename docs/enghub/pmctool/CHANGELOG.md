@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 <!-- towncrier release notes start -->
 
+## [1.0.1](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/1.0.1) - 2023-04-12
+
+
+### Bug fixes
+
+- Temporarily roll back minimum version check to accommodate server error. [#17684846](https://msazure.visualstudio.com/One/_workitems/edit/17684846)
+
+
 ## [1.0.0](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/1.0.0) - 2023-04-11
 
 
