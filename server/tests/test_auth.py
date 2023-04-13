@@ -155,6 +155,7 @@ async def test_authenticate_v1_token_version(mock_fetch_data):
     payload = TOKEN_PAYLOAD.copy()
     payload["ver"] = "1.0"
     payload["iss"] = auth.ISSUERS["1.0"]
+    payload["aud"] = f"api://{settings.APP_CLIENT_ID}"
     token = await generate_token(payload)
     request = await generate_request(token)
 

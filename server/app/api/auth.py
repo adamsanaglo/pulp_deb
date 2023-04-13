@@ -43,12 +43,19 @@ async def authenticate(request: Request) -> str:
         else:
             raise HTTPException(status_code=401, detail=f"{e}")
 
-    # get the issuer based on the token version
+    # get the issuer and audience based on the token version
     try:
         unverified = jwt.decode(token, options={"require": ["ver"], "verify_signature": False})
         token_version = unverified["ver"]
-        issuer = ISSUERS[token_version]
-    except (KeyError, jwt.PyJWTError) as e:
+        if token_version == "1.0":
+            issuer = ISSUERS["1.0"]
+            audience = f"api://{settings.APP_CLIENT_ID}"
+        elif token_version == "2.0":
+            issuer = ISSUERS["2.0"]
+            audience = settings.APP_CLIENT_ID
+        else:
+            raise ValueError(token_version)
+    except (ValueError, jwt.PyJWTError) as e:
         raise HTTPException(status_code=401, detail=f"Invalid/missing token version: {e}.")
 
     # decode and validate the token
@@ -57,7 +64,7 @@ async def authenticate(request: Request) -> str:
             token,
             signing_key.key,
             algorithms=ALGORITHMS,
-            audience=settings.APP_CLIENT_ID,
+            audience=audience,
             issuer=issuer,
             options={"require": ["exp", "aud", "iss"]},
         )
