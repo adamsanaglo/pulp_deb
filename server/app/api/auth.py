@@ -12,7 +12,10 @@ from app.core.schemas import RepoId
 
 SUPPORT = "Contact your team's PMC Account Admin or PMC Support for assistance."
 JWKS_URL = f"https://login.microsoftonline.com/{settings.TENANT_ID}/discovery/v2.0/keys"
-ISSUER = f"https://login.microsoftonline.com/{settings.TENANT_ID}/v2.0"
+ISSUERS = {
+    "1.0": f"https://sts.windows.net/{settings.TENANT_ID}/",
+    "2.0": f"https://login.microsoftonline.com/{settings.TENANT_ID}/v2.0",
+}
 ALGORITHMS = ["RS256"]
 
 
@@ -40,6 +43,14 @@ async def authenticate(request: Request) -> str:
         else:
             raise HTTPException(status_code=401, detail=f"{e}")
 
+    # get the issuer based on the token version
+    try:
+        unverified = jwt.decode(token, options={"require": ["ver"], "verify_signature": False})
+        token_version = unverified["ver"]
+        issuer = ISSUERS[token_version]
+    except (KeyError, jwt.PyJWTError) as e:
+        raise HTTPException(status_code=401, detail=f"Invalid/missing token version: {e}.")
+
     # decode and validate the token
     try:
         data = jwt.decode(
@@ -47,7 +58,7 @@ async def authenticate(request: Request) -> str:
             signing_key.key,
             algorithms=ALGORITHMS,
             audience=settings.APP_CLIENT_ID,
-            issuer=ISSUER,
+            issuer=issuer,
             options={"require": ["exp", "aud", "iss"]},
         )
     except jwt.InvalidTokenError as e:

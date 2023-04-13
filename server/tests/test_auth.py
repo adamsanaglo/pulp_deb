@@ -23,9 +23,10 @@ SIGNING_KEY = {
 KEY_SET = {"keys": [SIGNING_KEY]}
 TOKEN_PAYLOAD = {
     "oid": "faf2ebc2-fe58-4ab8-bb70-ad82c9e2f44d",
-    "iss": auth.ISSUER,
+    "iss": auth.ISSUERS["2.0"],
     "aud": settings.APP_CLIENT_ID,
     "exp": int(time.time()) + 600,
+    "ver": "2.0",
 }
 
 
@@ -145,3 +146,47 @@ async def test_authenticate_missing_oid(mock_fetch_data):
         await authenticate(request)
     assert exc.value.status_code == 401
     assert "Missing or invalid oid" in exc.value.detail
+
+
+@patch("app.api.auth.ALGORITHMS", ["HS256"])
+@patch("jwt.PyJWKClient.fetch_data", return_value=KEY_SET)
+async def test_authenticate_v1_token_version(mock_fetch_data):
+    """Test using a v1 token."""
+    payload = TOKEN_PAYLOAD.copy()
+    payload["ver"] = "1.0"
+    payload["iss"] = auth.ISSUERS["1.0"]
+    token = await generate_token(payload)
+    request = await generate_request(token)
+
+    oid = await authenticate(request)
+    assert oid == TOKEN_PAYLOAD["oid"]
+
+
+@patch("app.api.auth.ALGORITHMS", ["HS256"])
+@patch("jwt.PyJWKClient.fetch_data", return_value=KEY_SET)
+async def test_authenticate_missing_token_version(mock_fetch_data):
+    """Test using a token without a ver."""
+    payload = TOKEN_PAYLOAD.copy()
+    payload.pop("ver")
+    token = await generate_token(payload)
+    request = await generate_request(token)
+
+    with pytest.raises(HTTPException) as exc:
+        await authenticate(request)
+    assert exc.value.status_code == 401
+    assert 'Token is missing the "ver" claim' in exc.value.detail
+
+
+@patch("app.api.auth.ALGORITHMS", ["HS256"])
+@patch("jwt.PyJWKClient.fetch_data", return_value=KEY_SET)
+async def test_authenticate_invalid_token_version(mock_fetch_data):
+    """Test using a token with an invalid ver."""
+    payload = TOKEN_PAYLOAD.copy()
+    payload["ver"] = "3"
+    token = await generate_token(payload)
+    request = await generate_request(token)
+
+    with pytest.raises(HTTPException) as exc:
+        await authenticate(request)
+    assert exc.value.status_code == 401
+    assert "Invalid/missing token version" in exc.value.detail
