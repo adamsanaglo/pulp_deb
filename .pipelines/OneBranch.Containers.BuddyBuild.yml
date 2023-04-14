@@ -4,10 +4,8 @@
 
 name: ${{ lower(variables['Build.SourceBranchName']) }}_$(Date:yyyyMMdd)$(Rev:.r)
 
-trigger:
-  tags:
-    include:
-      - server-*
+# No automatic trigger, but you can still run a BuddyBuild manually if you wish.
+trigger: none
 
 variables:
   tag: $[replace(variables['build.sourcebranchname'], 'server-', '')]
@@ -24,18 +22,17 @@ resources:
       ref: refs/heads/main
 
 extends:
-  template: v2/OneBranch.Official.CrossPlat.yml@templates # https://aka.ms/obpipelines/templates
+  template: v2/OneBranch.NonOfficial.CrossPlat.yml@templates # https://aka.ms/obpipelines/templates
   parameters:
     featureFlags:
       sbom: true  # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/6089/Generating-SBOM
-      pythonAuthInDockerJobsFeeds: 'Compute-PMC'  # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/4601/Build-Docker-Images?anchor=pip-authenticate
       # linuxEsrpSigningPreview: true    # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/4623/Signing?anchor=linux-signing
 
     globalSdl: # https://aka.ms/obpipelines/sdl
       tsa:
-        enabled: true
+        enabled: false
       policheck:
-        break: true
+        break: false
       # suppression:  # suppress warnings in vendored open source projects
       #   suppressionFile: $(Build.SourcesDirectory)/.gdn/.gdnsuppress
       #   suppressionSet: default
