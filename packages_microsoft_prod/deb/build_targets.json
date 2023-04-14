@@ -1,0 +1,49 @@
+{
+  "debian": {
+    "channels": ["insiders-fast", "insiders-slow", "prod"],
+    "release_versions": {
+      "10": {
+        "alias": "buster",
+        "additional_channels": []
+      },
+      "11": {
+        "alias": "bullseye",
+        "additional_channels": []
+      }
+    }
+  },
+  "ubuntu": {
+    "channels": ["insiders-fast", "insiders-slow", "prod"],
+    "release_versions": {
+      "14.04": {
+        "alias": "trusty",
+        "additional_channels": []
+      },
+      "16.04": {
+        "alias": "xenial",
+        "additional_channels": ["mssql-server-2017-gdr", "mssql-server-2017", "mssql-server-2019-gdr", "mssql-server-2019", "mssql-server-preview"]
+      },
+      "18.04": {
+        "alias": "bionic",
+        "additional_channels": ["mssql-server-2017", "mssql-server-2019-gdr", "mssql-server-2019", "mssql-server-preview"]
+      },
+      "20.04": {
+        "alias": "focal",
+        "additional_channels": ["mssql-server-2019", "mssql-server-2022", "mssql-server-preview"]
+      },
+      "22.04": {
+        "alias": "jammy",
+        "additional_channels": ["mssql-server-2022"]
+      },
+      "22.10": {
+        "alias": "kinetic",
+        "additional_channels": []
+      },
+      "23.04": {
+        "alias": "lunar",
+        "additional_channels": []
+      }
+    }
+  }
+}
+  

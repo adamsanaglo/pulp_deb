@@ -1,0 +1,82 @@
+{
+  "rhel": {
+    "channels": {
+      "insiders-fast": "Insiders-Fast",
+      "insiders-slow": "Insiders-Slow",
+      "prod": "Production"
+    },
+    "configroot": "etc/yum.repos.d",
+    "release_versions": {
+      "6": {"additional_channels": {}},
+      "7": {"additional_channels": {}},
+      "8": {"additional_channels": {
+        "mssql-server-2017-gdr": "SQL Server 2017 GDR",
+        "mssql-server-2017": "SQL Server 2017",
+        "mssql-server-2019-gdr": "SQL Server 2019 GDR",
+        "mssql-server-2019": "SQL Server 2019",
+        "mssql-server-preview": "SQL Server Preview"
+      }},
+      "9": {"additional_channels": {
+        "mssql-server-2022": "SQL Server 2022"
+      }}
+    }
+  },
+  "centos": {
+    "channels": {
+      "insiders-fast": "Insiders-Fast",
+      "insiders-slow": "Insiders-Slow",
+      "prod": "Production"
+    },
+    "configroot": "etc/yum.repos.d",
+    "release_versions": {
+      "7": {"additional_channels": {}},
+      "8": {"additional_channels": {}}
+    }
+  },
+  "fedora": {
+    "channels": {
+      "prod": "Production"
+    },
+    "configroot": "etc/yum.repos.d",
+    "release_versions": {
+      "36": {"additional_channels": {}},
+      "37": {"additional_channels": {}},
+      "38": {"additional_channels": {}}
+    }
+  },
+  "sles": {
+    "channels": {
+      "insiders-fast": "Insiders-Fast",
+      "insiders-slow": "Insiders-Slow",
+      "prod": "Production"
+    },
+    "configroot": "etc/zypp/repos.d",
+    "release_versions": {
+      "12": {"additional_channels": {
+        "mssql-server-2017-gdr": "SQL Server 2017 GDR",
+        "mssql-server-2017": "SQL Server 2017",
+        "mssql-server-2019-gdr": "SQL Server 2019 GDR",
+        "mssql-server-2019": "SQL Server 2019",
+        "mssql-server-preview": "SQL Server Preview"
+      }},
+      "15": {"additional_channels": {
+        "mssql-server-2019-gdr": "SQL Server 2019 GDR",
+        "mssql-server-2019": "SQL Server 2019",
+        "mssql-server-2022": "SQL Server 2022",
+        "mssql-server-preview": "SQL Server Preview"
+      }}
+    }
+  },
+  "opensuse": {
+    "channels": {
+      "insiders-fast": "Insiders-Fast",
+      "insiders-slow": "Insiders-Slow",
+      "prod": "Production"
+    },
+    "configroot": "etc/zypp/repos.d",
+    "release_versions": {
+      "15": {"additional_channels": {}}
+    }
+  }
+}
+  

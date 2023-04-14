@@ -1,0 +1,12 @@
+Name: Microsoft Linux Package Repository
+Maintainer: Linux Repository Admins <aztuxrepo@microsoft.com>
+Source: https://github.com/microsoft/linux-package-repositories
+Upstream-Name: packages-microsoft-prod
+
+Copyright: 2023 Microsoft Corporation
+License: MIT
+
+Files *
+Copyright: 2023 Microsoft Corporation
+License: MIT
+

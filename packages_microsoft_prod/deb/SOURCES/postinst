@@ -1,0 +1,35 @@
+#!/bin/sh -e
+
+docDir="/usr/share/doc/packages-microsoft-prod"
+listDir="/etc/apt/sources.list.d"
+listFile="microsoft-prod.list"
+gpgDir="/usr/share/keyrings"
+gpgFile="microsoft-prod.gpg"
+
+case "$1" in
+    configure)
+        # Older versions of this package removed these files during upgrade
+        # dpkg would then (correctly) omit them, resulting in a broken install.
+        # If during upgrade these files are not present, install them.
+        # https://github.com/dotnet/core/issues/2149
+        if [ ! -f "${listDir}/${listFile}" ]; then
+            echo "File ${listDir}/${listFile} is missing. Installing..."
+            install -m 644 "${docDir}/${listFile}" "${listDir}"
+        fi
+
+        if [ ! -f "${gpgDir}/${gpgFile}" ]; then
+            echo "File ${gpgDir}/${gpgFile} is missing. Installing..."
+            install -m 644 "${docDir}/${gpgFile}" "${gpgDir}"
+        fi
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+    echo "postinst called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

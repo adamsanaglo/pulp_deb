@@ -1,0 +1,2 @@
+/etc/apt/sources.list.d/microsoft-prod.list
+/usr/share/keyrings/microsoft-prod.gpg

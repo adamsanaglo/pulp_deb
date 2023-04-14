@@ -1,0 +1,33 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    install)
+        if [ -f /etc/apt/sources.list.d/microsoft-prod.list ]; then
+            rm -f /etc/apt/sources.list.d/microsoft-prod.list
+        fi
+
+        if [ -f /usr/share/keyrings/microsoft-prod.gpg ]; then
+            rm -f /usr/share/keyrings/microsoft-prod.gpg
+        fi
+        ;;
+    
+    upgrade)
+        for gpgDir in /usr/share/keyrings /etc/apt/trusted.gpg.d; do
+            if [ -f $gpgDir/microsoft-prod.gpg ]; then
+                rm -f $gpgDir/microsoft-prod.gpg
+            fi
+        done
+        ;;
+
+    *)
+        exit 0
+        ;;
+esac
+
+
+
+exit 0
+
+

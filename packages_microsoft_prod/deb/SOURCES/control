@@ -1,0 +1,10 @@
+Package: packages-microsoft-prod
+Version: 1.1
+Architecture: all
+Maintainer: Linux Repo Admins <aztuxrepo@microsoft.com>
+Depends: ca-certificates
+Section: admin
+Priority: optional
+Description: Apt configuration for packages.microsoft.com
+ This package contains the apt repo configuration
+ for packages.microsoft.com and the public GPG key.

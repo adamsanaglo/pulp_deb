@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -e
+if [ "$1" = "remove" ]; then
+    # Only remove the files during package removal, *not* during upgrades
+    if [ -f /etc/apt/sources.list.d/microsoft-prod.list ]; then
+        rm -f /etc/apt/sources.list.d/microsoft-prod.list
+    fi
+
+    if [ -f /usr/share/keyrings/microsoft-prod.gpg ]; then
+        rm -f /usr/share/keyrings/microsoft-prod.gpg
+    fi
+
+fi
+
+exit 0
