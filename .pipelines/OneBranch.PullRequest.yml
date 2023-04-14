@@ -83,6 +83,10 @@ extends:
                 #cp $(Build.SourcesDirectory)/*.tgz $(Build.SourcesDirectory)/out
                 #cp $(Build.SourcesDirectory)/*.tgz.sha256 $(Build.SourcesDirectory)/out
 
+          - task: PipAuthenticate@1
+            inputs:
+              artifactFeeds: 'Compute-PMC'
+
           - script: |
               python3 -m pip install poetry
             displayName: 'Install dependencies'

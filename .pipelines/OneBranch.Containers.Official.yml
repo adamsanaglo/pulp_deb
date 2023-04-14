@@ -29,6 +29,7 @@ extends:
   parameters:
     featureFlags:
       sbom: true  # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/6089/Generating-SBOM
+      pythonAuthInDockerJobsFeeds: 'Compute-PMC'  # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/4601/Build-Docker-Images?anchor=pip-authenticate
       # linuxEsrpSigningPreview: true    # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/4623/Signing?anchor=linux-signing
 
     globalSdl: # https://aka.ms/obpipelines/sdl
