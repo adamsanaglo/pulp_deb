@@ -97,9 +97,16 @@ function kube_init() {
         return
     fi
     if [ "$1" = "prod" ]; then
+        # Login with prod credentials
         ../tools/login-deploy.py
+    elif ! az account show > /dev/null; then
+        # Manual login required for other environments
+        echo "No active az cli session. Logging in..."
+        az login
     fi
     set_initial_vars $1
+    # Set active subscription
+    az account set --subscription ${sub}
     get_az_cli_vars
     get_aks_creds
 }
