@@ -33,7 +33,7 @@ With this tool, publishers no longer need to do all of that. The following confi
 
 ## For Developers: Setting Up for Use Locally
 
-To run this extension locally, NodeJS, Docker Desktop, and TypeScript must be installed. This repository should also be cloned, as you will need `main.ts` along with the `Dockerfile` in `/Compute-PMC/cli`. Please also make sure to have your publisher cert downloaded somewhere locally as there will be no KeyVault access.
+To run this extension locally, NodeJS, Docker Desktop, and TypeScript must be installed. This repository should also be cloned, as you will need everything inside `/extension-prototype`. Please also make sure to have your publisher cert downloaded somewhere locally as there will be no KeyVault access. (Additionally, you may want to read the first part of the section under "Building the `.vsix` File" below for an easier setup process. Keep in mind it only takes care of steps 1 - 4 in this section).
 
 Before running the last step, you must have Docker Desktop running. You should also be connected to MSFTVPN.
 
@@ -47,9 +47,9 @@ After installation, the following must be done:
 
     `cd ~/Compute-PMC/extension-prototype/buildandrelease`
 
-2. Install TypeScript version 4.0.2
+2. Install TypeScript version 4.6.3
 
-    `npm install typescript@4.0.2 -g --save-dev`
+    `npm install typescript@4.6.3 -g --save-dev`
 
 3. Install all necessary dependencies.
 
@@ -84,6 +84,13 @@ If the core code in `main.ts` must be changed at any point, you must call `tsc` 
 ## For developers: Building the `.vsix` File
 
 *Note: Node must be installed.
+
+Assuming the steps from the previous section haven't been done and you would like to generate the .vsix straight from your cloned directory, there is a shell script `extension_build.sh` available within `/extension-prototype` you may use. It should be flagged as executable and can be provided an argument for where you would like the packaged extension to be output. If this argument is not provided, the packaged extension will be output to `/extension-prototype` by default. In terminal, run the following:
+
+    `chmod +x ~/Compute-PMC/extension-prototype/extension_build.sh`
+    `~/Compute-PMC/extension-prototype/extension_build.sh YOUR_DESIRED_OUTPUT_PATH`
+
+Running this shell script will install typescript and all other dependencies needed for this extension. So it eliminates the need for steps 1 - 4 in the previous section. If you have already done steps 1 - 4, you may continue with the following:
 
 1. Install the Cross-Platform CLI for Azure DevOps through the WSL2 terminal.
 

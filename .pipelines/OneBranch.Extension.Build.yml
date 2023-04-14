@@ -1,0 +1,38 @@
+trigger:
+  paths:
+    include:
+    - extension-prototype/*
+
+variables:
+  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
+
+resources:
+  repositories: 
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates # https://aka.ms/obpipelines/templates
+  parameters:
+    stages:
+      - stage: build_extension
+        jobs:
+        - job: build_extension
+          pool:
+            type: linux
+          variables:
+            ob_outputDirectory: '$(Build.SourcesDirectory)/out'
+          steps:
+            - task: npmAuthenticate@0
+              displayName: 'Authenticate NPM'
+              inputs:
+                workingFile: '$(System.DefaultWorkingDirectory)/extension-prototype/buildandrelease/.npmrc'
+
+            - task: Bash@3
+              inputs:
+                targetType: 'inline'
+                script: |
+                  chmod +x $(System.DefaultWorkingDirectory)/extension-prototype/extension_build.sh
+                  $(System.DefaultWorkingDirectory)/extension-prototype/extension_build.sh $(ob_outputDirectory)
