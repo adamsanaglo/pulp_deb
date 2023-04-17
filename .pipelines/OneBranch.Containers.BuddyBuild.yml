@@ -36,13 +36,11 @@ extends:
       # suppression:  # suppress warnings in vendored open source projects
       #   suppressionFile: $(Build.SourcesDirectory)/.gdn/.gdnsuppress
       #   suppressionSet: default
-      # codeql:     # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/4634/SDL?anchor=codeql-(semmle)-for-compiled-languages
-      #   python: 
-      #     enabled: true
-      #   compiled: 
-      #     enabled: true
-      # bandit:
-      #   enabled: true
+      codeql:     # https://onebranch.visualstudio.com/OneBranch/_wiki/wikis/OneBranch.wiki/4634/SDL?anchor=codeql-(semmle)-for-compiled-languages
+        python:
+          enabled: true
+      bandit:
+        enabled: true
 
     stages:
     - stage: build_images
