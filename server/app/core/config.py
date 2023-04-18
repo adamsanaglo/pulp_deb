@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     PULP_API_PATH: str = "/pulp/api/v3"
     PULP_ADMIN_USERNAME: str
     PULP_ADMIN_PASSWORD: str
-    PULP_TIMEOUT: int = 30
+    PULP_TIMEOUT: int = 300
 
     POSTGRES_SERVER: str
     POSTGRES_USER: str

@@ -42,6 +42,7 @@ data:
   PULP_PUBLISH_RELEASE_FILE_LABEL: "true"
   PULP_CONTENT_WORKERS: "8"
   PULP_API_WORKERS: "4"
+  PULP_GUNICORN_TIMEOUT: "300"
   # Long enough to let tasks complete, a little less than AKS terminationGracePeriodSeconds
   PULP_WORKER_TTL: "300"
   PULP_DATABASES__default__OPTIONS__sslmode: "verify-full"

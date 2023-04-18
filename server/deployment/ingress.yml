@@ -89,7 +89,7 @@ data:
             allow 127.0.0.1;
             deny all;
         }
-  
+
         location / {
             proxy_pass http://pulpcontent;
         }
@@ -132,6 +132,7 @@ data:
 
         location / {
             proxy_pass http://pmcserver;
+            proxy_read_timeout 300s;
         }
     }
 ---
