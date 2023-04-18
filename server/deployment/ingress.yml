@@ -101,7 +101,7 @@ data:
 
     # Instruct nginx to publish logs to stderr / stdout so kubernetes can capture them.
     error_log  stderr warn;
-    log_format custom 'nginx-api [$${no_envsubst}time_local] - [$${no_envsubst}http_x_correlation_id]: "$${no_envsubst}request" $${no_envsubst}status $${no_envsubst}body_bytes_sent "$${no_envsubst}http_referer" "$${no_envsubst}http_user_agent" "$${no_envsubst}gzip_ratio"';
+    log_format custom 'nginx-api $${no_envsubst}time_iso8601 $${no_envsubst}http_x_correlation_id: "$${no_envsubst}request" $${no_envsubst}status $${no_envsubst}body_bytes_sent "$${no_envsubst}http_user_agent" $${no_envsubst}request_time';
     access_log  /dev/stdout custom;
 
     server { # Server to handle incoming requests for the api
@@ -179,10 +179,8 @@ spec:
         image: mcr.microsoft.com/cbl-mariner/base/nginx:1
         resources:
           requests:
-            cpu: 1000m
-            memory: 3Gi
-          limits:
-            cpu: 1000m
+            cpu: 100m
+            memory: 250Mi
         ports:
           - containerPort: 80
             name: http
@@ -243,10 +241,8 @@ spec:
         image: mcr.microsoft.com/cbl-mariner/base/nginx:1
         resources:
           requests:
-            cpu: 1000m
-            memory: 3Gi
-          limits:
-            cpu: 1000m
+            cpu: 100m
+            memory: 250Mi
         ports:
           - containerPort: 443
             name: https
