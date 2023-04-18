@@ -101,7 +101,7 @@ data:
 
     # Instruct nginx to publish logs to stderr / stdout so kubernetes can capture them.
     error_log  stderr warn;
-    log_format custom 'nginx-api [$time_local] - [$http_x_correlation_id]: "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$gzip_ratio"';
+    log_format custom 'nginx-api [$${no_envsubst}time_local] - [$${no_envsubst}http_x_correlation_id]: "$${no_envsubst}request" $${no_envsubst}status $${no_envsubst}body_bytes_sent "$${no_envsubst}http_referer" "$${no_envsubst}http_user_agent" "$${no_envsubst}gzip_ratio"';
     access_log  /dev/stdout custom;
 
     server { # Server to handle incoming requests for the api
