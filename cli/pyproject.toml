@@ -31,6 +31,7 @@ types-Pygments = "^2.13.1"
 black = "^22.8.0"
 types-pyOpenSSL = "^22.1.0"
 towncrier = "^22.12.0"
+flake8-use-pathlib = "^0.3.0"
 
 [tool.poetry.extras]
 pygments = ["Pygments"]

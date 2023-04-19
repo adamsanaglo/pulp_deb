@@ -1,4 +1,5 @@
 import hashlib
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import typer
@@ -30,12 +31,15 @@ sha256_option = typer.Option(None, help="Sha256 sum of the file in question.")
 file_option = typer.Option(
     None,
     help="Path to the local file you're searching for. Calculates sha256 sum and uses that filter.",
+    exists=True,
+    readable=True,
+    dir_okay=False,
 )
 
 
-def _sha256sum(path: str) -> str:
+def _sha256sum(path: Path) -> str:
     h = hashlib.sha256()
-    with open(path, "rb") as f:
+    with path.open("rb") as f:
         for line in f:
             h.update(line)
     return h.hexdigest()
@@ -61,7 +65,7 @@ def deb_list(
     arch: Optional[str] = typer.Option(None),
     sha256: Optional[str] = sha256_option,
     relative_path: Optional[str] = typer.Option(None),
-    file: Optional[str] = file_option,
+    file: Optional[Path] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
     ordering: str = ORDERING_OPT,
@@ -131,7 +135,7 @@ def rpm_list(
     release: Optional[str] = typer.Option(None),
     arch: Optional[str] = typer.Option(None),
     sha256: Optional[str] = sha256_option,
-    file: Optional[str] = file_option,
+    file: Optional[Path] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
     ordering: str = ORDERING_OPT,
@@ -162,7 +166,7 @@ def python_list(
     name: Optional[str] = typer.Option(None),
     filename: Optional[str] = typer.Option(None),
     sha256: Optional[str] = sha256_option,
-    file: Optional[str] = file_option,
+    file: Optional[Path] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
     ordering: str = ORDERING_OPT,
@@ -189,7 +193,7 @@ def file_list(
     repository: Optional[str] = id_or_name("repositories", repo_option),
     relative_path: Optional[str] = typer.Option(None),
     sha256: Optional[str] = sha256_option,
-    file: Optional[str] = file_option,
+    file: Optional[Path] = file_option,
     limit: int = LIMIT_OPT,
     offset: int = OFFSET_OPT,
     ordering: str = ORDERING_OPT,

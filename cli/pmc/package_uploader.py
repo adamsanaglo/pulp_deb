@@ -94,7 +94,7 @@ class PackageUploader:
 
     def _upload_package(self, data: Dict[str, Any], path: Optional[Path] = None) -> Any:
         if path:
-            files = {"file": open(path, "rb")}
+            files = {"file": path.open("rb")}
         else:
             files = None
 

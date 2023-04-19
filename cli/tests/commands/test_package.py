@@ -204,14 +204,15 @@ def test_package_upload_by_url(orphan_cleanup: None) -> None:
 
 def test_package_directory_upload(orphan_cleanup: None) -> None:
     package_names = ["hello.txt", "test.txt"]
-    package_dir = TemporaryDirectory()
+    with TemporaryDirectory() as temp_dir:
+        package_dir = Path(temp_dir)
 
-    for file in package_names:
-        with open(f"{package_dir.name}/{file}", "w") as f:
-            f.write(file)
+        for file in package_names:
+            with (package_dir / file).open("w") as f:
+                f.write(file)
 
-    become(Role.Package_Admin)
-    result = invoke_command(["package", "upload", "--type", "file", package_dir.name])
+        become(Role.Package_Admin)
+        result = invoke_command(["package", "upload", "--type", "file", str(package_dir)])
 
     packages = json.loads(result.stdout)
     assert sorted([pkg["relative_path"] for pkg in packages]) == sorted(package_names)
