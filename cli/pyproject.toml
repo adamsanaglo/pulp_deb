@@ -21,6 +21,7 @@ tomli-w = "^1.0.0"
 msal = "^1.19.0"
 pyOpenSSL = "^22.1.0"
 tomli = "^2.0.1"
+packaging = "^23.1"
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.10.1"
