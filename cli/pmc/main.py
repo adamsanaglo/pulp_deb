@@ -6,14 +6,14 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import httpx
+import requests
 import typer
 from click.exceptions import UsageError
 from pydantic import AnyHttpUrl, ValidationError
 from pydantic.tools import parse_obj_as
 
 from .auth import AuthenticationError
-from .client import client_context, create_client
+from .client import init_session, session_context
 from .commands import access, account
 from .commands import config as config_cmd
 from .commands import distribution, orphan, package, publication, remote, repository, task
@@ -61,7 +61,7 @@ app.add_restricted_typer(orphan.app, name="orphan")
 
 # Exceptions for which a traceback is not helpful/meaningful
 NO_TRACEBACK_EXCEPTIONS = (
-    httpx.HTTPStatusError,
+    requests.HTTPError,
     UsageError,
     ValidationError,
     DecodeError,
@@ -89,13 +89,13 @@ def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
 
 def format_exception(exception: BaseException) -> Dict[str, Any]:
     """Build an error dict from an exception."""
-    if isinstance(exception, httpx.HTTPStatusError) and exception.response.status_code == 401:
+    if isinstance(exception, requests.HTTPError) and exception.response.status_code == 401:
         return {
             "http_status": 401,
             "message": "Unauthorized, ensure that you have logged in by setting the msal options",
             "command_traceback": str(exception.request.url),
         }
-    elif isinstance(exception, httpx.HTTPStatusError):
+    elif isinstance(exception, requests.HTTPError):
         err: Dict[str, Any] = {"message": str(exception)}
 
         try:
@@ -106,7 +106,7 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
                 err["detail"] = exception.response.text
 
         err["http_status"] = exception.response.status_code
-        err["command_trackeback"] = str(exception.request.url)
+        err["url"] = str(exception.request.url)
         if "x-correlation-id" in exception.response.headers:
             err["correlation_id"] = exception.response.headers["x-correlation-id"]
     elif isinstance(exception, PulpTaskFailure):
@@ -133,8 +133,6 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
             "message": exc_message,
             "detail": getattr(exception, "detail", None),
         }
-        if isinstance(exception, httpx.RequestError):
-            err["url"] = str(exception.request.url)
 
         if not isinstance(exception, NO_TRACEBACK_EXCEPTIONS):
             err["command_traceback"] = "".join(traceback.format_tb(exception.__traceback__))
@@ -145,7 +143,7 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
 def process_result(result: Any, **kwargs: Any) -> None:
     """Execute after the command."""
     with suppress(LookupError):
-        client_context.get().close()
+        session_context.get().close()
 
 
 def version_callback(value: bool) -> None:
@@ -236,7 +234,7 @@ def main(
         config.base_url = parse_obj_as(AnyHttpUrl, base_url)
 
     ctx.obj = PMCContext(config=config, config_path=config_path)
-    client_context.set(create_client(ctx.obj))
+    init_session(ctx.obj)
 
     check_version()
 

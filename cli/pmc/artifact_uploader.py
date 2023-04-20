@@ -3,11 +3,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-import httpx
 from click import BadParameter
 from pydantic import AnyHttpUrl, ValidationError, parse_obj_as
 
-from pmc.client import client, client_context, create_client
+from pmc.client import client, init_session, session_context
 from pmc.context import PMCContext
 from pmc.utils import PulpTaskFailure
 
@@ -64,7 +63,7 @@ class ArtifactUploader:
         resp = client.post("/artifacts/", params=data, files=files)
         resp_json = resp.json()
 
-        if not httpx.codes.is_success(resp.status_code):
+        if not resp.ok:
             try:
                 return self._find_existing_artifact(resp)
             except KeyError:
@@ -84,7 +83,7 @@ class ArtifactUploader:
         self, data: Dict[str, Any], paths: Iterable[Path] = []
     ) -> List[Dict[str, Any]]:
         def set_context(context: PMCContext) -> None:
-            client_context.set(create_client(context))
+            session_context.set(init_session(context))
 
         artifacts = []
         with ThreadPoolExecutor(

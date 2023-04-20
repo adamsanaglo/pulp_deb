@@ -3,10 +3,10 @@ import shutil
 from contextvars import ContextVar
 from functools import partialmethod
 from time import sleep
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import click
-import httpx
+import requests
 import typer
 
 from .constants import CLI_VERSION, LIST_SEPARATOR
@@ -29,20 +29,18 @@ else:
 
 
 TaskHandler = Optional[Callable[[str], Any]]
-client_context: ContextVar[httpx.Client] = ContextVar("client")
 
 
 class ApiClient:
-    """Wrapper class that will lazily pull the httpx client from the client contextvar.
+    """Wrapper class that will lazily pull the requests session from the session contextvar.
 
-    This allows the client variable to be imported from this module once without needing to call a
-    function in each command function to fetch the client from the client_contextvar.
+    This allows the session variable to be imported from this module once without needing to call a
+    function in each command function to fetch the session from the session_contextvar.
     """
 
-    def request(self, *args: Any, **kwargs: Any) -> httpx.Response:
-        client = client_context.get()
-        resp = client.request(*args, **kwargs)
-        return resp
+    def request(self, *args: Any, **kwargs: Any) -> requests.Response:
+        session = session_context.get()
+        return session.request(*args, **kwargs)
 
     # define some methods that map to request
     get = partialmethod(request, "get")
@@ -54,63 +52,69 @@ class ApiClient:
 client = ApiClient()
 
 
-def _set_headers(ctx: PMCContext, request: httpx.Request) -> None:
-    """
-    Auto-increment our correlation id for every request we make with this context.
-    This allows us to more easily trace through the server logs for a given request, but we can
-    still find related before-or-after requests if we need to.
+class ClientSession(requests.Session):
+    def __init__(self, ctx: PMCContext):
+        super().__init__()
+        self.context = ctx
+        self.verify = self.context.ssl_verify
 
-    The Auth token is pretty self-explanatory.
-    """
-    i = int(ctx.cid, 16)
-    ctx.cid = format(i + 1, "x")
-    request.headers["x-correlation-id"] = ctx.cid
+    def _get_headers(self) -> Dict[str, Any]:
+        """
+        Auto-increment our correlation id for every request we make with this context.
+        This allows us to more easily trace through the server logs for a given request, but we can
+        still find related before-or-after requests if we need to.
 
-    try:
-        token = ctx.auth.acquire_token()
-    except Exception:
-        typer.echo("Failed to retrieve AAD token", err=True)
-        raise
-    request.headers["Authorization"] = f"Bearer {token}"
+        The Auth token is pretty self-explanatory.
+        """
+        headers = {}
 
-    request.headers["pmc-cli-version"] = CLI_VERSION
+        # increment and set correlation id
+        i = int(self.context.cid, 16)
+        self.context.cid = format(i + 1, "x")
+        headers["x-correlation-id"] = self.context.cid
+
+        try:
+            token = self.context.auth.acquire_token()
+        except Exception:
+            typer.echo("Failed to retrieve AAD token", err=True)
+            raise
+        headers["Authorization"] = f"Bearer {token}"
+
+        headers["pmc-cli-version"] = CLI_VERSION
+
+        return headers
+
+    def request(
+        self, method: Union[str, bytes], url: Union[str, bytes], *args: Any, **kwargs: Any
+    ) -> requests.Response:
+        url = f"{self.context.base_url}{str(url)}"
+
+        if "headers" not in kwargs:
+            kwargs["headers"] = self._get_headers()
+
+        if "timeout" not in kwargs:
+            kwargs["timeout"] = 600
+
+        if self.context.debug:
+            typer.echo(f"Request: {str(method)} {str(url)}")
+
+        response = super().request(method, url, *args, **kwargs)
+
+        if self.context.debug:
+            typer.echo(f"Response: {str(method)} {str(url)} - Status {response.status_code}")
+
+        response.raise_for_status()
+
+        return response
 
 
-def _log_request(request: httpx.Request) -> None:
-    typer.echo(f"Request: {request.method} {request.url}")
-
-    if "content-type" in request.headers and request.headers["content-type"] == "application/json":
-        typer.echo(f"Body: {json.loads(request.content)}")
+session_context: ContextVar[ClientSession] = ContextVar("client")
 
 
-def _log_response(response: httpx.Response) -> None:
-    request = response.request
-    typer.echo(f"Response: {request.method} {request.url} - Status {response.status_code}")
-
-
-def _raise_for_status(response: httpx.Response) -> None:
-    response.read()  # read the response's body before raise_for_status closes it
-    response.raise_for_status()
-
-
-def create_client(ctx: PMCContext) -> httpx.Client:
-    def _call_set_headers(request: httpx.Request) -> None:
-        _set_headers(ctx, request)
-
-    request_hooks = [_call_set_headers]
-    response_hooks = [_raise_for_status]
-
-    if ctx.debug:
-        request_hooks.append(_log_request)
-        response_hooks.insert(0, _log_response)
-
-    client = httpx.Client(
-        base_url=ctx.base_url,
-        event_hooks={"request": request_hooks, "response": response_hooks},
-        timeout=None,
-        verify=ctx.ssl_verify,
-    )
-    return client
+def init_session(ctx: PMCContext) -> ClientSession:
+    session = ClientSession(ctx)
+    session_context.set(session)
+    return session
 
 
 def _extract_ids(resp_json: Any) -> Union[str, List[str], None]:
@@ -133,7 +137,7 @@ def poll_task(task_id: str, task_handler: TaskHandler = None, quiet: bool = Fals
     # While waiting for long tasks, we occasionally encounter an issue where our auth token
     # expires /right after/ we make a request and we get a 401. In that case let's simply try
     # again one extra time, which should trigger a re-auth and work.
-    if resp.status_code == httpx.codes.UNAUTHORIZED:
+    if resp.status_code == requests.codes.UNAUTHORIZED:
         resp = client.get(f"/tasks/{task_id}/")
 
     task = resp.json()
@@ -180,7 +184,7 @@ def output_json(ctx: PMCContext, output: Any, suppress_pager: bool = False) -> N
 
 
 def handle_response(
-    ctx: PMCContext, resp: httpx.Response, task_handler: TaskHandler = None
+    ctx: PMCContext, resp: requests.Response, task_handler: TaskHandler = None
 ) -> None:
     if not resp.content:
         # empty response

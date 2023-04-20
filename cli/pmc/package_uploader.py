@@ -6,7 +6,7 @@ from typing import Any, Dict, Iterable, List, Optional
 from click import BadParameter
 from pydantic import AnyHttpUrl, ValidationError, parse_obj_as
 
-from pmc.client import client, client_context, create_client, poll_task
+from pmc.client import client, init_session, poll_task, session_context
 from pmc.context import PMCContext
 from pmc.schemas import PackageType
 from pmc.utils import PulpTaskFailure, raise_if_task_failed
@@ -121,7 +121,7 @@ class PackageUploader:
         self, data: Dict[str, Any], paths: Iterable[Path] = []
     ) -> List[Dict[str, Any]]:
         def set_context(context: PMCContext) -> None:
-            client_context.set(create_client(context))
+            session_context.set(init_session(context))
 
         packages = []
         with ThreadPoolExecutor(

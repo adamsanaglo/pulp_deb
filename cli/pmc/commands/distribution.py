@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-import httpx
+import requests
 import typer
 
 from pmc.client import client, handle_response
@@ -55,7 +55,7 @@ def create(
 ) -> None:
     """Create a distribution."""
 
-    def show_func(task: Any) -> httpx.Response:
+    def show_func(task: Any) -> requests.Response:
         assert isinstance(task, Dict) and task.get("created_resources")
         new_id = task["created_resources"][0]
         return client.get(f"/distributions/{new_id}/")
@@ -90,7 +90,7 @@ def update(
 ) -> None:
     """Update a distribution."""
 
-    def show_func(task: Any) -> httpx.Response:
+    def show_func(task: Any) -> requests.Response:
         return client.get(f"/distributions/{id}/")
 
     data = {}
