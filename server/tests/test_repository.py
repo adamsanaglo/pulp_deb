@@ -167,7 +167,7 @@ async def test_roles_repository_add_package(
 
 @pytest.mark.parametrize(
     "repo_perm, package_perm",
-    product((False, True, "operator"), ("none", "other", "me")),
+    product((False, True, "operator-disabled", "operator-enabled"), ("none", "other", "me")),
 )
 async def test_roles_repository_remove_package(
     async_client,
@@ -179,10 +179,14 @@ async def test_roles_repository_remove_package(
     monkeypatch,
 ):
     """
-    This test runs a total of 36 times: once for every combination of role (4) * whether or not
-    you've been granted repo access and/or are an operator (3) * who "owns" the package (nobody,
+    This test runs a total of 48 times: once for every combination of role (4) * whether or not
+    you've been granted repo access and/or are an operator (4) * who "owns" the package (nobody,
     someone else, me) (3).
     """
+    superuser = False
+    if type(repo_perm) is not bool:
+        repo_perm, enabled = repo_perm.split("-")
+        superuser = enabled == "enabled"
     # set up db
     monkeypatch.setattr(
         content_manager, "add_and_remove_packages", get_async_mock(gen_task_attrs())
@@ -203,9 +207,8 @@ async def test_roles_repository_remove_package(
     )
 
     # try it
-    response = await async_client.patch(
-        f"/api/v4/repositories/{repo_id}/packages/", json={"remove_packages": [package_id]}
-    )
+    params = {"remove_packages": [package_id], "superuser": superuser}
+    response = await async_client.patch(f"/api/v4/repositories/{repo_id}/packages/", json=params)
 
     # see if permissions are correct
     expected_status = 403
@@ -215,7 +218,7 @@ async def test_roles_repository_remove_package(
         # can delete own packages
         expected_status = 200
     elif account.role == Role.Package_Admin or (
-        account.role == Role.Publisher and repo_perm == "operator"
+        account.role == Role.Publisher and repo_perm == "operator" and superuser
     ):
         # can delete all packages
         expected_status = 200

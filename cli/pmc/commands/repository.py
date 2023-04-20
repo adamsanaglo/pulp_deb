@@ -36,6 +36,7 @@ RETAIN_REPO_VERSIONS_HELP = (
     "The number of repository versions to retain. Pass an empty string to retain all. "
     "Default is all."
 )
+SUPERUSER_HELP = "Override package permission check. Available only to repo operators."
 
 sqlite_metadata_option = typer.Option(
     None, help="Enable the generation of sqlite metadata files for yum repos (Deprecated)."
@@ -233,15 +234,18 @@ def update_packages(
     # component: str = typer.Argument(None, help="Component to add packages to."),
     add_packages: Optional[str] = typer.Option(None, help=ADD_PACKAGES_HELP),
     remove_packages: Optional[str] = typer.Option(None, help=REMOVE_PACKAGES_HELP),
+    superuser: bool = typer.Option(False, help=SUPERUSER_HELP),
 ) -> None:
     """Add or remove packages from a repository."""
-    data: Dict[str, Union[str, List[str]]] = {}
+    data: Dict[str, Union[str, List[str], bool]] = {}
     if add_packages:
         data["add_packages"] = add_packages.split(LIST_SEPARATOR)
     if remove_packages:
         data["remove_packages"] = remove_packages.split(LIST_SEPARATOR)
     if release:
         data["release"] = release
+    if superuser:
+        data["superuser"] = superuser
     # if component:
     #    data["component"] = component
 
@@ -257,6 +261,7 @@ def purge(
         None, help="Only delete packages from this release (deb repos only)"
     ),
     confirm: bool = typer.Option(False),
+    superuser: bool = typer.Option(False, help=SUPERUSER_HELP),
 ) -> None:
     if not confirm:
         if not typer.confirm("This will delete all content in the specified repo. Proceed?"):
@@ -266,6 +271,8 @@ def purge(
     params: Dict[str, Any] = {"all": True}
     if release:
         params["release"] = release
+    if superuser:
+        params["superuser"] = superuser
     resp = client.patch(f"/repositories/{repo_id}/bulk_delete/", json=params)
     handle_response(ctx.obj, resp)
 

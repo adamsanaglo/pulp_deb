@@ -558,6 +558,7 @@ class RepositoryPackageUpdate(BaseModel):
     remove_packages: Optional[List[PackageId]]
     release: Optional[str]
     component: str = "main"
+    superuser: bool = False
     migration: bool = False  # TODO: [MIGRATE] Remove this parameter
 
     @root_validator(pre=False, skip_on_failure=True)
@@ -900,6 +901,7 @@ class RepositoryBulkDelete(BaseModel):
     release: Optional[str]
     component: str = "main"
     all: bool = False
+    superuser: bool = False
     migration: bool = False  # TODO: [MIGRATE] Remove this parameter
 
     @root_validator(pre=False, skip_on_failure=True)

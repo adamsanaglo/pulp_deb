@@ -251,6 +251,7 @@ async def bulk_delete(
         remove_packages=ids,
         release=delete_cmd.release,
         component=delete_cmd.component,
+        superuser=delete_cmd.superuser,
         migration=delete_cmd.migration,  # TODO: [MIGRATE] remove this line
     )
     return await _update_packages(id, update_cmd, account, session, set(), names, filenames)
@@ -272,8 +273,8 @@ async def _update_packages(
     #   * When anyone adds a package, record that they added it so that they'll "own" updates.
     # * Repo Admins and Publishers should be able to REMOVE packages that they "own" in this repo.
     #   * Exception: Package Admins and Publishers that have the "operator" flag set for this repo
-    #     can remove *any* package. The "operator" flag corresponds with the pseudo-role "Repo
-    #     Operator" to support the Mariner team.
+    #     can remove *any* package, if they have also provided the --superuser option. The
+    #     "operator" flag corresponds with the pseudo-role "Repo Operator" to support Mariner.
 
     # Ensure that, if a Publisher, the account has access to this repo.
     statement = select(RepoAccess).where(
@@ -314,7 +315,10 @@ async def _update_packages(
     # Next enforce package removing permissions
     if remove_names:
         if account.role == Role.Package_Admin or (
-            account.role == Role.Publisher and repo_perm and repo_perm.operator
+            account.role == Role.Publisher
+            and repo_perm
+            and repo_perm.operator
+            and repo_update.superuser
         ):
             pass  # Account can remove whatever they want
 
