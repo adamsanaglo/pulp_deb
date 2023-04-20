@@ -1,1 +1,0 @@
-Switch http client library to better handle large (> 1GB) package uploads.

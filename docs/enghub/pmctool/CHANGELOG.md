@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 <!-- towncrier release notes start -->
 
+## [1.1.0](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/1.1.0) - 2023-04-20
+
+
+### Features
+
+- Added a `--repository` filter to the distro list command. [#17947782](https://msazure.visualstudio.com/One/_workitems/edit/17947782)
+
+
+### Bug fixes
+
+- Switch http client library to better handle large (> 1GB) package uploads. [#15947571](https://msazure.visualstudio.com/One/_workitems/edit/15947571)
+- Fixed import error due to missing packaging package. [#18445458](https://msazure.visualstudio.com/One/_workitems/edit/18445458)
+
+
 ## [1.0.2](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/1.0.2) - 2023-04-13
 
 
