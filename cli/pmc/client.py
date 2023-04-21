@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import click
 import requests
 import typer
+from requests.auth import AuthBase
 
 from .constants import CLI_VERSION, LIST_SEPARATOR
 from .context import PMCContext
@@ -52,6 +53,15 @@ class ApiClient:
 client = ApiClient()
 
 
+class TokenAuth(AuthBase):
+    def __init__(self, token: str) -> None:
+        self.token = token
+
+    def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
+        r.headers["authorization"] = f"Bearer {self.token}"
+        return r
+
+
 class ClientSession(requests.Session):
     def __init__(self, ctx: PMCContext):
         super().__init__()
@@ -73,13 +83,6 @@ class ClientSession(requests.Session):
         self.context.cid = format(i + 1, "x")
         headers["x-correlation-id"] = self.context.cid
 
-        try:
-            token = self.context.auth.acquire_token()
-        except Exception:
-            typer.echo("Failed to retrieve AAD token", err=True)
-            raise
-        headers["Authorization"] = f"Bearer {token}"
-
         headers["pmc-cli-version"] = CLI_VERSION
 
         return headers
@@ -97,6 +100,13 @@ class ClientSession(requests.Session):
 
         if self.context.debug:
             typer.echo(f"Request: {str(method)} {str(url)}")
+
+        try:
+            token = self.context.auth.acquire_token()
+        except Exception:
+            typer.echo("Failed to retrieve AAD token", err=True)
+            raise
+        kwargs["auth"] = token
 
         response = super().request(method, url, *args, **kwargs)
 
