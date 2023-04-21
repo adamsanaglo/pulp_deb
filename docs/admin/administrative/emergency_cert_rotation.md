@@ -28,32 +28,38 @@ So the Corp subscription may not be in scope for rotation, depending on when the
 This section captures an inventory of all certs and how they're used.
 Many of these certs are used for client auth with Subject Name Issuer (SNI) authentication.
 Once they're rotated, no further action is required.
+The tables below include a Deploy column, which describes how each cert is rolled out to prod.
+- Auto: Latest secret is fetched/used whenever necessary
+- Routine: Deployed whenever an AKS or AzureFunction deployment occurs
+- ClientAuth: Used strictly for client authentication
+    - Mostly used in ADO jobs, which fetch the latest secret whenever a job is run
+    - May need to manually download for *interactive* scenarios
+- Manual: Requires manual steps to deploy
 
 ### AME/PMC Prod (ae06cb0d-47c5-420b-ac59-8e84bef194bb)
-|KeyVault|Cert Name|Purpose|Impact|
-|--------|---------|-------|------|
-|pmcprod|accountAdmin|Admin Account|No impact (SNI)|
-|pmcprod|deploy|AAD Deploy Account|No Impact (SNI)|
-|pmcprod|esrp-auth-prod|ESRP Authentication|No Impact (SNI)|
-|pmcprod|esrp-sign-prod|ESRP Request Signing|No Impact (SNI)|
-|pmcprod|migrationAccount|Service-to-Service Auth|No Impact (SNI)|
-|pmcprod|packageAdmin|Admin Account|No Impact (SNI)|
-|pmcprod|pmcDistroTLS|TLS|No Impact (TLS)|
-|pmcprod|pmcIngestTLS|TLS|No Impact (TLS)|
-|pmcprod|repoAdmin|Admin Account|No Impact (SNI)|
+|KeyVault|Cert Name|Purpose|Impact|Deploy|
+|--------|---------|-------|------|------|
+|pmcprod|accountAdmin|Admin Account|No impact (SNI)|ClientAuth|
+|pmcprod|deploy|AAD Deploy Account|No Impact (SNI)|ClientAuth|
+|pmcprod|esrp-auth-prod|ESRP Authentication|No Impact (SNI)|Routine|
+|pmcprod|esrp-sign-prod|ESRP Request Signing|No Impact (SNI)|Auto|
+|pmcprod|migrationAccount|Service-to-Service Auth|No Impact (SNI)|Routine|
+|pmcprod|packageAdmin|Admin Account|No Impact (SNI)|ClientAuth|
+|pmcprod|pmcDistroTLS|TLS|No Impact (TLS)|Routine|
+|pmcprod|pmcIngestTLS|TLS|No Impact (TLS)|Routine|
+|pmcprod|repoAdmin|Admin Account|No Impact (SNI)|ClientAuth|
 
 ### Corp/Azure Linux Apt Repo (d7015505-773d-4c07-bbba-2ddf41b33414)
-|KeyVault|Cert Name|Purpose|Impact|
-|--------|---------|-------|------|
-|apt-repo|apt-api-ssl|API TLS Cert|No impact (TLS)|
-|apt-repo|apt-gcs|GCS|No Impact Expected|
-|apt-repo|apt-ssl|Mirror TLS (old)|No Impact (TLS)|
-|apt-repo|apt-ssl-euap|EUAP TLS Cert|No Impact (TLS)|
-|apt-repo|apt-ssl-new|Mirror TLS Cert|No Impact (TLS)|
-|apt-repo|esrp-auth|ESRP Authentication|No Impact (SNI)|
-|apt-repo|esrp-codesign|ESRP Request Signing|No Impact (SNI)|
-|apt-repo|repoadmin|Admin Account|No Impact (SNI)|
-|apt-linux-geneva|geneva|MDSD/GCS Auth|No Impact Expected|
+|KeyVault|Cert Name|Purpose|Impact|Deploy|
+|--------|---------|-------|------|------|
+|apt-repo|apt-api-ssl|API TLS Cert|No impact (TLS)|Manual|
+|apt-repo|apt-gcs|GCS|No Impact Expected|Manual|
+|apt-repo|apt-ssl-euap|EUAP TLS Cert|No Impact (TLS)|Manual|
+|apt-repo|apt-ssl-new|Mirror TLS Cert|No Impact (TLS)|Manual|
+|apt-repo|esrp-auth|ESRP Authentication|No Impact (SNI)|Auto|
+|apt-repo|esrp-codesign|ESRP Request Signing|No Impact (SNI)|Auto|
+|apt-repo|repoadmin|Admin Account|No Impact (SNI)|ClientAuth|
+|apt-linux-geneva|geneva|MDSD/GCS Auth|No Impact Expected|Manual|
 
 ## ECR Drill Preparation
 **For real-world events (rotating certs due to legitimate compromise) skip this section.**
@@ -149,15 +155,23 @@ This section covers deploying newly rotated certificates to the "vCurrent" Corp 
     ./ecrtool.py -d ecr/prod-corp-mirrors.json
     ```
 - EUAP mirrors
-    - Install the apt-ssl-euap private key to `/etc/ssl/private/pmc-ssl.key`
-    - Install the apt-ssl-euap cert/chain to `/etc/ssl/certs/pmc-ssl.cer`
-    - Run `sudo nginx -s reload` to read the new cert from disk.
+    - Manually separate the certificate and key into two separate files
+        - Cert is downloaded as a single PEM file, but nginx expects two separate files
+    - Navigate to the `Compute-PMC/edge` folder
+    - Run the `deploy-tls.sh` script to deploy to each EUAP mirror. Example below targets EUAP1
+        ```bash
+        ./deploy-tls.sh /path/to/cert.crt /path/to/key.key euap1
+        ```
     - Navigate to [https://pmc-beta.trafficmanager.net](https://pmc-beta.trafficmanager.net) and confirm no TLS errors are encountered.
 - Prod mirrors
-    - Install the apt-ssl-new private key to `/etc/ssl/private/pmc-ssl.key`
-    - Install the apt-ssl-new cert/chain to `/etc/ssl/certs/pmc-ssl.cer`
-    - Run `sudo nginx -s reload` to read the new cert from disk.
-    - Navigate to [https://ackages.microsoft.com](https://packages.microsoft.com) and confirm no TLS errors are encountered.
+    - Manually separate the certificate and key into two separate files
+        - Cert is downloaded as a single PEM file, but nginx expects two separate files
+    - Navigate to the `Compute-PMC/edge` folder
+    - Run the `deploy-tls.sh` script to deploy to each prod mirror. Example below targets wus1
+        ```bash
+        ./deploy-tls.sh /path/to/cert.crt /path/to/key.key wus1
+        ```
+    - Navigate to [https://packages.microsoft.com](https://packages.microsoft.com) and confirm no TLS errors are encountered.
 - When complete, the following certs will be rolled out to production.
     - apt-ssl-euap
     - apt-ssl-new
