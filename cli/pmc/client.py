@@ -106,7 +106,7 @@ class ClientSession(requests.Session):
         except Exception:
             typer.echo("Failed to retrieve AAD token", err=True)
             raise
-        kwargs["auth"] = token
+        kwargs["auth"] = TokenAuth(token)
 
         response = super().request(method, url, *args, **kwargs)
 
