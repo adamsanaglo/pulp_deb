@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 <!-- towncrier release notes start -->
 
+## [1.2.0](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/1.2.0) - 2023-04-25
+
+
+### Features
+
+- Turn the RepoOperator privilege off by default and add a switch [#18548711](https://msazure.visualstudio.com/One/_workitems/edit/18548711)
+
+
+### Bug fixes
+
+- Fixed bug where auth errors were occurring due to .netrc file. [#18712489](https://msazure.visualstudio.com/One/_workitems/edit/18712489)
+
+
 ## [1.1.0](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/1.1.0) - 2023-04-20
 
 
