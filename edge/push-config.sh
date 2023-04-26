@@ -21,18 +21,41 @@ function copy_to_host {
     scp $sshopts $@ apt-automation@${host}:~
 }
 
+function copy_and_install {
+    localpath=$1
+    host=$2
+    target=$3
+    basename=$(basename $localpath)
+    copy_to_host $localpath
+    do_on_host sudo install -o root -g root -m 644 $basename $target
+}
+
+function cacheconfig_from_hostname {
+    hostname=$1
+    # strip trailing digits from hostname
+    region=${hostname%[[:digit:]]*}
+    line=$(grep "^$region," cache-configs/region_map.csv)
+    # line is of the form "region,cacheconfig"
+    cacheconfig=${line#*,}
+    echo $cacheconfig
+}
+
 function push_config {
     config=$1
     localpath=$2
     host=$3
-    basename=$(basename $localpath)
+
     if [ $config == "vnext" ]; then
         targetname="vNext.conf"
     else
         targetname="vCurrent.conf"
     fi
-    copy_to_host $localpath
-    do_on_host sudo install -o root -g root -m 644 $basename /etc/nginx/sites-available/$targetname
+    copy_and_install $localpath $host /etc/nginx/sites-available/$targetname
+
+    cacheconfig=$(cacheconfig_from_hostname $host)
+    copy_and_install cache-configs/$cacheconfig $host /etc/nginx/cache.conf
+
+    copy_and_install index.html $host /var/pmc/www/index.html
 }
 
 function push_configs {
