@@ -92,3 +92,15 @@ For example, if you wanted to push / test a custom version of the pmcserver cont
 1. `./update.sh ppe api-pod api-pod.yml`
 1. Test your change.
 1. When you're done revert the image change in api-pod.yml and re-run the update.sh step to reset.
+
+# Migrating AKS Node Image to Mariner
+PMC AKS nodes were originally deployed with Ubuntu OS images.
+MSFT is standardizing on Mariner, to ensure our supply chain remains secure.
+The `migrate-aks-mariner.sh` script will perform the following steps:
+- Create a new mariner-based nodepool
+- Cordon nodes and drain workloads froms the old Ubuntu nodepool
+- Delete the old nodepool
+Additional details can be found in [Mariner's Migration Guide](https://eng.ms/docs/products/mariner-linux/gettingstarted/aks/ubuntumigration)
+```bash
+./migrate-aks-mariner.sh [ppe|prod]
+```
