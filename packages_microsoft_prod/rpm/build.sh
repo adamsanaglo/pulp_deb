@@ -42,16 +42,17 @@ for distro in ${distros[@]}; do
     define_keys_array additional_channels ".${distro}.release_versions.\"${release_version}\".additional_channels"
     rpmbuild --define "_topdir $(pwd)" --define "distro $distro" --define "release_version $release_version" \
              --define "configroot $configroot" --define "_rpmdir $(pwd)/RPMS/$distro/$release_version" \
+             --define "_build_name_fmt %{NAME}.rpm" \
              packages-microsoft-prod.spec -bb --quiet
     
     for channel in ${channels[@]}; do
       channel_name=$(read_value ".${distro}.channels.\"${channel}\"")
-      BUILD/repo_config.sh "SOURCES/repo.template" "RPMS/$distro/$release_version/noarch" "$channel" "$distro" "$release_version" "$channel" "$channel_name"
+      BUILD/repo_config.sh "SOURCES/repo.template" "RPMS/$distro/$release_version" "$channel" "$distro" "$release_version" "$channel" "$channel_name"
     done
     
     for channel in ${additional_channels[@]}; do
       channel_name=$(read_value ".${distro}.release_versions.\"${release_version}\".additional_channels.\"${channel}\"")
-      BUILD/repo_config.sh "SOURCES/repo.template" "RPMS/$distro/$release_version/noarch" "$channel" "$distro" "$release_version" "$channel" "$channel_name"
+      BUILD/repo_config.sh "SOURCES/repo.template" "RPMS/$distro/$release_version" "$channel" "$distro" "$release_version" "$channel" "$channel_name"
     done
   done
 done

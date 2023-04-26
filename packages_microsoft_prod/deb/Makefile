@@ -1,9 +1,8 @@
-LABEL?=~dev
 # Set these via override
 #RELVER?=16.04
 #DISTRO?=ubuntu
 PACKAGE:=packages-microsoft-prod
-VERSION=1.1-$(DISTRO)$(RELVER).$(LABEL)
+VERSION=1.1-$(DISTRO)$(RELVER)
 FAKEROOT=./data-root
 DOCDIR=$(FAKEROOT)/usr/share/doc/$(PACKAGE)/
 LINTIANOVERRIDES=$(FAKEROOT)/usr/share/lintian/overrides/$(PACKAGE)

@@ -36,7 +36,7 @@ fi
 
 for distro in ${distros[@]}; do
   define_array release_versions ".${distro}.release_versions | keys"
-  define_array channels ".${distro}.channels"
+  define_array channels ".${distro}.channels | keys"
   if [ ! -z "$2" ]; then
     if [[ " ${release_versions[*]} " =~ " $2 " ]]; then
       release_versions=($2)
@@ -47,18 +47,22 @@ for distro in ${distros[@]}; do
   fi
   for release_version in ${release_versions[@]}; do
     release_alias=$(read_value ".${distro}.release_versions.\"${release_version}\".alias")
-    define_array additional_channels ".${distro}.release_versions.\"${release_version}\".additional_channels"
+    define_array additional_channels ".${distro}.release_versions.\"${release_version}\".additional_channels | keys"
     dest_dir="DEBS/$distro/$release_version"
     mkdir -p $dest_dir
     configure_list SOURCES/microsoft-prod.list "$distro" "$release_version" prod "$release_alias"
-    make DISTRO=$distro RELVER=$release_version
+    make DISTRO=$distro RELVER=$release_version DEB=packages-microsoft-prod.deb
     rm SOURCES/microsoft-prod.list
     mv *.deb $dest_dir
     make clean
 
     for channel in ${channels[@]}; do
       # These go in the prod repo but in a different distribution.
-      configure_list $dest_dir/$channel.list "$distro" "$release_version" prod "$channel"
+      case "$channel" in
+        prod) distribution="$release_alias" ;;
+        *) distribution="$channel" ;;
+      esac
+      configure_list $dest_dir/$channel.list "$distro" "$release_version" prod "$distribution"
     done
     for channel in ${additional_channels[@]}; do
       # These go in separate repos with the release alias as the distribution.
