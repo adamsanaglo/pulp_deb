@@ -1,4 +1,5 @@
 import ssl
+from importlib.metadata import version
 from typing import Any, Dict, Optional
 
 from pydantic import BaseSettings, PostgresDsn
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api/v4"
     DEBUG: bool
     PROJECT_NAME: str = "pmcserver"
-    VERSION: str = "0.0.1"
+    VERSION: str = version("pmcserver")
 
     PULP_HOST: str
     PULP_API_PATH: str = "/pulp/api/v3"

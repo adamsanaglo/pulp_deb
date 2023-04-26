@@ -1,0 +1,2 @@
+Fixed a bug where server version was reported incorrectly at /api/ (in addition to /api/v4/). Now
+the correct version is reported solely at /api/v4/.

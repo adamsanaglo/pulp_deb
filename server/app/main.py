@@ -3,7 +3,6 @@ import logging.config
 import time
 from typing import Any, Awaitable, Callable, Dict
 
-import pkg_resources
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError as ValidationError
@@ -92,7 +91,6 @@ def root() -> str:
 @root_router.get("/api/", status_code=200)
 def api(request: Request) -> Dict[str, Any]:
     return {
-        "server": {"version": settings.VERSION},
         "versions": {"v4": "v4/"},
     }
 
@@ -101,7 +99,7 @@ def api(request: Request) -> Dict[str, Any]:
 @root_router.get("/api/v4/", status_code=200)
 def api_v4(request: Request) -> Dict[str, Any]:
     return {
-        "version": pkg_resources.get_distribution("pmcserver").version,
+        "version": settings.VERSION,
         "min_cli_version": settings.MIN_CLI_VERSION,
     }
 
