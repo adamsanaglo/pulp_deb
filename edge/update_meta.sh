@@ -55,7 +55,22 @@ if [ -e "$pockets" ]; then
 else
     opts=""
 fi
-curl -s -L -o $pockets $opts https://pmc-distro.trafficmanager.net/info/apt-repos.txt
+
+# try to fetch apt-repos.txt 5 times with 5 second delay between retries
+for i in {1..5}; do
+    curl --fail -s -L -o $pockets $opts https://pmc-distro.trafficmanager.net/info/apt-repos.txt
+    status_code=$?
+    if [ $status_code -eq 0 ]; then
+        break
+    fi
+    sleep 5
+done
+if [ $status_code -ne 0 ]; then
+    log "Failed to fetch apt-repos.txt (curl status $status_code)"
+    # Let the next cron job invocation try again
+    rm $runfile 
+    exit 1
+fi
 
 for pocket in $(cat $pockets); do
     block_job_count_ge $max_jobs
