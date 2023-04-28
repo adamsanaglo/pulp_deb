@@ -4,13 +4,12 @@ import sys
 from contextlib import suppress
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Pattern, Union
+from typing import Any, Callable, Dict, Optional, Pattern, Tuple, Union
 
 import click
 import tomli
 import typer
 from click.exceptions import UsageError
-from packaging import version
 
 from pmc.client import client
 from pmc.constants import CLI_VERSION
@@ -196,9 +195,12 @@ def build_params(limit: int, offset: int, **kwargs: Any) -> Dict[str, Any]:
 
 
 def check_version() -> None:
+    def _version(version_str: str) -> Tuple[int, ...]:
+        return tuple(map(int, version_str.split(".")))
+
     resp = client.get("/")
     min_version = resp.json()["min_cli_version"]
-    if version.parse(CLI_VERSION) < version.parse(min_version):
+    if _version(CLI_VERSION) < _version(min_version):
         typer.echo(
             f"Warning!! Your current CLI version {CLI_VERSION} is older than the "
             f"recommended minimum version {min_version}. Please upgrade your cli.",

@@ -1,4 +1,4 @@
-import pkg_resources
+from importlib.metadata import version
 
 
 class NamedString(str):
@@ -12,4 +12,4 @@ class NamedString(str):
 LIST_SEPARATOR = NamedString(",")
 LIST_SEPARATOR.name = "comma"
 
-CLI_VERSION = pkg_resources.get_distribution("pmc-cli").version
+CLI_VERSION = version("pmc-cli")
