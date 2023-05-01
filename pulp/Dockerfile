@@ -109,7 +109,7 @@ RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulpcore/0003-Redirect
 
 # Apply our pulp_deb patches until upstream accepts/releases our merge requests
 COPY container-assets/pulp_deb /tmp/pulp_deb
-RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0001-Merged-PRs-6822668-And-6834315-Add-pulp_deb-filters.patch # https://github.com/pulp/pulp_deb/pull/647
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0001-Add-filters-to-select-by-related-pulp_deb-content-ty.patch # https://github.com/pulp/pulp_deb/pull/647
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0002-Merged-PR-6941077-Apply-release-fields-feature-to-pu.patch # https://github.com/pulp/pulp_deb/pull/656
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0003-Merged-PR-6950075-Re-apply-pulp_deb-release-field-pa.patch # ^
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0004-Merged-PR-7045448-Preserve-the-names-of-deb-packages.patch # https://github.com/pulp/pulp_deb/issues/696

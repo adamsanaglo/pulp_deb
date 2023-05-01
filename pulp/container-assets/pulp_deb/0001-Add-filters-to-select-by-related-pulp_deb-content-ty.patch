@@ -1,31 +1,23 @@
-From 96710db7a18ea17ed1947a7bac92f14bc50d4fc4 Mon Sep 17 00:00:00 2001
+From 680375590716c173fc3dd593395647e28e62a6fc Mon Sep 17 00:00:00 2001
 From: Stephen Herr <stephenherr@microsoft.com>
 Date: Wed, 28 Sep 2022 12:10:02 -0400
 Subject: [PATCH] Add filters to select by related pulp_deb content types
 
 closes #646
 ---
- CHANGES/646.feature              |   1 +
- pulp_deb/app/viewsets/content.py | 134 ++++++++++++++++++++++++++++++-
- 2 files changed, 134 insertions(+), 1 deletion(-)
- create mode 100644 CHANGES/646.feature
+ pulp_deb/app/viewsets/content.py | 153 ++++++++++++++++++++++++++++++-
+ 1 file changed, 152 insertions(+), 1 deletion(-)
 
-diff --git a/CHANGES/646.feature b/CHANGES/646.feature
-new file mode 100644
-index 0000000..ac68991
---- /dev/null
-+++ b/CHANGES/646.feature
-@@ -0,0 +1 @@
-+Added API filters to limit results by related pulp_deb content types.
 diff --git a/pulp_deb/app/viewsets/content.py b/pulp_deb/app/viewsets/content.py
-index a2e14d5..e7da3f4 100644
+index a2e14d5..c549312 100644
 --- a/pulp_deb/app/viewsets/content.py
 +++ b/pulp_deb/app/viewsets/content.py
-@@ -1,8 +1,11 @@
+@@ -1,8 +1,12 @@
  from gettext import gettext as _  # noqa
  
 +from django_filters import Filter
-+from pulpcore.plugin.models import RepositoryVersion
++from pulpcore.plugin.models import Repository, RepositoryVersion
++from pulpcore.plugin.serializers.content import ValidationError
  from pulpcore.plugin.viewsets import (
 -    ContentViewSet,
      ContentFilter,
@@ -34,7 +26,7 @@ index a2e14d5..e7da3f4 100644
      SingleArtifactContentUploadViewSet,
  )
  
-@@ -36,11 +39,120 @@ class GenericContentViewSet(SingleArtifactContentUploadViewSet):
+@@ -36,11 +40,134 @@ class GenericContentViewSet(SingleArtifactContentUploadViewSet):
      filterset_class = GenericContentFilter
  
  
@@ -87,14 +79,18 @@ index a2e14d5..e7da3f4 100644
 +    """
 +
 +    HELP = "Override with your value-specific help message"
++    ARG = "Override with the type of your arg, for example package_href"
 +    GENERIC_HELP = """
-+    Must be a comma-separated string: "value,repository_version_href"
-+    value: %s
-+    repository_version_href: The RepositoryVersion href to filter by
++    Must be a comma-separated string: "{arg},repository_or_repository_version_href"
++    {arg}: {help}
++    repository_or_repository_version_href: The RepositoryVersion href to filter by, or Repository
++        href (assume latest version)
 +    """
 +
 +    def __init__(self, *args, **kwargs):
-+        kwargs.setdefault("help_text", _(self.GENERIC_HELP) % _(self.HELP))
++        kwargs.setdefault(
++            "help_text", _(self.GENERIC_HELP).format(arg=_(self.ARG), help=_(self.HELP))
++        )
 +        super().__init__(*args, **kwargs)
 +
 +    def filter(self, qs, value):
@@ -107,12 +103,18 @@ index a2e14d5..e7da3f4 100644
 +            # user didn't supply a value
 +            return qs
 +
-+        my_value, repo_version_href = value.split(",", 1)
-+        if not my_value or not repo_version_href or "," in repo_version_href:
-+            # malformed input, bail
-+            return qs
++        repo_version = None
++        my_value, r_or_rv_href = value.split(",", 1)
++        if not my_value or not r_or_rv_href or "," in r_or_rv_href:
++            raise ValidationError(detail=_("Invalid value supplied for content filter"))
 +
-+        repo_version = NamedModelViewSet.get_resource(repo_version_href, RepositoryVersion)
++        repo_version = NamedModelViewSet.get_resource(r_or_rv_href)
++        if isinstance(repo_version, Repository):
++            repo_version = repo_version.latest_version()
++
++        if not isinstance(repo_version, RepositoryVersion):
++            raise ValidationError(detail=_("Invalid value supplied for content filter"))
++
 +        prc_qs = models.PackageReleaseComponent.objects.filter(pk__in=repo_version.content)
 +
 +        return self._filter(qs, my_value, prc_qs)
@@ -129,18 +131,22 @@ index a2e14d5..e7da3f4 100644
 +
 +
 +class PackageToReleaseComponentFilter(ContentRelationshipFilter):
-+    HELP = "(ReleaseComponent uuid) Filter results where Package in ReleaseComponent"
++    HELP = "Filter results where Package in ReleaseComponent"
++    ARG = "release_component_href"
 +
 +    def _filter(self, qs, value, prc_qs):
-+        prc_qs = prc_qs.filter(release_component=value)
++        rc = NamedModelViewSet.get_resource(value, models.structure_content.ReleaseComponent)
++        prc_qs = prc_qs.filter(release_component__pk=rc.pk)
 +        return qs.filter(deb_packagereleasecomponent__in=prc_qs)
 +
 +
 +class PackageToReleaseFilter(ContentRelationshipFilter):
-+    HELP = "(Release uuid) Filter results where Package in Release"
++    HELP = "Filter results where Package in Release"
++    ARG = "release_href"
 +
 +    def _filter(self, qs, value, prc_qs):
-+        prc_qs = prc_qs.filter(release_component__release=value)
++        r = NamedModelViewSet.get_resource(value, models.structure_content.Release)
++        prc_qs = prc_qs.filter(release_component__release__pk=r.pk)
 +        return qs.filter(deb_packagereleasecomponent__in=prc_qs)
 +
 +
@@ -155,15 +161,17 @@ index a2e14d5..e7da3f4 100644
      class Meta:
          model = models.Package
          fields = [
-@@ -215,11 +327,21 @@ class InstallerFileIndexViewSet(ContentViewSet):
+@@ -215,11 +342,23 @@ class InstallerFileIndexViewSet(ContentViewSet):
      filterset_class = InstallerFileIndexFilter
  
  
 +class ReleaseToPackageFilter(ContentRelationshipFilter):
-+    HELP = "(Package uuid) Filter results where Release contains Package"
++    HELP = "Filter results where Release contains Package"
++    ARG = "package_href"
 +
 +    def _filter(self, qs, value, prc_qs):
-+        prc_qs = prc_qs.filter(package=value)
++        p = NamedModelViewSet.get_resource(value, models.content.Package)
++        prc_qs = prc_qs.filter(package__pk=p.pk)
 +        return qs.filter(deb_releasecomponent__deb_packagereleasecomponent__in=prc_qs)
 +
 +
@@ -177,15 +185,17 @@ index a2e14d5..e7da3f4 100644
      class Meta:
          model = models.Release
          fields = ["codename", "suite", "distribution"]
-@@ -272,11 +394,21 @@ class ReleaseArchitectureViewSet(ContentViewSet):
+@@ -272,11 +411,23 @@ class ReleaseArchitectureViewSet(ContentViewSet):
      filterset_class = ReleaseArchitectureFilter
  
  
 +class ReleaseComponentToPackageFilter(ContentRelationshipFilter):
-+    HELP = "(Package uuid) Filter results where ReleaseComponent contains Package"
++    HELP = "Filter results where ReleaseComponent contains Package"
++    ARG = "package_href"
 +
 +    def _filter(self, qs, value, prc_qs):
-+        prc_qs = prc_qs.filter(package=value)
++        p = NamedModelViewSet.get_resource(value, models.content.Package)
++        prc_qs = prc_qs.filter(package__pk=p.pk)
 +        return qs.filter(deb_packagereleasecomponent__in=prc_qs)
 +
 +

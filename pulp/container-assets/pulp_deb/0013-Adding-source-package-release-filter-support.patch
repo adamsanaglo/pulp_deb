@@ -1,19 +1,19 @@
-From 1a8792ecad1040867d7a5f08d0e10df340f51f39 Mon Sep 17 00:00:00 2001
+From e66c8a39417e912a3c8267e5a37e8cfdf860d690 Mon Sep 17 00:00:00 2001
 From: Moustafa Moustafa <momousta@microsoft.com>
-Date: Tue, 28 Mar 2023 13:22:45 -0500
+Date: Fri, 28 Apr 2023 14:15:12 -0400
 Subject: [PATCH] Adding source package release filter support
 
 ---
- pulp_deb/app/viewsets/content.py | 34 ++++++++++++++++++++++++++------
- 1 file changed, 28 insertions(+), 6 deletions(-)
+ pulp_deb/app/viewsets/content.py | 38 +++++++++++++++++++++++++++-----
+ 1 file changed, 32 insertions(+), 6 deletions(-)
 
 diff --git a/pulp_deb/app/viewsets/content.py b/pulp_deb/app/viewsets/content.py
-index c957ebb..a9034c3 100644
+index df22de8..ecb18e9 100644
 --- a/pulp_deb/app/viewsets/content.py
 +++ b/pulp_deb/app/viewsets/content.py
-@@ -115,16 +115,19 @@ class ContentRelationshipFilter(Filter):
+@@ -126,16 +126,19 @@ class ContentRelationshipFilter(Filter):
+             raise ValidationError(detail=_("Invalid value supplied for content filter"))
  
-         repo_version = NamedModelViewSet.get_resource(repo_version_href, RepositoryVersion)
          prc_qs = models.PackageReleaseComponent.objects.filter(pk__in=repo_version.content)
 +        sprc_qs = models.SourcePackageReleaseComponent.objects.filter(pk__in=repo_version.content)
  
@@ -33,63 +33,68 @@ index c957ebb..a9034c3 100644
          """
          raise NotImplementedError
  
-@@ -132,7 +135,7 @@ class ContentRelationshipFilter(Filter):
- class PackageToReleaseComponentFilter(ContentRelationshipFilter):
-     HELP = "(ReleaseComponent uuid) Filter results where Package in ReleaseComponent"
+@@ -144,7 +147,7 @@ class PackageToReleaseComponentFilter(ContentRelationshipFilter):
+     HELP = "Filter results where Package in ReleaseComponent"
+     ARG = "release_component_href"
  
 -    def _filter(self, qs, value, prc_qs):
 +    def _filter(self, qs, value, prc_qs, sprc_qs):
-         prc_qs = prc_qs.filter(release_component=value)
+         rc = NamedModelViewSet.get_resource(value, models.structure_content.ReleaseComponent)
+         prc_qs = prc_qs.filter(release_component__pk=rc.pk)
          return qs.filter(deb_packagereleasecomponent__in=prc_qs)
- 
-@@ -140,11 +143,27 @@ class PackageToReleaseComponentFilter(ContentRelationshipFilter):
- class PackageToReleaseFilter(ContentRelationshipFilter):
-     HELP = "(Release uuid) Filter results where Package in Release"
+@@ -154,12 +157,32 @@ class PackageToReleaseFilter(ContentRelationshipFilter):
+     HELP = "Filter results where Package in Release"
+     ARG = "release_href"
  
 -    def _filter(self, qs, value, prc_qs):
 +    def _filter(self, qs, value, prc_qs, sprc_qs):
-         prc_qs = prc_qs.filter(release_component__release=value)
+         r = NamedModelViewSet.get_resource(value, models.structure_content.Release)
+         prc_qs = prc_qs.filter(release_component__release__pk=r.pk)
          return qs.filter(deb_packagereleasecomponent__in=prc_qs)
  
  
 +class SourcePackageToReleaseComponentFilter(ContentRelationshipFilter):
-+    HELP = "(ReleaseComponent uuid) Filter results where SourcePackage in ReleaseComponent"
++    HELP = "Filter results where SourcePackage in ReleaseComponent"
++    ARG = "release_component_href"
 +
 +    def _filter(self, qs, value, prc_qs, sprc_qs):
-+        sprc_qs = sprc_qs.filter(release_component=value)
++        rc = NamedModelViewSet.get_resource(value, models.structure_content.ReleaseComponent)
++        sprc_qs = sprc_qs.filter(release_component__pk=rc.pk)
 +        return qs.filter(deb_sourcepackagereleasecomponent__in=sprc_qs)
 +
 +
 +class SourcePackageToReleaseFilter(ContentRelationshipFilter):
-+    HELP = "(Release uuid) Filter results where Package in Release"
++    HELP = "Filter results where SourcePackage in Release"
++    ARG = "release_href"
 +
 +    def _filter(self, qs, value, prc_qs, sprc_qs):
-+        sprc_qs = sprc_qs.filter(release_component__release=value)
++        r = NamedModelViewSet.get_resource(value, models.structure_content.Release)
++        sprc_qs = sprc_qs.filter(release_component__release__pk=r.pk)
 +        return qs.filter(deb_sourcepackagereleasecomponent__in=sprc_qs)
 +
 +
  class PackageFilter(ContentFilter):
      """
      FilterSet for Package.
-@@ -360,7 +379,7 @@ class InstallerFileIndexViewSet(ContentViewSet):
- class ReleaseToPackageFilter(ContentRelationshipFilter):
-     HELP = "(Package uuid) Filter results where Release contains Package"
+@@ -376,7 +399,7 @@ class ReleaseToPackageFilter(ContentRelationshipFilter):
+     HELP = "Filter results where Release contains Package"
+     ARG = "package_href"
  
 -    def _filter(self, qs, value, prc_qs):
 +    def _filter(self, qs, value, prc_qs, sprc_qs):
-         prc_qs = prc_qs.filter(package=value)
+         p = NamedModelViewSet.get_resource(value, models.content.Package)
+         prc_qs = prc_qs.filter(package__pk=p.pk)
          return qs.filter(deb_releasecomponent__deb_packagereleasecomponent__in=prc_qs)
- 
-@@ -427,7 +446,7 @@ class ReleaseArchitectureViewSet(ContentViewSet):
- class ReleaseComponentToPackageFilter(ContentRelationshipFilter):
-     HELP = "(Package uuid) Filter results where ReleaseComponent contains Package"
+@@ -445,7 +468,7 @@ class ReleaseComponentToPackageFilter(ContentRelationshipFilter):
+     HELP = "Filter results where ReleaseComponent contains Package"
+     ARG = "package_href"
  
 -    def _filter(self, qs, value, prc_qs):
 +    def _filter(self, qs, value, prc_qs, sprc_qs):
-         prc_qs = prc_qs.filter(package=value)
+         p = NamedModelViewSet.get_resource(value, models.content.Package)
+         prc_qs = prc_qs.filter(package__pk=p.pk)
          return qs.filter(deb_packagereleasecomponent__in=prc_qs)
- 
-@@ -492,6 +511,9 @@ class SourcePackageFilter(ContentFilter):
+@@ -511,6 +534,9 @@ class SourcePackageFilter(ContentFilter):
      FilterSet for Debian Source Packages.
      """
  
@@ -100,5 +105,5 @@ index c957ebb..a9034c3 100644
          model = models.SourcePackage
          fields = [
 -- 
-2.25.1
+2.31.1
 

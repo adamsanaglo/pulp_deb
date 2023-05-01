@@ -573,19 +573,20 @@ class PackageApi(PulpApi):
         if not params:
             params = {}
 
-        # Translate the repo_id into the repo_version_href pulp wants, if provided.
-        if params.get("repository", None):
-            params = params.copy()
-            repository = params.pop("repository")
-            repo_id = RepoId(repository)
-            params["repository_version"] = await RepositoryApi.latest_version_href(repo_id)
-
+        repository = params.pop("repository", None)
         if endpoint_args["type"] in [PackageType.deb, PackageType.deb_src] and (
             release := params.get("release", None)
         ):
-            if "repository_version" not in params:
+            if not repository:
                 raise ValueError("Must supply repository when filtering by release.")
-            params["release"] = f"{release.uuid},{params['repository_version']}"
+
+            # latest repo_version is assumed, doesn't need to be looked up
+            repo_href = id_to_pulp_href(RepoId(repository))
+            params["release"] = f"{id_to_pulp_href(release)},{repo_href}"
+        elif repository:
+            # Translate the repo_id into the repo_version_href pulp wants, if provided.
+            repo_id = RepoId(repository)
+            params["repository_version"] = await RepositoryApi.latest_version_href(repo_id)
 
         return await super().list(pagination, params, **endpoint_args)
 
