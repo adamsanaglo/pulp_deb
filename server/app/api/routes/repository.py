@@ -231,7 +231,7 @@ async def bulk_delete(
 
     packages, ids, names, filenames = list(), [], set(), []
     for type, package_queries in type_to_queries.items():
-        packages += await package_lookup(
+        packages = await package_lookup(
             id, type, delete_cmd.release, package_queries=package_queries
         )
         name_field = type.pulp_name_field

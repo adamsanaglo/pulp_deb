@@ -1,6 +1,8 @@
 import json
 from collections import Counter
-from typing import Any, List, Optional
+from typing import Any, Generator, List, Optional
+
+import pytest
 
 from pmc.constants import LIST_SEPARATOR
 from pmc.schemas import Role
@@ -124,17 +126,20 @@ def _build_package_list_command(repo_id: str, release: Optional[str] = None) -> 
     return list_cmd
 
 
-def _update_list_packages(
+def _add_list_packages(
     package_ids: List[str], package_types: List[str], repo_id: str, release: Optional[str] = None
 ) -> None:
-    # Note: Not a test. You can't just shove any package in any repo. See callers below.
     become(Role.Repo_Admin)
     add_cmd = _build_package_update_command(repo_id, package_ids, "add", release)
-    list_cmd = _build_package_list_command(repo_id, release)
 
     result = invoke_command(add_cmd)
     assert result.exit_code == 0, f"adding package to repo failed: {result.stderr}"
 
+
+def _assert_packages_count_ids(
+    package_ids: List[str], package_types: List[str], repo_id: str, release: Optional[str] = None
+) -> None:
+    list_cmd = _build_package_list_command(repo_id, release)
     package_types_counter = Counter(package_types)
     for package_type, count in package_types_counter.items():
         list_cmd[1:2] = [package_type]
@@ -147,11 +152,22 @@ def _update_list_packages(
             id_index = package_ids.index(resp_result["id"])
             assert package_type == package_types[id_index]
 
-    cmd = _build_package_update_command(repo_id, package_ids, "remove")
-    result = invoke_command(cmd)
+
+def _remove_list_packages(
+    package_ids: List[str], package_types: List[str], repo_id: str, release: Optional[str] = None
+) -> None:
+    become(Role.Repo_Admin)
+    remove_cmd = _build_package_update_command(repo_id, package_ids, "remove")
+    result = invoke_command(remove_cmd)
     assert result.exit_code == 0, f"removing package from repo failed: {result.stderr}"
 
+
+def _assert_no_packages_listed(
+    package_types: List[str], repo_id: str, release: Optional[str] = None
+) -> None:
+    package_types_counter = Counter(package_types)
     for package_type in package_types_counter.keys():
+        list_cmd = _build_package_list_command(repo_id, release)
         list_cmd[1:2] = [package_type]
         result = invoke_command(list_cmd)
         assert result.exit_code == 0
@@ -159,47 +175,48 @@ def _update_list_packages(
         assert response["count"] == 0
 
 
-def test_yum_update_list_packages(rpm_package: Any, yum_repo: Any) -> None:
-    _update_list_packages([rpm_package["id"]], ["rpm"], yum_repo["id"])
-
-
-def test_apt_update_list_packages(deb_package: Any, release: Any) -> None:
-    _update_list_packages(
-        [deb_package["id"]],
-        ["deb"],
-        release["repository_id"],
-        release["name"],
-    )
-
-
-def test_apt_update_list_source_packages(deb_src_package: Any, release: Any) -> None:
-    _update_list_packages(
-        [deb_src_package["id"]],
-        ["debsrc"],
-        release["repository_id"],
-        release["name"],
-    )
-
-
-def test_apt_update_list_deb_and_debsrc_packages(
-    deb_package: Any, deb_src_package: Any, release: Any
+def _update_list_packages(
+    package_ids: List[str], package_types: List[str], repo_id: str, release: Optional[str] = None
 ) -> None:
-    _update_list_packages(
-        [deb_src_package["id"], deb_package["id"]],
-        ["debsrc", "deb"],
-        release["repository_id"],
-        release["name"],
-    )
+    # Note: Not a test. You can't just shove any package in any repo. See callers below.
+    _add_list_packages(package_ids, package_types, repo_id, release)
+
+    _assert_packages_count_ids(package_ids, package_types, repo_id, release)
+
+    _remove_list_packages(package_ids, package_types, repo_id, release)
+
+    _assert_no_packages_listed(package_types, repo_id, release)
 
 
-def test_apt_update_list_two_deb_packages(
-    deb_package: Any, zst_deb_package: Any, release: Any
-) -> None:
+@pytest.fixture(
+    params=[
+        (["deb_package"], ["deb"], "release"),
+        (["deb_src_package"], ["debsrc"], "release"),
+        (["deb_package", "deb_src_package"], ["deb", "debsrc"], "release"),
+        (["deb_package", "zst_deb_package"], ["deb", "deb"], "release"),
+        (["rpm_package"], ["rpm"], "yum_repo"),
+    ],
+    ids=["deb", "debsrc", "deb_debsrc", "deb_zst", "rpm"],
+)
+def package_info(request: Any) -> Generator[Any, None, None]:
+    ids = [request.getfixturevalue(pf)["id"] for pf in request.param[0]]
+    types = request.param[1]
+
+    if request.param[2] == "release":
+        release = request.getfixturevalue(request.param[2])
+        yield ids, types, release["repository_id"], release["name"]
+    else:
+        repo = request.getfixturevalue(request.param[2])["id"]
+        yield ids, types, repo, None
+
+
+def test_apt_update_list_packages(package_info: Any, release: Any) -> None:
+    package_ids, types, repo_id, release_name = package_info
     _update_list_packages(
-        [zst_deb_package["id"], deb_package["id"]],
-        ["deb", "deb"],
-        release["repository_id"],
-        release["name"],
+        package_ids,
+        types,
+        repo_id,
+        release_name,
     )
 
 
@@ -369,8 +386,29 @@ def test_purge(yum_repo: Any, rpm_package: Any) -> None:
     assert result.exit_code == 0, f"repo purge failed: {result.stderr}"
 
     # Assert has no content
-    result = invoke_command(["package", "rpm", "list", "--repo", repo_id])
-    assert result.exit_code == 0, f"repo list failed: {result.stderr}"
-    response = json.loads(result.stdout)
-    assert "count" in response
-    assert response["count"] == 0
+    _assert_no_packages_listed(["rpm"], repo_id)
+
+
+def test_purge_apt(release: Any, deb_package: Any, deb_src_package: Any) -> None:
+    repo_id = release["repository_id"]
+    release_name = release["name"]
+    _add_list_packages(
+        [deb_src_package["id"], deb_package["id"]],
+        ["debsrc", "deb"],
+        repo_id,
+        release_name,
+    )
+
+    _assert_packages_count_ids(
+        [deb_src_package["id"], deb_package["id"]],
+        ["debsrc", "deb"],
+        repo_id,
+        release_name,
+    )
+
+    # purge repo
+    result = invoke_command(["repo", "purge", repo_id, "--confirm"])
+    assert result.exit_code == 0, f"repo purge failed: {result.stderr}"
+
+    # Assert has no content
+    _assert_no_packages_listed(["deb", "debsrc"], repo_id, release_name)
