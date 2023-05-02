@@ -1,0 +1,8 @@
+- name: Index
+  href: index.md
+- name: AKS Cluster Failed
+  href: aks_cluster_failed.md
+- name: Publisher Onboarding
+  href: publisher_onboarding.md
+- name: Emergency Cert Rotation (ECR)
+  href: ecr.md

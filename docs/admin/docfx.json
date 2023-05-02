@@ -1,0 +1,44 @@
+{
+  "build": {
+    "content": [
+      {
+        "files": [ "**/*.yml", "**/*.md" ]
+      },
+      {
+        "files": [
+          ".{md,yml}"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**",
+          "**/*.{png,PNG}",
+          "**/*.{jpg,JPG}",
+          "Scripts/**"
+        ]
+      }
+    ],
+    "dest": "_site",
+    "markdownEngineName": "markdig",
+    "globalMetadata": {
+      "_appTitle": "PMC - Admin/TSGs",
+      "_enableSearch": "true",
+      "_enableNewTab": "true",
+      "_gitContribute": {
+        "branch": "main"
+      }
+      },
+    "fileMetadataFiles": [],
+    "template": [
+      "default",
+      "_templates/last-modified"
+    ],
+    "postProcessors": [ "LastModifiedPostProcessor" ],
+    "noLangKeyword": false,
+    "keepFileLink": false,
+    "cleanupCacheHistory": false,
+    "disableGitFeatures": false
+  }
+}
