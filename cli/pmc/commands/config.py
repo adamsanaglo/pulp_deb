@@ -26,7 +26,7 @@ QUIET_OPT = typer.Option(
     False,
     "--quiet",
     "-q",
-    help="Silence output except for warnings, errors, and the final command result.",
+    help="Silence output except for critical warnings, errors, and the final command result.",
 )
 SSL_VERIFY_OPT = typer.Option(True, help="Verify the ssl cert.", hidden=True)
 RESP_FORMAT_OPT = typer.Option(Format.json, "--format", hidden=True)  # TODO: add more formats

@@ -208,4 +208,14 @@ def handle_response(
     if not ctx.no_wait and task_id:
         resp = poll_task(task_id, task_handler, ctx.quiet)
 
-    output_json(ctx, resp.json(), task_id is not None)
+    output = resp.json()
+    output_json(ctx, output, task_id is not None)
+    if (
+        output.get("count", 0) > len(output.get("results", []))
+        and output.get("offset", -1) == 0
+        and not ctx.quiet
+    ):
+        typer.echo(
+            "Warning: Results are paginated. Use --offset (and/or --limit) to view more results.",
+            err=True,
+        )
