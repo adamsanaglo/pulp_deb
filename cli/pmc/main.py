@@ -89,24 +89,24 @@ def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
 
 def format_exception(exception: BaseException) -> Dict[str, Any]:
     """Build an error dict from an exception."""
-    if isinstance(exception, requests.HTTPError) and exception.response.status_code == 401:
-        return {
-            "http_status": 401,
-            "message": "Unauthorized, ensure that you have logged in by setting the msal options",
-            "command_traceback": str(exception.request.url),
+    if isinstance(exception, requests.HTTPError):
+        if exception.response.status_code == 401:
+            message = "Unauthorized, ensure that you have logged in by setting the msal options"
+        else:
+            message = str(exception)
+
+        err: Dict[str, Any] = {
+            "message": message,
+            "http_status": exception.response.status_code,
+            "url": str(exception.request.url),
         }
-    elif isinstance(exception, requests.HTTPError):
-        err: Dict[str, Any] = {"message": str(exception)}
 
         try:
-            resp_json = exception.response.json()
-            err["detail"] = resp_json.get("detail")
-        except (json.decoder.JSONDecodeError, AttributeError):
+            err["detail"] = exception.response.json().get("detail")
+        except json.decoder.JSONDecodeError:
             if exception.response.text:
                 err["detail"] = exception.response.text
 
-        err["http_status"] = exception.response.status_code
-        err["url"] = str(exception.request.url)
         if "x-correlation-id" in exception.response.headers:
             err["correlation_id"] = exception.response.headers["x-correlation-id"]
     elif isinstance(exception, PulpTaskFailure):
@@ -115,7 +115,6 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
             "message": exception.original_message,
             "command_traceback": exception.original_traceback,
         }
-        return err
     elif isinstance(exception, ValidationError):
         # config validation error
         err = {
