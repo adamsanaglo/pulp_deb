@@ -206,7 +206,7 @@ class Identifier(str):
     Based on https://pydantic-docs.helpmanual.io/usage/types/#classes-with-__get_validators__
     """
 
-    pattern: Pattern[str] = re.compile(rf"^([a-z-]+)-({uuid_group})$")
+    pattern: Pattern[str] = re.compile(rf"^([a-z-]+)-({uuid_group})(-versions-\d+)?$")
     examples: List[str] = []
 
     @classmethod
