@@ -25,7 +25,7 @@ from app.core.schemas import (
     RepoVersionId,
     TaskId,
 )
-from app.services.pulp.utils import get_client, id_to_pulp_href, memoize, sha256, translate_response
+from app.services.pulp.utils import get_client, memoize, sha256, translate_response
 
 T = TypeVar("T", bound="PulpApi")
 
@@ -55,6 +55,12 @@ class PulpApi:
             # lazily instantiate the client once
             logger.debug("Creating Pulp httpx client")
             context["httpx_client"] = get_client()
+
+        # translate Identifiers back into pulp_hrefs before sending the request
+        for my_arg in ("data", "params", "json"):
+            for key, value in kwargs.get(my_arg, {}).items():
+                if isinstance(value, Identifier):
+                    kwargs[my_arg][key] = value.pulp_href
 
         resp = await context["httpx_client"].request(*args, **kwargs)
 
@@ -192,8 +198,6 @@ class RepositoryApi(PulpApi):
         type = data.pop("type")
         if type in [RepoType.yum, RepoType.apt]:
             await cls._set_gpg_fields(data, type)
-        if remote := data.get("remote", None):
-            data["remote"] = id_to_pulp_href(remote)
         resp = await cls.post(cls.endpoint("create", type=type), json=data)
         ret = translate_response(resp.json())
         await cls._translate_signing_service(ret)
@@ -210,8 +214,6 @@ class RepositoryApi(PulpApi):
     async def update(cls, id: RepoId, data: Dict[str, Any]) -> Any:
         if cls.SS in data:
             await cls._set_gpg_fields(data, id.type)
-        if data.get("remote", False):
-            data["remote"] = id_to_pulp_href(data.pop("remote"))
         return await super().update(id, data)
 
     @classmethod
@@ -234,7 +236,7 @@ class RepositoryApi(PulpApi):
         """Update a repo's content by calling the repo modify endpoint."""
 
         def _translate_ids(ids: List[ContentId]) -> List[str]:
-            return [id_to_pulp_href(content_id) for content_id in ids]
+            return [content_id.pulp_href for content_id in ids]
 
         data = {}
         if add_content:
@@ -254,10 +256,10 @@ class RepositoryApi(PulpApi):
         return await PublicationApi.create(data)
 
     @classmethod
-    async def latest_version_href(cls, repo_id: RepoId) -> str:
+    async def latest_version(cls, repo_id: RepoId) -> RepoVersionId:
         """Get the latest version href for a repo id."""
         repo = await cls.read(repo_id)
-        return id_to_pulp_href(RepoVersionId(repo["latest_version"]))
+        return RepoVersionId(repo["latest_version"])
 
     @staticmethod
     def detail_uri(type: Any) -> str:
@@ -303,8 +305,6 @@ class RepoVersionApi(PulpApi):
 
         if repo_id := params.pop("repository", False):
             endpoint_args["repository"] = RepoId(repo_id)
-        if content_id := params.pop("content", False):
-            params["content"] = id_to_pulp_href(content_id)
 
         return await super().list(pagination, params, **endpoint_args)
 
@@ -330,35 +330,17 @@ class RepoVersionApi(PulpApi):
 
 class PublicationApi(PulpApi):
     @classmethod
-    async def list(
-        cls,
-        pagination: Optional[Pagination] = None,
-        params: Optional[Dict[str, Any]] = None,
-        **endpoint_args: Any,
-    ) -> Any:
-        if not params:
-            params = {}
-        if repo_version := params.pop("repository_version", False):
-            params["repository_version"] = id_to_pulp_href(RepoVersionId(repo_version))
-        if repo := params.pop("repository", False):
-            params["repository"] = id_to_pulp_href(RepoId(repo))
-        if content := params.pop("content", False):
-            params["content"] = id_to_pulp_href(PackageId(content))
-
-        return await super().list(pagination, params, **endpoint_args)
-
-    @classmethod
     async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Call the create endpoint."""
-        repo_id = data.pop("repository")
-        type = RepoId(repo_id).publication_type
+        repo_id = RepoId(data.pop("repository"))
+        type = repo_id.publication_type
 
         if type == RepoType.apt:
             data["structured"] = True
         if type == RepoType.file:
             data["manifest"] = "FILE_MANIFEST"
 
-        data["repository"] = id_to_pulp_href(repo_id)
+        data["repository"] = repo_id
         resp = await cls.post(cls.endpoint("create", type=type), json=data)
         return translate_response(resp.json())
 
@@ -452,25 +434,16 @@ class DistributionApi(PulpApi):
             params = {}
 
         if repository := params.pop("repository", None):
-            params["repository"] = id_to_pulp_href(repository)
+            params["repository"] = repository
 
         return await super().list(pagination, params, **endpoint_args)
 
     @classmethod
     async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Override the distro create method to set repository."""
-        if "repository" in data:
-            data["repository"] = id_to_pulp_href(data["repository"])
         type = data.pop("type")
         resp = await cls.post(cls.endpoint("create", type=type), json=data)
         return translate_response(resp.json())
-
-    @classmethod
-    async def update(cls, id: DistroId, data: Dict[str, Any]) -> Any:
-        """Override the distro update method to set repository."""
-        if "repository" in data:
-            data["repository"] = id_to_pulp_href(data["repository"])
-        return await super().update(id, data)
 
     @staticmethod
     def _detail_uri(type: Any) -> str:
@@ -581,12 +554,12 @@ class PackageApi(PulpApi):
                 raise ValueError("Must supply repository when filtering by release.")
 
             # latest repo_version is assumed, doesn't need to be looked up
-            repo_href = id_to_pulp_href(RepoId(repository))
-            params["release"] = f"{id_to_pulp_href(release)},{repo_href}"
+            repo_href = RepoId(repository).pulp_href
+            params["release"] = f"{release.pulp_href},{repo_href}"
         elif repository:
             # Translate the repo_id into the repo_version_href pulp wants, if provided.
             repo_id = RepoId(repository)
-            params["repository_version"] = await RepositoryApi.latest_version_href(repo_id)
+            params["repository_version"] = await RepositoryApi.latest_version(repo_id)
 
         return await super().list(pagination, params, **endpoint_args)
 
@@ -635,8 +608,8 @@ class PackageReleaseComponentApi(PulpApi):
         """Find a package release component, if it exists."""
         resp = await cls.list(
             params={
-                cls.package_key(package_id.type): id_to_pulp_href(package_id),
-                "release_component": id_to_pulp_href(comp_id),
+                cls.package_key(package_id.type): package_id,
+                "release_component": comp_id,
             },
             type=package_id.type,
         )
@@ -651,10 +624,8 @@ class PackageReleaseComponentApi(PulpApi):
         if prc_id:
             return prc_id
 
-        package = id_to_pulp_href(package_id)
-        comp = id_to_pulp_href(comp_id)
         prc = await cls.create(
-            data={cls.package_key(package_id.type): package, "release_component": comp},
+            data={cls.package_key(package_id.type): package_id, "release_component": comp_id},
             type=package_id.type,
         )
         return ContentId(prc["id"])
@@ -693,12 +664,12 @@ class ReleaseApi(PulpApi):
 
     @staticmethod
     async def _get_components(release_id: ReleaseId) -> Any:
-        resp = await ReleaseComponentApi.list(params={"release": id_to_pulp_href(release_id)})
+        resp = await ReleaseComponentApi.list(params={"release": release_id})
         return [comp["component"] for comp in resp["results"]]
 
     @staticmethod
     async def _get_architectures(release_id: ReleaseId) -> Any:
-        resp = await ReleaseArchitectureApi.list(params={"release": id_to_pulp_href(release_id)})
+        resp = await ReleaseArchitectureApi.list(params={"release": release_id})
         return [arch["architecture"] for arch in resp["results"]]
 
     @staticmethod
@@ -724,7 +695,7 @@ class ReleaseApi(PulpApi):
         if params and "repository" in params:
             params = params.copy()
             repo_id = DebRepoId(params.pop("repository"))
-            params["repository_version"] = await RepositoryApi.latest_version_href(repo_id)
+            params["repository_version"] = (await RepositoryApi.latest_version(repo_id)).pulp_href
             if "package" in params:
                 params["package"] = f"{params['package']},{params['repository_version']}"
 
@@ -743,15 +714,14 @@ class ReleaseApi(PulpApi):
     async def _add_items(
         api_class: Type[PulpApi], field: str, release: ReleaseId, items: List[str]
     ) -> List[ContentId]:
-        release_href = id_to_pulp_href(release)
         content = []
 
         for item in items:
-            response = await api_class.list(params={field: item, "release": release_href})
+            response = await api_class.list(params={field: item, "release": release})
             if len(results := response["results"]) > 0:
                 result = results[0]
             else:
-                result = await api_class.create({field: item, "release": release_href})
+                result = await api_class.create({field: item, "release": release})
             content_id = ContentId(result["id"])
             content.append(content_id)
 
@@ -809,22 +779,6 @@ class ReleaseApi(PulpApi):
 
 
 class TaskApi(PulpApi):
-    @classmethod
-    async def list(
-        cls,
-        pagination: Optional[Pagination] = None,
-        params: Optional[Dict[str, Any]] = None,
-        **endpoint_args: Any,
-    ) -> Any:
-        """Call the list endpoint."""
-        if params:
-            params = params.copy()
-            if "reserved_resources" in params:
-                params["reserved_resources"] = id_to_pulp_href(params["reserved_resources"])
-            if "created_resources" in params:
-                params["created_resources"] = id_to_pulp_href(params["created_resources"])
-        return await super().list(pagination, params, **endpoint_args)
-
     @classmethod
     async def cancel(cls, id: TaskId) -> Any:
         """Call the task cancel endpoint."""

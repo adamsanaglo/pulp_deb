@@ -1,9 +1,9 @@
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends
 
-from app.core.schemas import PackageId, Pagination, PublicationId
+from app.core.schemas import PackageId, Pagination, PublicationId, RepoId
 from app.services.pulp.api import PublicationApi
 
 router = APIRouter()
@@ -15,15 +15,16 @@ logger = logging.getLogger(__name__)
 @router.get("/publications/")
 async def list(
     pagination: Pagination = Depends(Pagination),
-    repository: Optional[str] = None,
+    repository: Optional[RepoId] = None,
     package: Optional[PackageId] = None,
 ) -> Any:
-    params = dict(repository=repository, content=package)
+    params: Dict[str, Any] = {}
+    if repository:
+        params["repository"] = repository
+    if package:
+        params["content"] = package
 
-    return await PublicationApi.list(
-        pagination,
-        params=params,
-    )
+    return await PublicationApi.list(pagination, params=params)
 
 
 @router.get("/publications/{id}/")

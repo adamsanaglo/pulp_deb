@@ -8,7 +8,6 @@ from pydantic import AnyHttpUrl
 from app.api.auth import requires_package_admin_or_publisher
 from app.api.routes.artifact import create_artifact
 from app.core.schemas import (
-    ArtifactId,
     BasePackageResponse,
     DebPackageListResponse,
     DebPackageQuery,
@@ -37,7 +36,6 @@ from app.core.schemas import (
 )
 from app.services.package.verify import PackageSignatureError, verify_signature
 from app.services.pulp.api import PackageApi
-from app.services.pulp.utils import id_to_pulp_href
 
 router = APIRouter()
 
@@ -148,8 +146,7 @@ async def create_package(
     if file_type == PackageType.deb_src:
         # create the dsc file artifact, if it doesn't exist.
         artifact = await create_artifact(file)
-        # Add the artifact pulp_href to data.
-        data["artifact"] = id_to_pulp_href(ArtifactId(artifact["id"]))
+        data["artifact"] = artifact["id"]
 
     return await PackageApi.create(data)
 

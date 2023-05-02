@@ -30,6 +30,7 @@ from app.core.schemas import (
     RepositoryResponse,
     RepositoryUpdate,
     RepoType,
+    RepoVersionId,
     RpmRepositoryResponse,
     TaskResponse,
 )
@@ -363,10 +364,11 @@ async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = Non
         publish = PublishRequest()
 
     repo = await RepositoryApi.read(id)
+    latest_version = RepoVersionId(repo["latest_version"])
 
     if not publish.force:
         # make sure there's not already a publication
-        pub_resp = await PublicationApi.list(params={"repository_version": repo["latest_version"]})
+        pub_resp = await PublicationApi.list(params={"repository_version": latest_version})
         if pub_resp["count"] > 0:
             raise HTTPException(
                 status_code=422,

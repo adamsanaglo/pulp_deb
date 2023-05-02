@@ -1,0 +1,1 @@
+Refactor: make automatic and deduplicate the translation between Identifier to pulp_href

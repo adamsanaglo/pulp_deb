@@ -62,9 +62,9 @@ async def package_lookup(
     params["fields"] = ",".join(
         package_type.natural_key_fields + ["pulp_href", package_type.pulp_filename_field]
     )
-    # Look up the current repo version once so we don't have to do it for each package list page.
-    params["repository_version"] = await RepositoryApi.latest_version_href(repo)
     if release:
+        # Release package filter assumes latest version, don't have to look it up.
+        params["repository"] = repo
         if isinstance(release, ReleaseId):
             params["release"] = release
         else:
@@ -73,6 +73,9 @@ async def package_lookup(
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=str(e))
             params["release"] = ReleaseId(rel["id"])
+    else:
+        # Look up the current repo version once so we don't have to do it for each page.
+        params["repository_version"] = await RepositoryApi.latest_version(repo)
 
     if request_size < 10 and request_size > 0:
         # Do individual lookups.

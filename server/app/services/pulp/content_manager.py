@@ -11,7 +11,6 @@ from app.services.pulp.api import (
     RepositoryApi,
 )
 from app.services.pulp.package_lookup import package_lookup
-from app.services.pulp.utils import id_to_pulp_href
 
 
 class ContentManager:
@@ -157,14 +156,14 @@ class ContentManager:
     async def _get_component_ids_in_release(self, release_id: ContentId) -> List[ContentId]:
         """Get list of component ids in this release."""
         components = await ReleaseComponentApi.list(
-            params={"release": id_to_pulp_href(release_id), "component": self.component}
+            params={"release": release_id, "component": self.component}
         )
         return [ContentId(x["id"]) for x in components["results"]]
 
     async def _get_arch_ids_in_release(self, release_id: ContentId) -> List[ContentId]:
         """Get list of component ids in this release."""
         architectures = await ReleaseArchitectureApi.list(
-            params={"release": id_to_pulp_href(release_id), "architecture": self.architecture}
+            params={"release": release_id, "architecture": self.architecture}
         )
         return [ContentId(x["id"]) for x in architectures["results"]]
 

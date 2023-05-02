@@ -32,6 +32,7 @@ from pydantic import (
 )
 from pydantic.main import ModelMetaclass
 
+from app.core.config import settings
 from app.core.models import Role
 
 T = TypeVar("T", bound="Identifier")
@@ -201,13 +202,46 @@ class TaskState(str, Enum):
 
 class Identifier(str):
     """
-    Represents an id in PMC.
+    Represents a pulp id in PMC.
 
     Based on https://pydantic-docs.helpmanual.io/usage/types/#classes-with-__get_validators__
     """
 
-    pattern: Pattern[str] = re.compile(rf"^([a-z-]+)-({uuid_group})(-versions-\d+)?$")
+    pattern: Pattern[str] = re.compile(rf"^([a-z-_]+)-({uuid_group})(-versions-\d+)?$")
     examples: List[str] = []
+
+    def __new__(cls: Type[T], my_string: str) -> Identifier:
+        """
+        Use our pattern matching to instantiate the most-specific type of Identifier.
+
+        Can instantiate Identifier subclasses with the string representation of Identifiers:
+            "content-deb-packages-39a63a9e-2081-4dfe-80eb-2c27af4b6024"
+        or with a full or partial pulp href:
+            "content/deb/packages/39a63a9e-2081-4dfe-80eb-2c27af4b6024/"
+            "/pulp/api/v3/content/deb/packages/39a63a9e-2081-4dfe-80eb-2c27af4b6024/"
+        """
+        if isinstance(my_string, Identifier):
+            # if it's already been instantiated, short-circuit all the below.
+            return my_string
+
+        my_string = my_string.removeprefix(settings.PULP_API_PATH)
+        my_string = my_string.replace("/", "-")
+        my_string = my_string.strip("-")
+        # Follow the subclass tree to find the most-specific subclass.
+        for subclass in cls.__subclasses__():
+            if subclass._is_valid(my_string):
+                return subclass.__new__(subclass, my_string)
+
+        if not cls._is_valid(my_string):
+            raise ValueError(f"{my_string} is not a valid {cls}")
+        return super().__new__(cls, my_string)  # default to Identifier
+
+    @property
+    def pulp_href(self) -> str:
+        """Translate an Identifier back into a pulp href."""
+        prefix, suffix = self.split(self.uuid)
+        prefix, suffix = prefix.replace("-", "/"), suffix.replace("-", "/")
+        return f"{settings.PULP_API_PATH}/{prefix}{self.uuid}{suffix}/"
 
     @classmethod
     def __get_validators__(cls: Type[T]) -> Generator[Callable[[str], T], None, None]:
@@ -221,17 +255,16 @@ class Identifier(str):
         )
 
     @classmethod
-    def validate(cls: Type[T], val: Union[str, UUID]) -> T:
+    def _is_valid(cls: Type[T], val: str) -> bool:
+        """Validate an id."""
+        return bool(cls.pattern.fullmatch(val))
+
+    @classmethod
+    def validate(cls: Type[T], val: str) -> T:
         """Validate an id and return a new Identifier instance."""
-        if isinstance(val, str):
-            match = cls.pattern.fullmatch(val)
-            if not match:
-                raise ValueError(f"invalid id: {val}")
-            return cls(val)
-        elif isinstance(val, UUID):
-            return cls.build_from_uuid(val)
-        else:
-            raise TypeError("string required")
+        if not cls._is_valid(val):
+            raise ValueError(f"invalid id: {val}")
+        return cls(val)
 
     @property
     def _pieces(self) -> Match[str]:
@@ -246,10 +279,6 @@ class Identifier(str):
         """Extract a uuid part from the id."""
         return self._pieces.group("uuid")
 
-    @classmethod
-    def build_from_uuid(cls: Type[T], uuid: UUID) -> T:
-        raise NotImplementedError
-
 
 class RepoId(Identifier):
     pattern = re.compile(
@@ -259,7 +288,7 @@ class RepoId(Identifier):
     examples = [
         "repositories-deb-apt-13104a41-ba7a-4de0-98b3-ae6f5c263558",
         "repositories-rpm-rpm-11712ac6-ae6d-43b0-9494-1930337425b4",
-        "repositories-python-python-9cdb587-1c31-4dbc-9002-267f10379f67",
+        "repositories-python-python-9cdb58a7-1c31-4dbc-9002-267f10379f67",
         "repositories-file-file-5d90abfd-0a58-4ac0-9915-42e201c07155",
     ]
 
