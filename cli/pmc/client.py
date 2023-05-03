@@ -211,7 +211,8 @@ def handle_response(
     output = resp.json()
     output_json(ctx, output, task_id is not None)
     if (
-        output.get("count", 0) > len(output.get("results", []))
+        isinstance(output, Dict)
+        and output.get("count", 0) > len(output.get("results", []))
         and output.get("offset", -1) == 0
         and not ctx.quiet
     ):
