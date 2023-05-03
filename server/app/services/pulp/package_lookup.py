@@ -106,8 +106,8 @@ async def package_lookup(
         found_names = set()
         packages_by_name = defaultdict(list)
         name_field = package_type.pulp_name_field
-        for query in package_queries:
-            package = query.dict(exclude_none=True)
+        for pkg_query in package_queries:
+            package = pkg_query.dict(exclude_none=True)
             packages_by_name[package[name_field]].append(package)
 
         # List the repo and match.

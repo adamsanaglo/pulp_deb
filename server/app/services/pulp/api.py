@@ -211,7 +211,7 @@ class RepositoryApi(PulpApi):
         return ret
 
     @classmethod
-    async def update(cls, id: RepoId, data: Dict[str, Any]) -> Any:
+    async def update(cls, id: RepoId, data: Dict[str, Any]) -> Any:  # type: ignore
         if cls.SS in data:
             await cls._set_gpg_fields(data, id.type)
         return await super().update(id, data)
@@ -335,9 +335,9 @@ class PublicationApi(PulpApi):
         repo_id = RepoId(data.pop("repository"))
         type = repo_id.publication_type
 
-        if type == RepoType.apt:
+        if type == PublicationType.apt:
             data["structured"] = True
-        if type == RepoType.file:
+        if type == PublicationType.file:
             data["manifest"] = "FILE_MANIFEST"
 
         data["repository"] = repo_id

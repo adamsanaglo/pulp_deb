@@ -46,7 +46,7 @@ class ContentManager:
     ) -> None:
         self.id = id
         self.release = release
-        self.specified_release_id = None
+        self.specified_release_id: Optional[ContentId] = None
         self.component = component
         self.architecture = architecture
 
@@ -119,19 +119,19 @@ class ContentManager:
                     # add prc ids
                     if release_id is self.specified_release_id:
                         for pkg_id in self.add_content[:]:
-                            prc_id = await self._find_or_create_prc(pkg_id, component_id)
-                            self.add_content.append(prc_id)
+                            add_prc_id = await self._find_or_create_prc(pkg_id, component_id)
+                            self.add_content.append(add_prc_id)
 
                     # remove prc ids
                     for pkg_id in self.remove_content:
-                        prc_id = await self._find_prc(pkg_id, component_id)
-                        if prc_id:
+                        remove_prc_id = await self._find_prc(pkg_id, component_id)
+                        if remove_prc_id:
                             if not self.release:
                                 # remove from all releases if not specified
-                                new_remove_content.append(prc_id)
+                                new_remove_content.append(remove_prc_id)
                             elif release_id == self.specified_release_id:
                                 # or remove from the specified release, as requested
-                                new_remove_content.append(prc_id)
+                                new_remove_content.append(remove_prc_id)
                             else:
                                 # still in a ReleaseComponent that we're not removing it from
                                 packages_we_cannot_remove.add(pkg_id)

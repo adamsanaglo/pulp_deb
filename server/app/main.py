@@ -1,7 +1,7 @@
 import logging
 import logging.config
 import time
-from typing import Any, Awaitable, Callable, Dict
+from typing import Any, Awaitable, Callable, Dict, Union
 
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import APIRouter, FastAPI
@@ -27,7 +27,7 @@ from app.core.log_config import DEFAULT_LOG_CONFIG
 
 # setup loggers
 if settings.LOGGING_CONFIG:
-    LOG_CONFIG = settings.LOGGING_CONFIG
+    LOG_CONFIG: Union[str, Dict[str, Any]] = settings.LOGGING_CONFIG
     logging.config.fileConfig(settings.LOGGING_CONFIG, disable_existing_loggers=False)
 else:
     LOG_CONFIG = DEFAULT_LOG_CONFIG
