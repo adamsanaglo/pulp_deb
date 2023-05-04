@@ -43,6 +43,7 @@ The tables below include a Deploy column, which describes how each cert is rolle
 |pmcprod|deploy|AAD Deploy Account|No Impact (SNI)|ClientAuth|
 |pmcprod|esrp-auth-prod|ESRP Authentication|No Impact (SNI)|Routine|
 |pmcprod|esrp-sign-prod|ESRP Request Signing|No Impact (SNI)|Auto|
+|pmcprod|geneva|Logging/MDSD Account|No Impact (SNI)|Manual|
 |pmcprod|migrationAccount|Service-to-Service Auth|No Impact (SNI)|Routine|
 |pmcprod|packageAdmin|Admin Account|No Impact (SNI)|ClientAuth|
 |pmcprod|pmcDistroTLS|TLS|No Impact (TLS)|Routine|
