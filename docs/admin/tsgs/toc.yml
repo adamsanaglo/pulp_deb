@@ -1,8 +1,22 @@
 - name: Index
   href: index.md
-- name: AKS Cluster Failed
-  href: aks_cluster_failed.md
 - name: Publisher Onboarding
   href: publisher_onboarding.md
+- name: Fetch API Logs
+  href: fetch_api_logs.md
+- name: Checksum Mismatch
+  href: checksum_mismatch.md
+- name: Deb Package Not Found in Metadata
+  href: deb_metadata.md
+- name: Migration Functions
+  href: migration_functions.md
+- name: Missing or Unexpected Package
+  href: missing_unexpected_package.md
+- name: AKS Cluster Failed
+  href: aks_cluster_failed.md
+- name: Deploy API Code
+  href: deploy_api_code.md
+- name: Clam AV SLA Breach
+  href: clamav_sla_breach.md
 - name: Emergency Cert Rotation (ECR)
   href: ecr.md
