@@ -24,10 +24,10 @@ async def _get_list(
 ) -> Tuple[List[Any], int]:
     """Takes a query and returns a page of results and count of total results."""
     count_query = select(func.count()).select_from(query.subquery())
-    count = (await session.exec(count_query)).scalar_one()
+    count = (await session.exec(count_query)).scalar_one()  # type: ignore
 
     query = query.limit(limit).offset(offset)
-    results = (await session.exec(query)).scalars().all()
+    results = (await session.exec(query)).scalars().all()  # type: ignore
 
     return results, count
 
@@ -45,9 +45,9 @@ async def list_account(
     if name:
         query = query.where(Account.name == name)
     if name__contains:
-        query = query.where(Account.name.contains(name__contains))
+        query = query.where(Account.name.contains(name__contains))  # type: ignore
     if name__icontains:
-        query = query.where(Account.name.ilike(f"%{name__icontains}%"))
+        query = query.where(Account.name.ilike(f"%{name__icontains}%"))  # type: ignore
 
     if ordering:
         if ordering.startswith("-"):
@@ -59,10 +59,10 @@ async def list_account(
     return AccountListResponse(count=count, results=accounts, **pagination.dict())
 
 
-@router.post("/accounts/")
+@router.post("/accounts/", response_model=AccountResponse)
 async def add_account(
     account_data: AccountCreate, session: AsyncSession = Depends(get_session)
-) -> AccountResponse:
+) -> Account:
     account = Account(**account_data.dict())
     session.add(account)
     await session.commit()
@@ -70,18 +70,18 @@ async def add_account(
     return account
 
 
-@router.get("/accounts/{id}/")
-async def read_account(id: UUID, session: AsyncSession = Depends(get_session)) -> AccountResponse:
+@router.get("/accounts/{id}/", response_model=AccountResponse)
+async def read_account(id: UUID, session: AsyncSession = Depends(get_session)) -> Account:
     account = await session.get(Account, id)
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     return account
 
 
-@router.patch("/accounts/{id}/")
+@router.patch("/accounts/{id}/", response_model=AccountResponse)
 async def update_account(
     id: UUID, account: AccountUpdate, session: AsyncSession = Depends(get_session)
-) -> AccountResponse:
+) -> Account:
     db_account = await session.get(Account, id)
     if not db_account:
         raise HTTPException(status_code=404, detail="Account not found")

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
@@ -12,11 +12,15 @@ from app.services.pulp.api import ArtifactApi
 router = APIRouter()
 
 
-@router.post("/artifacts/", dependencies=[Depends(requires_package_admin_or_publisher)])
+@router.post(
+    "/artifacts/",
+    dependencies=[Depends(requires_package_admin_or_publisher)],
+    response_model=ArtifactResponse,
+)
 async def create_artifact(
     file: Optional[UploadFile] = None,
     url: Optional[AnyHttpUrl] = None,
-) -> ArtifactResponse:
+) -> Any:
 
     if not file and not url:
         raise HTTPException(status_code=422, detail="Must upload a file or specify url.")

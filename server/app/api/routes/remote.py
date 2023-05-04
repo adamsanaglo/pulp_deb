@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 
@@ -17,30 +17,36 @@ from app.services.pulp.api import RemoteApi
 router = APIRouter()
 
 
-@router.get("/remotes/")
+@router.get("/remotes/", response_model=RemoteListResponse)
 async def list_remotes(
     pagination: Pagination = Depends(Pagination), name: Optional[str] = None
-) -> RemoteListResponse:
+) -> Any:
     return await RemoteApi.list(pagination, params={"name": name})
 
 
-@router.post("/remotes/", dependencies=[Depends(requires_repo_admin)])
-async def create_remote(remote: RemoteCreate) -> RemoteResponse:
+@router.post(
+    "/remotes/", dependencies=[Depends(requires_repo_admin)], response_model=RemoteResponse
+)
+async def create_remote(remote: RemoteCreate) -> Any:
     return await RemoteApi.create(remote.dict(exclude_unset=True))
 
 
-@router.get("/remotes/{id}/")
-async def read_remote(id: RemoteId) -> RemoteResponse:
+@router.get("/remotes/{id}/", response_model=RemoteResponse)
+async def read_remote(id: RemoteId) -> Any:
     return await RemoteApi.read(id)
 
 
-@router.patch("/remotes/{id}/", dependencies=[Depends(requires_repo_admin)])
-async def update_remote(id: RemoteId, remote: RemoteUpdate) -> TaskResponse:
+@router.patch(
+    "/remotes/{id}/", dependencies=[Depends(requires_repo_admin)], response_model=TaskResponse
+)
+async def update_remote(id: RemoteId, remote: RemoteUpdate) -> Any:
     data = remote.dict(exclude_unset=True)
 
     return await RemoteApi.update(id, data)
 
 
-@router.delete("/remotes/{id}/", dependencies=[Depends(requires_repo_admin)])
-async def delete_remote(id: RemoteId) -> TaskResponse:
+@router.delete(
+    "/remotes/{id}/", dependencies=[Depends(requires_repo_admin)], response_model=TaskResponse
+)
+async def delete_remote(id: RemoteId) -> Any:
     return await RemoteApi.destroy(id)

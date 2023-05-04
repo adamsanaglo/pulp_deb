@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 
@@ -18,7 +18,7 @@ from app.services.pulp.api import DistributionApi
 router = APIRouter()
 
 
-@router.get("/distributions/")
+@router.get("/distributions/", response_model=DistributionListResponse)
 async def list_distros(
     pagination: Pagination = Depends(Pagination),
     repository: Optional[RepoId] = None,
@@ -27,7 +27,7 @@ async def list_distros(
     base_path: Optional[str] = None,
     base_path__contains: Optional[str] = None,
     ordering: Optional[str] = None,
-) -> DistributionListResponse:
+) -> Any:
     return await DistributionApi.list(
         pagination,
         params={
@@ -41,22 +41,28 @@ async def list_distros(
     )
 
 
-@router.post("/distributions/", dependencies=[Depends(requires_repo_admin)])
-async def create_distribution(distro: DistributionCreate) -> TaskResponse:
+@router.post(
+    "/distributions/", dependencies=[Depends(requires_repo_admin)], response_model=TaskResponse
+)
+async def create_distribution(distro: DistributionCreate) -> Any:
     return await DistributionApi.create(distro.dict(exclude_unset=True))
 
 
-@router.get("/distributions/{id}/")
-async def read_distribution(id: DistroId) -> DistributionResponse:
+@router.get("/distributions/{id}/", response_model=DistributionResponse)
+async def read_distribution(id: DistroId) -> Any:
     return await DistributionApi.read(id)
 
 
-@router.patch("/distributions/{id}/", dependencies=[Depends(requires_repo_admin)])
-async def update_distribution(id: DistroId, distro: DistributionUpdate) -> TaskResponse:
+@router.patch(
+    "/distributions/{id}/", dependencies=[Depends(requires_repo_admin)], response_model=TaskResponse
+)
+async def update_distribution(id: DistroId, distro: DistributionUpdate) -> Any:
     data = distro.dict(exclude_unset=True)
     return await DistributionApi.update(id, data)
 
 
-@router.delete("/distributions/{id}/", dependencies=[Depends(requires_repo_admin)])
-async def delete_distribution(id: DistroId) -> TaskResponse:
+@router.delete(
+    "/distributions/{id}/", dependencies=[Depends(requires_repo_admin)], response_model=TaskResponse
+)
+async def delete_distribution(id: DistroId) -> Any:
     return await DistributionApi.destroy(id)

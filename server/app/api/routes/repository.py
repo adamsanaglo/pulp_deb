@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Any, Dict, List, MutableSet, Optional, Union
+from typing import Any, Dict, List, MutableSet, Optional, TypeVar, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -41,15 +41,19 @@ from app.services.pulp.package_lookup import package_lookup
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+T = TypeVar("T", bound=PackageQuery)
 
-@router.get("/repositories/", response_model_exclude_unset=True)
+
+@router.get(
+    "/repositories/", response_model_exclude_unset=True, response_model=RepositoryListResponse
+)
 async def list_repos(
     pagination: Pagination = Depends(Pagination),
     name: Optional[str] = None,
     name__contains: Optional[str] = None,
     name__icontains: Optional[str] = None,
     ordering: Optional[str] = None,
-) -> RepositoryListResponse:
+) -> Any:
     params = {
         "name": name,
         "name__contains": name__contains,
@@ -59,20 +63,26 @@ async def list_repos(
     return await RepositoryApi.list(pagination, params=params)
 
 
-@router.post("/repositories/", dependencies=[Depends(requires_repo_admin)])
+@router.post(
+    "/repositories/",
+    dependencies=[Depends(requires_repo_admin)],
+    response_model=Union[RpmRepositoryResponse, RepositoryResponse],
+)
 async def create_repository(
     repo: RepositoryCreate,
-) -> Union[RpmRepositoryResponse, RepositoryResponse]:
+) -> Any:
     return await RepositoryApi.create(repo.dict(exclude_unset=True))
 
 
-@router.get("/repositories/{id}/")
-async def read_repository(id: RepoId) -> Union[RpmRepositoryResponse, RepositoryResponse]:
+@router.get("/repositories/{id}/", response_model=Union[RpmRepositoryResponse, RepositoryResponse])
+async def read_repository(id: RepoId) -> Any:
     return await RepositoryApi.read(id)
 
 
-@router.patch("/repositories/{id}/", dependencies=[Depends(requires_repo_admin)])
-async def update_repository(id: RepoId, repo: RepositoryUpdate) -> TaskResponse:
+@router.patch(
+    "/repositories/{id}/", dependencies=[Depends(requires_repo_admin)], response_model=TaskResponse
+)
+async def update_repository(id: RepoId, repo: RepositoryUpdate) -> Any:
     if id.type != RepoType.yum and "sqlite_metadata" in repo.__fields_set__:
         raise HTTPException(
             status_code=422, detail="sqlite_metadata is only permitted for yum repositories."
@@ -81,23 +91,29 @@ async def update_repository(id: RepoId, repo: RepositoryUpdate) -> TaskResponse:
     return await RepositoryApi.update(id, repo.dict(exclude_unset=True))
 
 
-@router.delete("/repositories/{id}/", dependencies=[Depends(requires_repo_admin)])
-async def delete_repository(id: RepoId) -> TaskResponse:
+@router.delete(
+    "/repositories/{id}/", dependencies=[Depends(requires_repo_admin)], response_model=TaskResponse
+)
+async def delete_repository(id: RepoId) -> Any:
     return await RepositoryApi.destroy(id)
 
 
-@router.post("/repositories/{id}/sync/", dependencies=[Depends(requires_repo_admin_or_migration)])
-async def sync_repository(id: RepoId, remote: Optional[RemoteId] = None) -> TaskResponse:
+@router.post(
+    "/repositories/{id}/sync/",
+    dependencies=[Depends(requires_repo_admin_or_migration)],
+    response_model=TaskResponse,
+)
+async def sync_repository(id: RepoId, remote: Optional[RemoteId] = None) -> Any:
     return await RepositoryApi.sync(id, remote)
 
 
-@router.patch("/repositories/{id}/packages/")
+@router.patch("/repositories/{id}/packages/", response_model=TaskResponse)
 async def update_packages(
     id: RepoId,
     repo_update: RepositoryPackageUpdate,
     account: Account = Depends(get_active_account),
     session: AsyncSession = Depends(get_session),
-) -> TaskResponse:
+) -> Any:
     if id.type == RepoType.yum and repo_update.release:
         raise HTTPException(
             status_code=422, detail="Release field is not permitted for yum repositories."
@@ -178,14 +194,16 @@ def _package_type_to_ids(ids: List[PackageId]) -> Dict[PackageType, List[Package
     return types
 
 
-def _package_type_to_queries(packages: List[PackageQuery]) -> Dict[PackageType, List[PackageQuery]]:
+def _package_type_to_queries(
+    packages: Optional[List[T]],
+) -> Dict[PackageType, List[T]]:
     """
     Builds a dictionary where the keys are PackageType and the values are lists of package
     queries of the same type. The package types must all be homogeneous (i.e. can live in
     the same repo).
     """
     if not packages or not len(packages):
-        return dict()
+        return defaultdict()
     types = defaultdict(list)
     base_package = packages[0]
     base_type = base_package.package_type()
@@ -206,7 +224,7 @@ async def bulk_delete(
     delete_cmd: RepositoryBulkDelete,
     account: Account = Depends(get_active_account),
     session: AsyncSession = Depends(get_session),
-) -> TaskResponse:
+) -> Any:
     """
     Essentially the same thing as passing a list of Package IDs to update_packages, except allows
     for a more optimized workflow because the caller does not have to look up the IDs first.
@@ -266,7 +284,7 @@ async def _update_packages(
     add_names: MutableSet[str],
     remove_names: MutableSet[str],
     remove_filenames: List[str],  # TODO: [MIGRATE] remove
-) -> TaskResponse:
+) -> Any:
     # Repo Package Update permissions are complicated.
     # * Repo Admins and Publishers should be able to ADD packages if and only if they "own" packages
     #   of that name in this repo.
@@ -291,8 +309,8 @@ async def _update_packages(
 
     # Create a mapping of package names to accounts that are allowed to modify them in this repo.
     package_name_to_account_id = defaultdict(set)
-    statement = select(OwnedPackage).where(OwnedPackage.repo_id == id)
-    for owned_package in await session.exec(statement):
+    op_stmt = select(OwnedPackage).where(OwnedPackage.repo_id == id)
+    for owned_package in await session.exec(op_stmt):
         package_name_to_account_id[owned_package.package_name].add(owned_package.account_id)
 
     # Next enforce package adding permissions
@@ -358,8 +376,12 @@ async def _update_packages(
     return resp
 
 
-@router.post("/repositories/{id}/publish/", dependencies=[Depends(requires_repo_permission)])
-async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = None) -> TaskResponse:
+@router.post(
+    "/repositories/{id}/publish/",
+    dependencies=[Depends(requires_repo_permission)],
+    response_model=TaskResponse,
+)
+async def publish_repository(id: RepoId, publish: Optional[PublishRequest] = None) -> Any:
     if not publish:
         publish = PublishRequest()
 

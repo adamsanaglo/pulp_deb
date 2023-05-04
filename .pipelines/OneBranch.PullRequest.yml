@@ -97,8 +97,7 @@ extends:
               poetry run flake8 . && \
               poetry run isort -c . && \
               poetry run black --check --diff . #&& \
-              # TODO: re-enable mypy checking once errors are fixed
-              # poetry run mypy --strict .
+              poetry run mypy --strict .
             displayName: "Lint server files"
 
           - script: |

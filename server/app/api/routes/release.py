@@ -20,13 +20,17 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/repositories/{repo_id}/releases/", response_model_exclude_unset=True)
+@router.get(
+    "/repositories/{repo_id}/releases/",
+    response_model_exclude_unset=True,
+    response_model=ReleaseListResponse,
+)
 async def list_releases(
     repo_id: DebRepoId,
     pagination: Pagination = Depends(Pagination),
     name: Optional[str] = None,
     package: Optional[PackageId] = None,
-) -> ReleaseListResponse:
+) -> Any:
     params: Dict[str, Any] = {"repository": repo_id}
     if name:
         params["distribution"] = name
@@ -35,8 +39,12 @@ async def list_releases(
     return await ReleaseApi.list(pagination, params)
 
 
-@router.post("/repositories/{repo_id}/releases/", dependencies=[Depends(requires_repo_admin)])
-async def create_release(repo_id: DebRepoId, release: ReleaseCreate) -> TaskResponse:
+@router.post(
+    "/repositories/{repo_id}/releases/",
+    dependencies=[Depends(requires_repo_admin)],
+    response_model=TaskResponse,
+)
+async def create_release(repo_id: DebRepoId, release: ReleaseCreate) -> Any:
     params = release.dict()
     params["repository"] = repo_id
 
@@ -57,8 +65,10 @@ async def create_release(repo_id: DebRepoId, release: ReleaseCreate) -> TaskResp
 
 
 @router.delete(
-    "/repositories/{repo}/releases/{release}/", dependencies=[Depends(requires_repo_admin)]
+    "/repositories/{repo}/releases/{release}/",
+    dependencies=[Depends(requires_repo_admin)],
+    response_model=TaskResponse,
 )
-async def delete_release(repo: DebRepoId, release: ReleaseId) -> TaskResponse:
+async def delete_release(repo: DebRepoId, release: ReleaseId) -> Any:
     cm = ContentManager(id=repo)
     return await cm.remove_release(release)

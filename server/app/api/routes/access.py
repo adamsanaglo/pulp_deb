@@ -40,7 +40,7 @@ async def _get_matching_repos(name_regex: str) -> List[Any]:
 
 
 async def _get_named_accounts(session: AsyncSession, account_names: List[str]) -> List[Account]:
-    statement = select(Account).where(Account.name.in_(account_names))
+    statement = select(Account).where(Account.name.in_(account_names))  # type: ignore
     results = await session.exec(statement)
     accounts = list(results.all())
     if len(accounts) < 1:
@@ -51,11 +51,11 @@ async def _get_named_accounts(session: AsyncSession, account_names: List[str]) -
 
 
 # If you just do a get on /accounts/repo_access/ then it matches list_account and blows up.
-@router.get("/access/repo/")
+@router.get("/access/repo/", response_model=List[RepoAccessResponse])
 async def list_repo_access(
     session: AsyncSession = Depends(get_session),
     account: Optional[UUID] = None,
-) -> List[RepoAccessResponse]:
+) -> List[RepoAccess]:
     statement = select(RepoAccess)
     if account:
         statement = statement.where(RepoAccess.account_id == account)
@@ -63,12 +63,12 @@ async def list_repo_access(
     return list(results.all())
 
 
-@router.post("/access/repo/{id}/clone_from/{original_id}/")
+@router.post("/access/repo/{id}/clone_from/{original_id}/", response_model=List[RepoAccessResponse])
 async def clone_repo_access_from(
     id: RepoId,
     original_id: RepoId,
     session: AsyncSession = Depends(get_session),
-) -> List[RepoAccessResponse]:
+) -> List[RepoAccess]:
     """Additively clone the repo permissions from another repo."""
     statement = select(RepoAccess).where(RepoAccess.repo_id == id)
     current_perms = (await session.exec(statement)).all()

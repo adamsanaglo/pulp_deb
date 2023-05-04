@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Type, Union
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
@@ -40,65 +40,69 @@ from app.services.pulp.api import PackageApi
 router = APIRouter()
 
 
-def _field_list(response: BasePackageResponse) -> str:
+def _field_list(response: Type[BasePackageResponse]) -> str:
     # use pulp's fields parameter to request specific fields and limit response size
     fields = list(response.schema(by_alias=False)["properties"].keys())
     fields.append("pulp_href")
     return (",").join(fields)
 
 
-@router.get("/deb/packages/")
+@router.get("/deb/packages/", response_model=DebPackageListResponse)
 async def deb_packages(
     pagination: Pagination = Depends(Pagination), query: DebPackageQuery = Depends()
-) -> DebPackageListResponse:
+) -> Any:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(DebPackageResponse)
     return await PackageApi.list(pagination, params=params, type=PackageType.deb)
 
 
-@router.get("/deb_src/packages/")
+@router.get("/deb_src/packages/", response_model=DebSourcePackageListResponse)
 async def deb_src_packages(
     pagination: Pagination = Depends(Pagination), query: DebSourcePackageQuery = Depends()
-) -> DebSourcePackageListResponse:
+) -> Any:
     params = query.dict(exclude_none=True)
     return await PackageApi.list(pagination, params=params, type=PackageType.deb_src)
 
 
-@router.get("/rpm/packages/")
+@router.get("/rpm/packages/", response_model=RpmPackageListResponse)
 async def rpm_packages(
     pagination: Pagination = Depends(Pagination), query: RpmPackageQuery = Depends()
-) -> RpmPackageListResponse:
+) -> Any:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(RpmPackageResponse)
     return await PackageApi.list(pagination, params=params, type=PackageType.rpm)
 
 
-@router.get("/python/packages/")
+@router.get("/python/packages/", response_model=PythonPackageListResponse)
 async def python_packages(
     pagination: Pagination = Depends(Pagination), query: PythonPackageQuery = Depends()
-) -> PythonPackageListResponse:
+) -> Any:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(PythonPackageResponse)
     return await PackageApi.list(pagination, params=params, type=PackageType.python)
 
 
-@router.get("/file/packages/")
+@router.get("/file/packages/", response_model=FilePackageListResponse)
 async def files(
     pagination: Pagination = Depends(Pagination), query: FilePackageQuery = Depends()
-) -> FilePackageListResponse:
+) -> Any:
     params = query.dict(exclude_none=True)
     params["fields"] = _field_list(FilePackageResponse)
     return await PackageApi.list(pagination, params=params, type=PackageType.file)
 
 
-@router.post("/packages/", dependencies=[Depends(requires_package_admin_or_publisher)])
+@router.post(
+    "/packages/",
+    dependencies=[Depends(requires_package_admin_or_publisher)],
+    response_model=TaskResponse,
+)
 async def create_package(
     file: Optional[UploadFile] = None,
     url: Optional[AnyHttpUrl] = None,
     ignore_signature: Optional[bool] = False,
     file_type: Optional[PackageType] = None,
     relative_path: Optional[str] = None,
-) -> TaskResponse:
+) -> Any:
     if not file and not url:
         raise HTTPException(status_code=422, detail="Must upload a file or specify url.")
 
@@ -151,21 +155,22 @@ async def create_package(
     return await PackageApi.create(data)
 
 
-@router.get("/packages/{id}/")
-async def read_package(
-    id: PackageId, details: bool = False
-) -> Union[
-    FullDebPackageResponse,
-    FullRpmPackageResponse,
-    FullPythonPackageResponse,
-    DebSourcePackageResponse,
-    FullDebSourcePackageResponse,
-    DebPackageResponse,
-    RpmPackageResponse,
-    PythonPackageResponse,
-    FullFilePackageResponse,
-    FilePackageResponse,
-]:
+@router.get(
+    "/packages/{id}/",
+    response_model=Union[
+        FullDebPackageResponse,
+        FullRpmPackageResponse,
+        FullPythonPackageResponse,
+        DebSourcePackageResponse,
+        FullDebSourcePackageResponse,
+        DebPackageResponse,
+        RpmPackageResponse,
+        PythonPackageResponse,
+        FullFilePackageResponse,
+        FilePackageResponse,
+    ],
+)
+async def read_package(id: PackageId, details: bool = False) -> Any:
     resp_model = ("Full" if details else "") + id.type.resp_model
     data = await PackageApi.read(id)
     return globals()[resp_model](**data)
