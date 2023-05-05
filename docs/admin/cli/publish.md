@@ -32,3 +32,7 @@ setting page](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/s
    feed](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/versions/),
    find the latest version and click the "Promote" button to promote it to a "Release". If you
    aren't able to promote the package version, see the setup section of this doc.
+1. Promote any other new dependencies to the "Release" view. Diffing pyproject.toml with git
+   should help you to identify them (e.g. `git diff cli-1.0.2..cli-1.1.0 -- cli/poetry.lock`).
+   This can be hard to parse so you can use `poetry export --without-hashes` to list of dependencies
+   and their versions.

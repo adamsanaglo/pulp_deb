@@ -62,7 +62,7 @@ Alternatively, you can simply install the pmc-cli with a single command but you 
 personal access token](https://msazure.visualstudio.com/_usersSettings/tokens):
 
 ```bash
-pip install --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC/pypi/simple/ "pmc-cli>0.0"
+pip install --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC%40Release/pypi/simple/ "pmc-cli>0.0"
 ```
 
 ## Configuration file
