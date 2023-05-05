@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
-from fastapi import FastAPI
+from cryptography.exceptions import InvalidSignature
+from fastapi import FastAPI, HTTPException
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
@@ -17,6 +18,7 @@ from app.core.models import Account, Role
 from app.core.schemas import RepoType
 from app.main import app as fastapi_app
 from app.services import migration as migration_module
+from app.services.model import signature
 from app.services.pulp import api as pulp_service_api
 from app.services.pulp import content_manager as content_manager_module
 
@@ -31,6 +33,7 @@ from .utils import (
 )
 
 current_user = Account(**gen_account_attrs())
+signature.PRIVATE_KEY_PATH = "/tmp/local-dev-signing.key"
 
 
 @pytest.fixture(scope="session")
@@ -82,6 +85,12 @@ def override_get_active_account() -> Callable:
     """This allows us to mock out the authentication step and return whatever account we please."""
 
     async def _get_active_account_override():
+        try:
+            signature.verify(current_user.hash(), bytes.fromhex(current_user.signature))
+        except InvalidSignature:
+            raise HTTPException(
+                status_code=403, detail=f"Invalid signature for account: {current_user.name}"
+            )
         return current_user
 
     return _get_active_account_override
@@ -107,6 +116,8 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
 def _with_account(role: Role) -> Account:
     global current_user
     current_user = Account(**gen_account_attrs(role))
+    current_user.sign()
+
     return current_user
 
 

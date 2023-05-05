@@ -1,12 +1,18 @@
 import enum
+import hashlib
+import logging
 import uuid
 from datetime import datetime
-from typing import List
+from typing import Any, List
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, event
 from sqlmodel import Column
 from sqlmodel import Enum as EnumCol
 from sqlmodel import Field, Relationship, SQLModel
+
+from app.services.model import signature
+
+logger = logging.getLogger(__name__)
 
 
 class ModelBase(SQLModel):
@@ -49,6 +55,25 @@ class Account(ModelBase, table=True):
     contact_email: str
     repos: List["RepoAccess"] = Relationship(back_populates="account")
     packages: List["OwnedPackage"] = Relationship(back_populates="account")
+    signature: str
+
+    def serialize(self) -> str:
+        """Serializes a row."""
+        fields_data = self.dict(exclude={"signature"})
+        fields_data = dict(sorted(fields_data.items()))
+        return str(fields_data)
+
+    def hash(self) -> bytes:
+        return hashlib.sha256(self.serialize().encode("utf-8")).digest()
+
+    def sign(self) -> None:
+        self.signature = signature.sign(self.hash())
+
+
+@event.listens_for(Account, "before_update")  # type: ignore
+@event.listens_for(Account, "before_insert")  # type: ignore
+def before_insert_function(mapper: Any, connection: Any, target: Account) -> None:
+    target.sign()
 
 
 class OwnedPackage(ModelBase, table=True):

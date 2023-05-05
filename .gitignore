@@ -287,5 +287,8 @@ tags
 server/.test.key
 server/.test.pub
 
+# The dev environment database rows local signing key
+server/dev_assets/local-dev-signing.key
+
 # ignore generated _site
 docs/enghub/_site

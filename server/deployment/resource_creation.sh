@@ -42,6 +42,7 @@ az keyvault network-rule add --name $kv --vnet-name $vnet --subnet $aks_subnet
 # https://microsoft.sharepoint.com/sites/Security_Tools_Services/SitePages/SAS/SAW%20KB/SAW-datacenter-IP-ranges.aspx
 az keyvault network-rule add --name $kv --ip-address 157.58.216.64/26 207.68.190.32/27 13.106.78.32/27 194.69.119.64/26 13.106.174.32/27 167.220.249.128/26 13.106.4.96/27
 # You may also want to add (and later remove) a network rule for your ip address here so that you can complete the next steps
+az keyvault key create --vault-name $kv --name $db_signing_key --kty "EC" --curve "P-256K"
 az keyvault secret set --vault-name $kv --name pulpAdminPassword --value $PULP_ADMIN_PASSWORD
 az keyvault secret set --vault-name $kv --name pmcPostgresPassword --value $PMC_POSTGRES_PASSWORD
 az keyvault secret set --vault-name $kv --name pulpPostgresPassword --value $PULP_POSTGRES_PASSWORD
@@ -79,7 +80,7 @@ az aks nodepool update -g $rg --cluster $aks -n nodepool1 --tags AzSecPackAutoCo
 
 get_az_cli_vars
 
-az keyvault set-policy -n $kv --key-permissions get --spn $CLIENT_ID
+az keyvault set-policy -n $kv --key-permissions get sign verify --spn $CLIENT_ID
 az keyvault set-policy -n $kv --secret-permissions get --spn $CLIENT_ID
 az keyvault set-policy -n $kv --certificate-permissions get --spn $CLIENT_ID
 

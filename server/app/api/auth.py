@@ -1,6 +1,7 @@
 import re
 
 import jwt
+from cryptography.exceptions import InvalidSignature
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm.exc import NoResultFound
 from sqlmodel import select
@@ -9,6 +10,7 @@ from app.core.config import settings
 from app.core.db import AsyncSession, get_session
 from app.core.models import Account, RepoAccess, Role
 from app.core.schemas import RepoId
+from app.services.model import signature
 
 SUPPORT = "Contact your team's PMC Account Admin or PMC Support for assistance."
 JWKS_URL = f"https://login.microsoftonline.com/{settings.TENANT_ID}/discovery/v2.0/keys"
@@ -96,6 +98,13 @@ async def get_active_account(
     except NoResultFound:
         raise HTTPException(
             status_code=403, detail=f"Domain UUID {oid} is not provisioned in PMC. {SUPPORT}"
+        )
+
+    try:
+        signature.verify(account.hash(), bytes.fromhex(account.signature))
+    except InvalidSignature:
+        raise HTTPException(
+            status_code=403, detail=f"Invalid signature for account: {account.name}"
         )
 
     if not account.is_enabled:

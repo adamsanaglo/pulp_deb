@@ -12,6 +12,7 @@ RUN useradd -r -m -u $uid -g $gid pmc
 
 EXPOSE 8000
 WORKDIR /pmcserver
+RUN chown pmc /pmcserver
 
 COPY pyproject.toml .
 COPY poetry.lock .
@@ -19,6 +20,7 @@ COPY alembic.ini .
 COPY README.md .
 COPY deployment/root-cert-bundle.pem .
 COPY deployment/entrypoint.sh .
+COPY deployment/sign_initial_account.py .
 COPY app app/
 COPY migrations migrations/
 

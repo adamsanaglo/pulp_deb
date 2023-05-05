@@ -10,6 +10,10 @@ APP_CLIENT_ID ?= 1ce02e3e-1bf3-4d28-8cdc-e921f824399d
 TENANT_ID ?= 72f988bf-86f1-41af-91ab-2d7cd011db47
 PULP_AZURE_ACCOUNT_NAME ?= none
 PULP_AZURE_ACCOUNT_KEY ?= none
+ADMIN_ACCOUNT_CLIENT_ID ?= 1334b698-bee4-4556-ae45-a5e7b5698504
+KEYVAULT ?= none
+DB_SIGNING_KEY ?= none
+AZURE_CLIENT_ID ?= none
 
 # Deliberately not pulled from process environment
 LEGACY_KEY_THUMBPRINT = $(shell base64 -d .test.key | gpg --show-keys - | head -n 2 | tail -n 1 | tail -c 17)
@@ -24,7 +28,8 @@ default: help
 	@./setvalues.py -s .env.example .env PULP_ADMIN_PASSWORD "${PULP_ADMIN_PASSWORD}" \
 	PULP_DATABASES__default__PASSWORD "${PULP_DATABASES__default__PASSWORD}" PULP_SECRET "${PULP_SECRET}" \
 	POSTGRES_PASSWORD "${POSTGRES_PASSWORD}" APP_CLIENT_ID "${APP_CLIENT_ID}" TENANT_ID "${TENANT_ID}" \
-	LEGACY_KEY_THUMBPRINT "${LEGACY_KEY_THUMBPRINT}"
+	LEGACY_KEY_THUMBPRINT "${LEGACY_KEY_THUMBPRINT}" ADMIN_ACCOUNT_CLIENT_ID "${ADMIN_ACCOUNT_CLIENT_ID}" \
+	DB_SIGNING_KEY "${DB_SIGNING_KEY}" KEYVAULT "${KEYVAULT}" AZURE_CLIENT_ID "${AZURE_CLIENT_ID}" 
 
 env.storage::			## generate environment for storage if creds are in the environment
 ifeq ($(PULP_AZURE_ACCOUNT_KEY),none)

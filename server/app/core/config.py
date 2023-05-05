@@ -26,9 +26,13 @@ class Settings(BaseSettings):
     POSTGRES_SERVER_CA_CERT: str = ""
     LOGGING_CONFIG: Optional[str]
     ECHO_SQL: Optional[bool] = False
+    ADMIN_ACCOUNT_CLIENT_ID: str = ""
 
+    KEYVAULT: str = ""
+    DB_SIGNING_KEY: str = ""
     APP_CLIENT_ID: str = ""
     TENANT_ID: str = ""
+    AZURE_CLIENT_ID: str = ""
 
     MIN_CLI_VERSION: str = "0.4.0"
 

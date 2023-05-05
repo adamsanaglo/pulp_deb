@@ -9,7 +9,11 @@ data:
   DEBUG: "0"
   PULP_ADMIN_USERNAME: "admin"
   APP_CLIENT_ID: $pmcAppId
+  ADMIN_ACCOUNT_CLIENT_ID: $account_id
   TENANT_ID: $AZURE_TENANT_ID
+  AZURE_CLIENT_ID: $CLIENT_ID
+  KEYVAULT: $kv
+  DB_SIGNING_KEY: $db_signing_key
   POSTGRES_USER: "pmcserver"
   POSTGRES_DB: "pmcserver"
   PULP_HOST: "http://localhost:24817"  # pmc-server talks to pulp api via in-pod localhost
