@@ -15,5 +15,5 @@ export esrpAuthCert="esrp-auth-prod"
 export esrpSignCert="esrp-sign-prod"
 
 function env_overrides() {
-    # None
+    export kv="${prefix}-keyvault-51689"
 }
