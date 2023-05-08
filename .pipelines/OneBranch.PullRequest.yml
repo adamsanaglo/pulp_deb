@@ -92,21 +92,23 @@ extends:
             displayName: 'Install dependencies'
 
           - script: |
-              cd server
-              poetry install && \
-              poetry run flake8 . && \
-              poetry run isort -c . && \
-              poetry run black --check --diff . #&& \
+              poetry install -q
+              poetry run flake8 .
+              poetry run isort -c .
+              poetry run black -q --check --diff .
               poetry run mypy --strict .
+            workingDirectory: server
+            failOnStderr: true
             displayName: "Lint server files"
 
           - script: |
-              cd cli
-              poetry install && \
-              poetry run flake8 . && \
-              poetry run isort -c . && \
-              poetry run black --check --diff . && \
+              poetry install -q
+              poetry run flake8 .
+              poetry run isort -c .
+              poetry run black -q --check --diff .
               poetry run mypy --strict .
+            workingDirectory: cli
+            failOnStderr: true
             displayName: "Lint cli files"
 
           # TODO: [MIGRATE] remove these lines

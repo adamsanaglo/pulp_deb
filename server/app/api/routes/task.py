@@ -31,8 +31,11 @@ async def read_task(id: TaskId) -> Any:
     return await TaskApi.read(id)
 
 
-@router.patch("/tasks/{id}/cancel/", dependencies=[Depends(requires_account_admin)],
-              response_model=TaskReadResponse)
+@router.patch(
+    "/tasks/{id}/cancel/",
+    dependencies=[Depends(requires_account_admin)],
+    response_model=TaskReadResponse,
+)
 async def cancel_task(id: TaskId) -> Any:
     try:
         return await TaskApi.cancel(id)
