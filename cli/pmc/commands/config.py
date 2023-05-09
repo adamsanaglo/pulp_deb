@@ -98,7 +98,7 @@ def create(
         if key == "msal_cert":
             continue
 
-        if locals().get(key):
+        if locals().get(key) is not None:
             config[key] = locals()[key]
         else:
             config[key] = field.get("default", "FILL_ME_IN")
