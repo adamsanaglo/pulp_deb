@@ -63,6 +63,18 @@ if is_public_ingest:
     for key in ["signer", "nginx", "nginx-conf"]:
         secret_paths.pop(key)
 
+def set_env_azure_client_id():
+    """
+    Sets the correct value for AZURE_CLIENT_ID in .env-api.
+    """
+    env_file = "../tux-sync/.env-api"
+    with open(env_file) as f:
+        s = f.read()
+        s = s.replace("__AZURE_CLIENT_ID__", msi_client_id)
+
+    with open(env_file, "w") as f:
+        f.write(s)
+
 def get_kv_util():
     """
     Maintain a single instance of keyvault_util
@@ -163,27 +175,24 @@ def cleanup():
     util.run_cmd("docker image prune -a -f")
 
 
+set_env_azure_client_id()
+
 # Make Directories (if not present)
 create_directories()
 
-# Fetch Secrets
 fetch_secrets()
 
-# Fetch Docker Images
 fetch_docker_images()
 
 if not is_public_ingest:
     # Copy nginx config into place
     install_nginx_config()
 
-# Update Function Url
 update_function_url()
 
-# Restart containers
 restart_containers()
 
 # Test API Container
 smoke_test()
 
-# Cleanup
 cleanup()
