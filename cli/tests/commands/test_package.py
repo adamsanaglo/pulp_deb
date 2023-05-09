@@ -7,7 +7,7 @@ import pytest
 
 from pmc.schemas import Role
 from tests.conftest import package_upload_command
-from tests.utils import become, invoke_command
+from tests.utils import invoke_command
 
 # Note that "package upload" is exercised by fixture.
 
@@ -17,17 +17,17 @@ FILE_URL = "https://packages.microsoft.com/keys/microsoft.asc"
 
 
 def test_upload_file_type(orphan_cleanup: None) -> None:
-    become(Role.Package_Admin)
-
     # file without file type
     path = Path.cwd() / "tests" / "assets" / "hello.txt"
-    result = invoke_command(["package", "upload", str(path)])
+    result = invoke_command(["package", "upload", str(path)], role=Role.Package_Admin)
     assert result.exit_code != 0
     assert "Could not determine package type" in result.stdout
 
     # python with file type
     path = Path.cwd() / "tests" / "assets" / "helloworld-0.0.1.tar.gz"
-    result = invoke_command(["package", "upload", "--type", "python", str(path)])
+    result = invoke_command(
+        ["package", "upload", "--type", "python", str(path)], role=Role.Package_Admin
+    )
     assert result.exit_code == 0
 
 
@@ -127,58 +127,57 @@ def test_zst_deb(zst_deb_package: Any) -> None:
 
 @pytest.mark.parametrize("package", ["unsigned.deb", "unsigned.rpm", "signed-by-other.rpm"])
 def test_unsigned_package(package: str) -> None:
-    become(Role.Package_Admin)
     cmd = package_upload_command(package)
-    result = invoke_command(cmd)
+    result = invoke_command(cmd, role=Role.Package_Admin)
     assert result.exit_code != 0
     assert "PackageSignatureError" in result.stdout
 
 
 def test_mariner_package(orphan_cleanup: None) -> None:
-    become(Role.Package_Admin)
     cmd = package_upload_command("signed-by-mariner.rpm")
-    result = invoke_command(cmd)
+    result = invoke_command(cmd, role=Role.Package_Admin)
     assert result.exit_code == 0
     assert "PackageSignatureError" not in result.stdout
 
 
 def test_invalid_rpm_package_upload() -> None:
     """Test uploading a text file as an rpm package."""
-    become(Role.Package_Admin)
-
     path = str(Path.cwd() / "tests" / "assets" / "invalid.rpm")
 
     # package signature verification fails
-    result = invoke_command(["package", "upload", path])
+    result = invoke_command(["package", "upload", path], role=Role.Package_Admin)
     assert result.exit_code != 0
     assert "PackageSignatureError" in result.stdout
 
     # pulp fails to parse the package
-    result = invoke_command(["package", "upload", "--ignore-signature", path])
+    result = invoke_command(
+        ["package", "upload", "--ignore-signature", path], role=Role.Package_Admin
+    )
     assert result.exit_code != 0
     assert "RPM file cannot be parsed for metadata" in result.stdout
 
 
 def test_invalid_deb_package_upload() -> None:
     """Test uploading a text file as a deb package."""
-    become(Role.Package_Admin)
-
     path = str(Path.cwd() / "tests" / "assets" / "invalid.deb")
 
     # package signature verification fails
-    result = invoke_command(["package", "upload", path])
+    result = invoke_command(["package", "upload", path], role=Role.Package_Admin)
     assert result.exit_code != 0
     assert "PackageSignatureError" in result.stdout
 
     # pulp fails to parse the package
-    result = invoke_command(["package", "upload", "--ignore-signature", path])
+    result = invoke_command(
+        ["package", "upload", "--ignore-signature", path], role=Role.Package_Admin
+    )
     assert result.exit_code != 0
     assert "Unable to find global header" in result.stdout
 
 
 def test_deb_src_package_upload_no_artifacts() -> None:
-    become(Role.Package_Admin)
-    result = invoke_command(package_upload_command("hello_2.10-2ubuntu2.dsc"))
+    result = invoke_command(
+        package_upload_command("hello_2.10-2ubuntu2.dsc"), role=Role.Package_Admin
+    )
     assert result.exit_code != 0
     assert "A source file is listed in the DSC file but is not yet available" in result.stdout
 
@@ -190,15 +189,16 @@ def test_ignore_signature(forced_unsigned_package: Any) -> None:
 
 def test_package_upload_by_url(orphan_cleanup: None) -> None:
     """Test a package upload by using a url."""
-    become(Role.Package_Admin)
-    result = invoke_command(["package", "upload", PACKAGE_URL])
+    result = invoke_command(["package", "upload", PACKAGE_URL], role=Role.Package_Admin)
     assert result.exit_code == 0
 
-    result = invoke_command(["package", "upload", FILE_URL])
+    result = invoke_command(["package", "upload", FILE_URL], role=Role.Package_Admin)
     assert result.exit_code == 1
     assert "Could not determine package type" in result.stdout
 
-    result = invoke_command(["package", "upload", "--type", "file", FILE_URL])
+    result = invoke_command(
+        ["package", "upload", "--type", "file", FILE_URL], role=Role.Package_Admin
+    )
     assert result.exit_code == 0
 
 
@@ -211,8 +211,9 @@ def test_package_directory_upload(orphan_cleanup: None) -> None:
             with (package_dir / file).open("w") as f:
                 f.write(file)
 
-        become(Role.Package_Admin)
-        result = invoke_command(["package", "upload", "--type", "file", str(package_dir)])
+        result = invoke_command(
+            ["package", "upload", "--type", "file", str(package_dir)], role=Role.Package_Admin
+        )
 
     packages = json.loads(result.stdout)
     assert sorted([pkg["relative_path"] for pkg in packages]) == sorted(package_names)
@@ -221,28 +222,26 @@ def test_package_directory_upload(orphan_cleanup: None) -> None:
 
 
 def test_duplicate_deb_package(deb_package: Any) -> None:
-    become(Role.Package_Admin)
-    result = invoke_command(package_upload_command("signed-by-us.deb"))
+    result = invoke_command(package_upload_command("signed-by-us.deb"), role=Role.Package_Admin)
     assert result.exit_code == 0
     assert json.loads(result.stdout)[0]["id"] == deb_package["id"]
 
 
 def test_duplicate_deb_src_package(deb_src_package: Any) -> None:
-    become(Role.Package_Admin)
-    result = invoke_command(package_upload_command("hello_2.10-2ubuntu2.dsc"))
+    result = invoke_command(
+        package_upload_command("hello_2.10-2ubuntu2.dsc"), role=Role.Package_Admin
+    )
     assert result.exit_code == 0
     assert json.loads(result.stdout)[0]["id"] == deb_src_package["id"]
 
 
 def test_duplicate_rpm_package(deb_package: Any) -> None:
-    become(Role.Package_Admin)
-    result = invoke_command(package_upload_command("signed-by-us.deb"))
+    result = invoke_command(package_upload_command("signed-by-us.deb"), role=Role.Package_Admin)
     assert result.exit_code == 0
     assert json.loads(result.stdout)[0]["id"] == deb_package["id"]
 
 
 def test_duplicate_file_package(deb_package: Any) -> None:
-    become(Role.Package_Admin)
-    result = invoke_command(package_upload_command("signed-by-us.deb"))
+    result = invoke_command(package_upload_command("signed-by-us.deb"), role=Role.Package_Admin)
     assert result.exit_code == 0
     assert json.loads(result.stdout)[0]["id"] == deb_package["id"]

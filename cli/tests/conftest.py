@@ -11,7 +11,6 @@ from pmc.schemas import DistroType, RepoType, Role
 
 from .utils import (
     account_create_command,
-    become,
     gen_distro_attrs,
     gen_release_attrs,
     gen_repo_attrs,
@@ -25,7 +24,6 @@ def config_file() -> Path:
     config_path = Path.cwd() / "tests" / "settings.toml"
     assert config_path.is_file(), f"Could not find {settings}."
     os.environ["PMC_CLI_CONFIG"] = str(config_path)
-    os.environ["PMC_CLI_PROFILE"] = "cli"
     return config_path
 
 
@@ -38,8 +36,7 @@ def settings(config_file: Path) -> Any:
 @pytest.fixture(autouse=True, scope="session")
 def check_connection(config_file: Path) -> None:
     try:
-        become(Role.Account_Admin)
-        result = invoke_command(["account", "list"])
+        result = invoke_command(["account", "list"], role=Role.Account_Admin)
         assert result.exit_code == 0, f"account list failed: {result.stderr}"
     except Exception as exc:
         raise Exception(f"{exc}. Is your server running?")
@@ -57,8 +54,7 @@ def _object_manager(
     """
     response = None
     try:
-        become(role)
-        result = invoke_command(cmd)
+        result = invoke_command(cmd, role=role)
         assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
         response = json.loads(result.stdout)
         yield response
@@ -68,8 +64,7 @@ def _object_manager(
                 type = cmd[0]  # "repo", "distro", "account"
                 cleanup_cmd = [type, "delete", response["id"]]
             if cleanup_cmd:
-                become(role)  # again, because the test may have changed role.
-                result = invoke_command(cleanup_cmd)
+                result = invoke_command(cleanup_cmd, role=role)
                 assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
 
 
@@ -105,7 +100,6 @@ def python_repo() -> Generator[Any, None, None]:
 
 @pytest.fixture()
 def distro() -> Generator[Any, None, None]:
-    become(Role.Repo_Admin)
     attrs = gen_distro_attrs()
     cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
     with _object_manager(cmd, Role.Repo_Admin) as d:
@@ -114,7 +108,6 @@ def distro() -> Generator[Any, None, None]:
 
 @pytest.fixture()
 def apt_distro() -> Generator[Any, None, None]:
-    become(Role.Repo_Admin)
     attrs = gen_distro_attrs(DistroType.apt)
     cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
     with _object_manager(cmd, Role.Repo_Admin) as d:
@@ -123,7 +116,6 @@ def apt_distro() -> Generator[Any, None, None]:
 
 @pytest.fixture()
 def yum_distro() -> Generator[Any, None, None]:
-    become(Role.Repo_Admin)
     attrs = gen_distro_attrs(DistroType.yum)
     cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
     with _object_manager(cmd, Role.Repo_Admin) as d:
@@ -139,8 +131,9 @@ def orphan_cleanup() -> Generator[None, None, None]:
     try:
         yield
     finally:
-        become(Role.Package_Admin)
-        result = invoke_command(["orphan", "cleanup", "--protection-time", "0"])
+        result = invoke_command(
+            ["orphan", "cleanup", "--protection-time", "0"], role=Role.Package_Admin
+        )
         assert result.exit_code == 0, f"Failed to call orphan cleanup: {result.stderr}."
 
 
@@ -291,9 +284,8 @@ def forced_unsigned_package(orphan_cleanup: None) -> Generator[Any, None, None]:
 @pytest.fixture()
 def task() -> Generator[Any, None, None]:
     # do something, anything, that results in at least one task being created
-    become(Role.Package_Admin)
     cmd = ["orphan", "cleanup"]
-    result = invoke_command(cmd)
+    result = invoke_command(cmd, role=Role.Package_Admin)
     assert result.exit_code == 0, f"Command {cmd} failed: {result.stderr}"
     response = json.loads(result.stdout)
     yield response

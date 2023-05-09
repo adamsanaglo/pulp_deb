@@ -37,14 +37,12 @@ poetry run pmc repo list
 
 ## Configuring Authentication
 
-A default Service Principal is available to simplify your dev environment
+Some default Service Principals are available to simplify your dev environment
 1. Run `make config`
   - This will generate a config in the default location (~/.config/pmc/settings.toml)
   - It will prepopulate this config file with the necessary settings.
 2. Download the latest PEM file from [Azure Keyvault](https://ms.portal.azure.com/#@microsoft.onmicrosoft.com/asset/Microsoft_Azure_KeyVault/Certificate/https://mb-repotest.vault.azure.net/certificates/esrp-auth-test) and place it in `~/.config/pmc/auth.pem`
-3. Create an account with the role you want to test.
-  - `./update_role.sh Repo_Admin --create`
-  - You can call this script again any time you wish to change roles (`./update_role.sh Account_Admin`)
+3. The default user's role is a Repo_Admin. There are also other role-based account profiles available: `--profile [account|repo|package|publisher]`
 
 ## Testing
 

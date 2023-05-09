@@ -26,7 +26,6 @@ class Settings(BaseSettings):
     POSTGRES_SERVER_CA_CERT: str = ""
     LOGGING_CONFIG: Optional[str]
     ECHO_SQL: Optional[bool] = False
-    ADMIN_ACCOUNT_CLIENT_ID: str = ""
 
     KEYVAULT: str = ""
     DB_SIGNING_KEY: str = ""

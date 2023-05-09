@@ -1,5 +1,17 @@
-[cli]
+[default]
 msal_client_id = "c93b1ed1-3b3e-408c-9003-10c87975644a"
 msal_scope = "api://1ce02e3e-1bf3-4d28-8cdc-e921f824399d/.default"
 msal_cert_path = "~/.config/pmc/auth.pem"
 msal_authority = "https://login.microsoftonline.com/Microsoft.onmicrosoft.com"
+
+[repo]
+# The default user is already a Repo_Admin
+
+[account]
+msal_client_id = "a30dc6a5-6c11-4478-8fec-c9aa19705434"
+
+[package]
+msal_client_id = "cb1695a3-45dd-43b9-9b32-3d9b7c32e994"
+
+[publisher]
+msal_client_id = "2ea13e79-0a4f-4650-9816-91bb798f0bd7"

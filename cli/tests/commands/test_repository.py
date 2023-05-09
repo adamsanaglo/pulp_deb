@@ -5,8 +5,7 @@ from typing import Any, Generator, List, Optional
 import pytest
 
 from pmc.constants import LIST_SEPARATOR
-from pmc.schemas import Role
-from tests.utils import become, gen_repo_attrs, invoke_command
+from tests.utils import gen_repo_attrs, invoke_command
 
 # Note that create and delete are exercised by the fixture.
 
@@ -129,7 +128,6 @@ def _build_package_list_command(repo_id: str, release: Optional[str] = None) -> 
 def _add_list_packages(
     package_ids: List[str], package_types: List[str], repo_id: str, release: Optional[str] = None
 ) -> None:
-    become(Role.Repo_Admin)
     add_cmd = _build_package_update_command(repo_id, package_ids, "add", release)
 
     result = invoke_command(add_cmd)
@@ -156,7 +154,6 @@ def _assert_packages_count_ids(
 def _remove_list_packages(
     package_ids: List[str], package_types: List[str], repo_id: str, release: Optional[str] = None
 ) -> None:
-    become(Role.Repo_Admin)
     remove_cmd = _build_package_update_command(repo_id, package_ids, "remove")
     result = invoke_command(remove_cmd)
     assert result.exit_code == 0, f"removing package from repo failed: {result.stderr}"
@@ -223,7 +220,6 @@ def test_apt_update_list_packages(package_info: Any, release: Any) -> None:
 def test_apt_update_list_python_and_rpm_packages(
     python_package: Any, rpm_package: Any, yum_repo: Any
 ) -> None:
-    become(Role.Repo_Admin)
     add_cmd = [
         "repo",
         "packages",
@@ -240,7 +236,6 @@ def test_apt_update_list_python_and_rpm_packages(
 
 
 def test_apt_update_packages_without_release(deb_package: Any, release: Any) -> None:
-    become(Role.Repo_Admin)
     cmd = [
         "repo",
         "packages",
@@ -257,7 +252,6 @@ def test_apt_update_packages_without_release(deb_package: Any, release: Any) -> 
 
 
 def test_apt_update_packages_with_bad_release(deb_package: Any, release: Any) -> None:
-    become(Role.Repo_Admin)
     cmd = [
         "repo",
         "packages",
@@ -275,7 +269,6 @@ def test_apt_update_packages_with_bad_release(deb_package: Any, release: Any) ->
 
 
 def test_yum_update_packages_with_release(rpm_package: Any, yum_repo: Any) -> None:
-    become(Role.Repo_Admin)
     cmd = [
         "repo",
         "packages",
@@ -293,8 +286,6 @@ def test_yum_update_packages_with_release(rpm_package: Any, yum_repo: Any) -> No
 
 
 def test_update_packages_invalid(yum_repo: Any) -> None:
-    become(Role.Repo_Admin)
-
     # bad id
     cmd = [
         "repo",
@@ -372,7 +363,6 @@ def test_retain_repo_versions(repo: Any) -> None:
 
 def test_purge(yum_repo: Any, rpm_package: Any) -> None:
     repo_id = yum_repo["id"]
-    become(Role.Repo_Admin)
     invoke_command(["repo", "packages", "update", repo_id, "--add-packages", rpm_package["id"]])
     # Assert has content
     result = invoke_command(["package", "rpm", "list", "--repo", repo_id])

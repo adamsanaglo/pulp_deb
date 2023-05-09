@@ -10,7 +10,6 @@ APP_CLIENT_ID ?= 1ce02e3e-1bf3-4d28-8cdc-e921f824399d
 TENANT_ID ?= 72f988bf-86f1-41af-91ab-2d7cd011db47
 PULP_AZURE_ACCOUNT_NAME ?= none
 PULP_AZURE_ACCOUNT_KEY ?= none
-ADMIN_ACCOUNT_CLIENT_ID ?= 1334b698-bee4-4556-ae45-a5e7b5698504
 KEYVAULT ?= none
 DB_SIGNING_KEY ?= none
 AZURE_CLIENT_ID ?= none
@@ -28,7 +27,7 @@ default: help
 	@./setvalues.py -s .env.example .env PULP_ADMIN_PASSWORD "${PULP_ADMIN_PASSWORD}" \
 	PULP_DATABASES__default__PASSWORD "${PULP_DATABASES__default__PASSWORD}" PULP_SECRET "${PULP_SECRET}" \
 	POSTGRES_PASSWORD "${POSTGRES_PASSWORD}" APP_CLIENT_ID "${APP_CLIENT_ID}" TENANT_ID "${TENANT_ID}" \
-	LEGACY_KEY_THUMBPRINT "${LEGACY_KEY_THUMBPRINT}" ADMIN_ACCOUNT_CLIENT_ID "${ADMIN_ACCOUNT_CLIENT_ID}" \
+	LEGACY_KEY_THUMBPRINT "${LEGACY_KEY_THUMBPRINT}" \
 	DB_SIGNING_KEY "${DB_SIGNING_KEY}" KEYVAULT "${KEYVAULT}" AZURE_CLIENT_ID "${AZURE_CLIENT_ID}" 
 
 env.storage::			## generate environment for storage if creds are in the environment
@@ -63,8 +62,11 @@ regen_test_key:		## wipe and regenerate the test keys used to do legacy signing 
 	gpg --homedir gpg_home --armor --export-secret-keys | base64 -w 0 > .test.key
 	rm -rf gpg_home
 
-grant_access:		## allow our dev principal access to the application
-	../cli/update_role.sh Account_Admin --create
+grant_access:		## allow our dev principals access to the application
+	dev_assets/create_account.sh Account_Admin 19aac333-96f6-4afb-a980-b458bced33df
+	dev_assets/create_account.sh Repo_Admin 1334b698-bee4-4556-ae45-a5e7b5698504
+	dev_assets/create_account.sh Package_Admin 73d681bb-229d-40a3-afcf-4941a87faa80
+	dev_assets/create_account.sh Publisher 42b00e34-d731-40fa-ad5d-415301742b03
 
 reset: teardown run grant_access ## reset container volumes and restart containers
 

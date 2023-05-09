@@ -1,8 +1,7 @@
 import json
-import subprocess
-from pathlib import Path
+from collections import Iterable
 from random import choice
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 from click.testing import Result
@@ -83,29 +82,31 @@ def account_create_command(**kwargs: str) -> List[str]:
 def invoke_command(*args: Any, **kwargs: Any) -> Result:
     """
     Invoke a command and handle any exception that gets thrown.
+    Assumes a role of Repo_Admin unless you specify role=Role.
 
     CliRunner calls the command directly which bypasses the error handling in main's run() function.
     This function emulates the logic in run() by appending the formatted error dict to
     result.stdout_bytes.
     """
-    if "runner" in kwargs:
-        runner = kwargs.pop("runner")
-    else:
-        runner = CliRunner(mix_stderr=False)
+    # Updating the call signature to runner.invoke below broke calling this function with a list
+    # of strings as the command, which is what everything currently does. Do some arg juggling
+    # to fix it.
+    my_args: Tuple[Any, ...] = args
+    if len(args) == 1 and isinstance(args[0], Iterable):
+        my_args = tuple(args[0])
 
-    result: Result = runner.invoke(app, *args, **kwargs)
+    runner = kwargs.pop("runner", CliRunner(mix_stderr=False))
+    role = kwargs.pop("role", Role.Repo_Admin)
+    profile_names = {
+        Role.Repo_Admin: "repo",
+        Role.Account_Admin: "account",
+        Role.Package_Admin: "package",
+        Role.Publisher: "publisher",
+    }
+    my_args = ("--profile", profile_names[role]) + my_args
+
+    result: Result = runner.invoke(app, args=my_args, **kwargs)
     if result.exception:
         err = format_exception(result.exception)
         result.stdout_bytes += json.dumps(err).encode("utf-8")
     return result
-
-
-current_role = None
-
-
-def become(role: Role) -> None:
-    """Update our role in the database."""
-    global current_role
-    if current_role != role:
-        subprocess.check_call([str(Path(__file__).parents[1] / "update_role.sh"), str(role)])
-        current_role = role

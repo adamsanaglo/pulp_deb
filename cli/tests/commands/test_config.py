@@ -62,7 +62,7 @@ def test_profiles(settings: Any, repo: Any) -> None:
 def test_partial_config(settings: Any, repo: Any) -> None:
     """Test a config with only some values defined."""
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".toml") as config:
-        config.write(tomli_w.dumps({"cli": {"no_wait": True}}))
+        config.write(tomli_w.dumps({"repo": {"no_wait": True}}))
         config.flush()
 
         result = invoke_command(

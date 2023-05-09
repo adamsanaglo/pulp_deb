@@ -162,7 +162,7 @@ function kube_pulp_shell() {
 
 function create_initial_account() {
     # Initializing signed account fields.
-    IFS=',' read -r id created_at last_edited signature <<<$(kube_bash 'pmcserver' 'python3 sign_initial_account.py')
+    IFS=',' read -r id created_at last_edited signature <<<$(kube_bash 'pmcserver' 'python3 sign_initial_account.py' --oid $account_id)
     # Add the initial Account_Admin specified in the env-specific setup script.
     kube_db 'pmcserver' "insert into account (id, oid, name, role, icm_service, icm_team, contact_email, is_enabled, signature, created_at, last_edited) values ('$id', '$account_id', 'dev', 'Account_Admin', 'dev', 'dev', 'dev@user.com', 't', '$signature', '$created_at', '$last_edited')"
 }

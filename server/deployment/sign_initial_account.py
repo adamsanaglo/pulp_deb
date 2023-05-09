@@ -5,7 +5,6 @@ import uuid
 from datetime import datetime
 from typing import List
 
-from app.core.config import settings
 from app.core.models import Account, Role
 
 
@@ -44,7 +43,7 @@ def _get_account_from_args(argv: List[str]) -> Account:
         sys.exit(-1)
 
     account = Account()
-    account.oid = uuid.UUID(settings.ADMIN_ACCOUNT_CLIENT_ID)
+    account.oid = uuid.UUID(int=0)
     account.name = "dev"
     account.is_enabled = True
     account.role = Role.Account_Admin

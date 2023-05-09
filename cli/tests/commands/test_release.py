@@ -1,8 +1,8 @@
 import json
 from typing import Any
 
-from pmc.schemas import RepoType, Role
-from tests.utils import become, gen_release_attrs, gen_repo_attrs, invoke_command, repo_create_cmd
+from pmc.schemas import RepoType
+from tests.utils import gen_release_attrs, gen_repo_attrs, invoke_command, repo_create_cmd
 
 
 def test_create_with_comps_architectures(orphan_cleanup: None, apt_repo: Any) -> None:
@@ -114,13 +114,7 @@ def _validate_package_exists_in_repo(repo_id: str, exists: bool) -> None:
 
 
 def test_remove_releases(apt_repo: Any, deb_package: Any, deb_src_package: Any) -> None:
-    become(Role.Repo_Admin)
-    cmd = [
-        "repo",
-        "release",
-        "create",
-        apt_repo["id"],
-    ]
+    cmd = ["repo", "release", "create", apt_repo["id"]]
     result = invoke_command(cmd + ["jammy"])
     assert result.exit_code == 0
     result = invoke_command(cmd + ["kinetic"])
