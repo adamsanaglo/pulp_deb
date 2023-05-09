@@ -69,8 +69,11 @@ Following community convention, when Microsoft repackages an upstream open sourc
 If you have made modifications to the upstream source code you believe cannot be shared, contact [OSS CELA](mailto:OSSStandardsLegal@service.microsoft.com).
 
 1. Build and publish (via PMC) an "srpm" (source rpm) package at the same time you build and publish the matching rpm package.
-1. Ensure that the package [SPEC file](https://rpm-packaging-guide.github.io/#what-is-a-spec-file) contains the short form of the license for the source code.
+1. Ensure that the package [SPEC file](https://rpm-packaging-guide.github.io/#what-is-a-spec-file) contains the [SPDX license expression](https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/) for the source code in the `License` field.
+   See also the [list of short-form identifiers](https://spdx.github.io/spdx-spec/v2.3/SPDX-license-list/) and the [Fedora documentation](https://docs.fedoraproject.org/en-US/legal/license-field/) (we are not bound by Fedora policy because we are not releasing software _into_ Fedora, but their docs are generally clear and illustrative).
 1. Ensure that a copy of the source code license is present in the LICENSE file following [rpm packaging conventions](https://rpm-packaging-guide.github.io/#preparing-source-code-for-packaging).
+   This file should be specified with the `%license` macro in the `%files` section of the SPEC file.
+   If building for a distribution that only contains rpm < 4.11 (like RHEL 6 or below), then `%doc` is the appropriate substitute for `%license`.
 1. Make sure some human-readable file in your rpm tells the reader how to acquire the corresponding srpm. You can install that file under `/usr/share/doc/_packagename_/` if your package doesn't otherwise create a folder which could be used for this purpose.
 1. If the source of your package is maintained in a publicly visible location (e.g. public github repo), the same human-readable document mentioned above (which points to your srpm) should also point to that location (your github repo).
 

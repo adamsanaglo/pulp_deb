@@ -8,5 +8,7 @@
   href: pmctool/
 - name: Logging and Analytics
   href: logs/
+- name: Packaging Guidelines
+  href: packaging/
 - name: Frequenty Asked Questions (FAQ)
   href: faq.md

@@ -6,7 +6,7 @@ Publishers operate on PMC repos via the `pmc` client CLI.
     - [Sample Config](#sample-config)
 - [Usage](#usage)
     - [List Resources](#list-resources)
-    - [Add/Remove Packages](#addremove-packages)
+    - [Publishing Packages](#publishing-packages)
 
 ## Installing the pmc client
 
