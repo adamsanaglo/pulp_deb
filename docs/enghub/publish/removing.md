@@ -1,11 +1,11 @@
 # Removing a package from a repository
 
-NOTE: Removing a package is, in most cases, a rare operation.
-If a package is broken or problematic, in most scenarios the best action is to publish a newer version which corrects the problem.
-Repos are often downloaded by outside entities for many reasons, and while those "repo cloners" will pick up new package versions, many will not remove a package that was removed from their upstream source.
-
 Package removal looks very much like adding a package to a repo.
 You will need to know the package ID of the specific package you want to remove, and you'll need to remove it from every repo to which you added it.
+
+## Frequently asked questions
+
+[!INCLUDE [remove-faq](../include/remove-faq.md)]
 
 ## Removing a package version from a single repo
 

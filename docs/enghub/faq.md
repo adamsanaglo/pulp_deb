@@ -104,3 +104,7 @@ A closed-source Microsoft binary published on PMC will often include or depend o
 1. Ensure that your package has the relevant End User License Agreement for the closed-source Microsoft packages in the standard metadata location for your package type.
     - For **rpm** packages, that standard location is the [SPEC file](https://rpm-packaging-guide.github.io/#what-is-a-spec-file).
     - For **deb** packages, that standard location is the `debian/copyright` file.
+
+## Removing Packages
+
+[!INCLUDE [remove-faq](include/remove-faq.md)]
