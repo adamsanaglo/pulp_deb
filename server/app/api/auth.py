@@ -36,14 +36,9 @@ async def authenticate(request: Request) -> str:
         signing_key = jwks_client.get_signing_key_from_jwt(token)
     except jwt.DecodeError as e:
         raise HTTPException(status_code=401, detail=f"Failed to parse auth token: {e}.")
-    except jwt.PyJWKClientError as e:
-        # TODO: once this PR is released update this to catch PyJWKClientConnectionError
-        # https://github.com/jpadilla/pyjwt/pull/876
-        if "Fail to fetch data from the url" in str(e):
-            # retry the request
-            signing_key = jwks_client.get_signing_key_from_jwt(token)
-        else:
-            raise HTTPException(status_code=401, detail=f"{e}")
+    except jwt.exceptions.PyJWKClientConnectionError:
+        # retry the request once
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
 
     # get the issuer and audience based on the token version
     try:
