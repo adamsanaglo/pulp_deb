@@ -30,7 +30,9 @@ QUIET_OPT = typer.Option(
 )
 SSL_VERIFY_OPT = typer.Option(True, help="Verify the ssl cert.", hidden=True)
 RESP_FORMAT_OPT = typer.Option(Format.json, "--format", hidden=True)  # TODO: add more formats
-BASE_URL_OPT = typer.Option("", help="The base url of the server (i.e. https://<hostname>/api/v4)")
+BASE_URL_OPT = typer.Option(
+    None, help="The base url of the server (i.e. https://<hostname>/api/v4)"
+)
 MSAL_CLIENT_ID_OPT = typer.Option(
     None,
     "--msal-client-id",

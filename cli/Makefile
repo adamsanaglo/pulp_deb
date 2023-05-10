@@ -10,6 +10,7 @@ msal_cert_path ?= ${HOME}/.config/pmc/auth.pem
 msal_authority ?= https://login.microsoftonline.com/Microsoft.onmicrosoft.com
 config_file ?= ${HOME}/.config/pmc/settings.toml
 signing_service ?= legacy
+base_url = http://localhost:8000/api/v4
 
 lint:
 	flake8 .
@@ -29,6 +30,7 @@ test: tests/settings.toml
 
 config:
 	pmc config create --no-edit \
+		--base-url "${base_url}" \
 		--location "${config_file}" \
 		--msal-client-id "${repo_client_id}" \
 		--msal-scope "${msal_scope}" \

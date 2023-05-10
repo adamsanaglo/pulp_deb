@@ -1,4 +1,5 @@
 [default]
+base_url = "http://localhost:8000/api/v4"
 msal_client_id = "c93b1ed1-3b3e-408c-9003-10c87975644a"
 msal_scope = "api://1ce02e3e-1bf3-4d28-8cdc-e921f824399d/.default"
 msal_cert_path = "~/.config/pmc/auth.pem"

@@ -220,6 +220,7 @@ def main(
         id_only=id_only,
         debug=debug,
         quiet=quiet,
+        base_url=(parse_obj_as(AnyHttpUrl, base_url) if base_url else None),
         ssl_verify=ssl_verify,
         resp_format=resp_format,
         msal_client_id=msal_client_id,  # pyright: ignore
@@ -229,8 +230,6 @@ def main(
         msal_SNIAuth=msal_SNIAuth,
         msal_authority=msal_authority,  # pyright: ignore
     )
-    if base_url:
-        config.base_url = parse_obj_as(AnyHttpUrl, base_url)
 
     ctx.obj = PMCContext(config=config, config_path=config_path)
     init_session(ctx.obj)

@@ -6,7 +6,6 @@ import click
 import typer
 from pydantic import AnyHttpUrl, BaseModel, FilePath, StrictStr, root_validator, validator
 from pydantic.main import ModelMetaclass
-from pydantic.tools import parse_obj_as
 
 FINISHED_TASK_STATES = ("skipped", "completed", "failed", "canceled")
 CONFIG_PATHS = [
@@ -133,7 +132,7 @@ class Config(BaseModel):
     debug: bool = False
     quiet: bool = False
     ssl_verify: bool = True
-    base_url: AnyHttpUrl = parse_obj_as(AnyHttpUrl, "http://localhost:8000/api/v4")
+    base_url: AnyHttpUrl
     hide_restricted_commands: bool = True
     signing_service: Optional[RepoSigningService] = RepoSigningService.esrp
 
@@ -178,5 +177,3 @@ class FileConfig(Config, metaclass=OptionalFieldsMeta):
     def validate_msal_cert(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # skip validating msal_cert
         return values
-
-    pass

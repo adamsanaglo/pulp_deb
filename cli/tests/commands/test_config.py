@@ -69,6 +69,8 @@ def test_partial_config(settings: Any, repo: Any) -> None:
             [
                 "--config",
                 config.name,
+                "--base-url",
+                settings["base_url"],
                 "--msal-client-id",
                 settings["msal_client_id"],
                 "--msal-scope",
