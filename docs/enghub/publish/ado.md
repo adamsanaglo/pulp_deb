@@ -64,3 +64,15 @@ A Release job is a straight-forward way to publish your content to packages.micr
 - Click Save to save all your changes
 - Be sure to bookmark (or otherwise document) a link to this job, as jobs can be difficult to find.
 - Click Create Release if you wish to test out your new publishing job.
+
+--
+## Frequently Asked Questions
+
+### How can I publish to tux-dev (rather than Prod) from ADO?
+
+The tux-ingest environment exists wholly within the Corpnet boundary, and it cannot be reached from outside Corpnet.
+The standard ADO pool servers exist outside Corpnet in arbitrary Azure IP space and cannot access Corpnet.
+If you try to use the default pool servers in ADO to publish to tux-dev, the DNS name for the API service (tux-ingest.corp.microsoft.com) will not be resolved.
+Your job will fail, typically with an error along the lines of "Failed to establish a new connection: [Error -2] Name or service not known".
+
+If you need to publish to tux-dev from ADO, the only solution is to create hosted pool inside Corpnet and use that to run your ADO job.

@@ -2,3 +2,6 @@
   href: index.md
 - name: Removing a package
   href: removing.md
+- name: Publishing packages via Azure Devops
+  href: ado.md
+  
