@@ -33,6 +33,8 @@ There are some prerequisite tasks that must be performed before your team can be
 
 ### Generate a certificate for authentication
 
+**Note**: These steps must be performed on a **SAW**. OneCert is *only* available via SAW.
+
 Access to the PMC publishing service is secured via client-side certificate associated with an AD Service Principal.
 You must generate a certificate to be used by your publishing workflow when it uses the PMC CLI.
 The recommended way to generate a certificate, per Azure Policy, is [OneCert](https://aka.ms/onecert). This will result in an auto-rotating certificate, which will save you time in the long-term.
@@ -55,6 +57,8 @@ That team might choose `*.pmcclient.prod.ourteam` as the domain for certs that a
 
 ### Create the Service Principal
 
+**Note**: For production/AME Service Principals, these steps must be performed on a **SAW**.
+
 The onboarding/migration process requires you to setup a Service Principal in Azure Active Directory and provide the Application ID associated with that Service Principal. You will then use that Service Principal to authenticate with the PMC API for all publishing actions.
 
 - Follow [these instructions](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#register-an-application-with-azure-ad-and-create-a-service-principal) to create a Service Principal (AKA Application Registration). You must create the Service Principal in the AAD Tenant which matches where you intend to publish content
@@ -64,6 +68,8 @@ The onboarding/migration process requires you to setup a Service Principal in Az
 In the main page for your Service Principal you will see an **Application ID** and **Object ID**. Take note of these for subsequent steps.
 
 ### Configure Service Principal Credentials
+
+**Note**: For production/AME accounts, these steps must be performed on a **SAW**.
 
 This is the magic step that enables auto-rotation. Once completed, any cert issued by the AME Root CA that matches your subject name will be a valid credential for your account. See [documentation](https://aadwiki.windows-int.net/index.php?title=Subject_Name_and_Issuer_Authentication).
 - Download SNIssuerConfig.exe from one of the various sources described [here](https://aadwiki.windows-int.net/index.php?title=Subject_Name_and_Issuer_Authentication#Location_of_signed_version_of_SNIssuerConfig_tool_and_configuration_for_sovereign_clouds)

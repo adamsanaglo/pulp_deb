@@ -6,6 +6,8 @@
   href: fetch_api_logs.md
 - name: Checksum Mismatch
   href: checksum_mismatch.md
+- name: Contend Delivery Errors
+  href: content_delivery_errors.md
 - name: Deb Package Not Found in Metadata
   href: deb_metadata.md
 - name: Migration Functions
