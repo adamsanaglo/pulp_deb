@@ -121,6 +121,13 @@ RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0009-Prevent-
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0010-Store-release-signing-overrides-on-repo-to-avoid-syn.patch # https://github.com/pulp/pulp_deb/pull/689
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0011-Add-repo_key_fields-constraint-to-PackageReleaseComp.patch # https://github.com/pulp/pulp_deb/pull/705
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0012-Initial-source-package-and-source-indices-support.patch # https://github.com/pulp/pulp_deb/pull/295
+# Warning: This patch will have to be re-written when we migrate to a version of pulp_deb that contains PR 647 (patch #1).
+# Because this patch depends on two different unmerged upstream PRs there's no upstream equivalent so no place to put the changes yet.
+# There's two changes in upstream that differ from what we need in this backported version:
+# 1) There is no longer a foreign-key mapping between Release and ReleaseComponent; the filter in SourcePackageToReleaseFilter will not work.
+#    Instead you must join by comparing ReleaseComponent.distribution = Release.distribution.
+# 2) The ContentRelationshipFilter base class now passes down a RepositoryVersion.content QuerySet instead of a filtered PackageReleaseComponents QuerySet.
+#    So this patch now _should not_ add a new arg on _filter, but should instead do whatever SourcePackageReleaseComponents filtering is necessary inside the _filter definitions.
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0013-Adding-source-package-release-filter-support.patch
 
 # Apply our pulp_rpm patches until upstream accepts/releases our merge requests
