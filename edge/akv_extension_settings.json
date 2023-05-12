@@ -1,0 +1,12 @@
+{
+    "secretsManagementSettings": {
+      "pollingIntervalInS": "3600",
+      "certificateStoreLocation": "/var/lib/waagent/Microsoft.Azure.KeyVault",
+      "requireInitialSync": true,
+      "observedCertificates": ["https://apt-linux-geneva.vault.azure.net/secrets/PMCv4EdgeGeneva"]
+    },
+    "authenticationSettings": {
+      "msiEndpoint":  "http://169.254.169.254/metadata/identity",
+      "msiClientId":  "309d693e-d61b-4b04-b3cd-f01698303bdf"
+    }
+}
