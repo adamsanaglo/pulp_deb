@@ -1,2 +1,4 @@
 - name: Onboarding to PMC
   href: index.md
+- name: Migration FAQ
+  href: migration.md
