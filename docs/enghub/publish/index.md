@@ -40,6 +40,14 @@ Packages must be signed prior to upload, otherwise they'll be rejected.
 ## Publishing the Package
 This section summarizes the steps for publishing to a repo. More details on the pmc cli can be found [here](https://eng.ms/docs/cloud-ai-platform/azure-core/azure-management-and-platforms/control-plane-bburns/pmc-package-ingestion/pmc-onboardingreference/pmctool) or by running `pmc --help`.
 
+Publishing a package is a three step process:
+
+1. Upload the package (and its sources)
+2. Add the package to a repo (or repos)
+3. Publish the repo(s)
+
+See the sections below for more info on each step.
+
 ### Upload the package
 The first step in publishing is to upload the package.
 

@@ -40,3 +40,18 @@ Doing so presents the same problems as removing a single package version; cloned
 The best course of action is:
 - Publish one final version of the package which simply notes the package has been withdrawn.
 - Remove all older versions of the package
+
+## Removing all packages from a repository
+
+The pmc cli has a purge command that will remove all packages from a repo.
+Be careful when using this command.
+
+```bash
+# yum or deb repo
+pmc repo purge --confirm myrepo
+
+# remove all packages from a release/dist (deb repos only)
+pmc repo purge --confirm mydebrepo focal
+```
+
+See the purge `--help` screen for more options and information.
