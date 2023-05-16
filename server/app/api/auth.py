@@ -37,8 +37,10 @@ async def authenticate(request: Request) -> str:
     except jwt.DecodeError as e:
         raise HTTPException(status_code=401, detail=f"Failed to parse auth token: {e}.")
     except jwt.exceptions.PyJWKClientConnectionError:
-        # retry the request once
+        # if we encountered a connection error, retry the request once
         signing_key = jwks_client.get_signing_key_from_jwt(token)
+    except jwt.PyJWKClientError as e:
+        raise HTTPException(status_code=401, detail=f"Failed to retrieve signing key: {e}.")
 
     # get the issuer and audience based on the token version
     try:
