@@ -54,6 +54,23 @@ You probably want to use a number like 100, 200, etc if your limit is 100.
 The other option is to specify a larger `--limit` but be warned that if the number is more than a
 couple hundred, you might run into problems.
 
+## How do I add my deb package to a release (aka dist)?
+
+In v3, for deb package repos, an id referred to a particular repo **and** release (e.g.
+repos/azure-cli/dists/focal).
+In v4, however, a repo id (or name) points only to a repo, which in turn could have one or more
+releases/dists.
+To get a list of releases for a deb package repo, use the repo release command:
+
+```bash
+pmc repo release list azure-cli-apt
+```
+
+To add a deb package to a repo, you must specify a release (e.g. "focal"):
+
+```bash
+pmc repo package update azure-cli-apt focal --add-packages $PKG_ID
+```
 
 ## How do I upload my package to multiple repos?
 
@@ -63,8 +80,8 @@ To give an example:
 
 ```bash
 PKG_ID=$(pmc --id-only package upload mydeb_1.0_amd64.deb)
-pmc repo package update myrepo1 jammy --add-packages $PKG_ID
-pmc repo package update myrepo2 focal --add-packages $PKG_ID
+pmc repo package update myrepo1-apt jammy --add-packages $PKG_ID
+pmc repo package update myrepo2-apt focal --add-packages $PKG_ID
 ```
 
 
