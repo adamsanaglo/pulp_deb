@@ -1,3 +1,4 @@
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Optional
 
@@ -21,15 +22,12 @@ async def create_artifact(
     file: Optional[UploadFile] = None,
     url: Optional[AnyHttpUrl] = None,
 ) -> Any:
-
     if not file and not url:
         raise HTTPException(status_code=422, detail="Must upload a file or specify url.")
 
     if url:
         resp = httpx.get(url)
-        file = UploadFile(Path(resp.url.path).name)
-        await file.write(resp.content)
-        await file.seek(0)
+        file = UploadFile(BytesIO(resp.content), filename=Path(resp.url.path).name)
     assert file is not None
 
     data = {"file": file}

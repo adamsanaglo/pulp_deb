@@ -1,3 +1,4 @@
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Optional, Type, Union
 
@@ -108,10 +109,9 @@ async def create_package(
 
     if url:
         resp = httpx.get(url)
-        file = UploadFile(Path(resp.url.path).name)
-        await file.write(resp.content)
-        await file.seek(0)
-    assert file is not None
+        file = UploadFile(BytesIO(resp.content), filename=Path(resp.url.path).name)
+
+    assert file is not None and file.filename is not None
 
     if not file_type:
         # attempt to resolve the file type using ext

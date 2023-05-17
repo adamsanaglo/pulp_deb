@@ -47,7 +47,7 @@ async def verify_signature(file: UploadFile, file_type: PackageType) -> None:
         _verify_deb_signature(file)
     else:
         raise UnsupportedFiletype(
-            "We don't know how to verify the signature of this file: " + file.filename
+            f"We don't know how to verify the signature of this file: {file.filename}"
         )
     await file.seek(0)  # "reset" it to be read again
 
