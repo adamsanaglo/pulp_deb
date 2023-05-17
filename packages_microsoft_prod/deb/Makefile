@@ -11,6 +11,8 @@ LISTDIR=$(FAKEROOT)/etc/apt/sources.list.d
 LISTFILE=microsoft-prod.list
 GPGDIR=$(FAKEROOT)/usr/share/keyrings
 GPGFILE=microsoft-prod.gpg
+VERIFYKEYDIR=$(FAKEROOT)/usr/share/debsig/keyrings/EB3E94ADBE1229CF
+VERIFYPOLICYDIR=$(FAKEROOT)/etc/debsig/policies/EB3E94ADBE1229CF
 
 package: $(DEB)
 
@@ -29,6 +31,9 @@ $(DOCDIR)/copyright: SOURCES/copyright $(DOCDIR)
 	cp $< $@
 
 $(DOCDIR)/$(GPGFILE): SOURCES/$(GPGFILE) $(DOCDIR)
+	cp $< $@
+
+$(DOCDIR)/microsoft.pol: SOURCES/microsoft.pol $(DOCDIR)
 	cp $< $@
 
 $(DOCDIR)/$(LISTFILE): SOURCES/$(LISTFILE) $(DOCDIR)
@@ -64,6 +69,7 @@ data.tar.gz: install-deps \
              $(DOCDIR)/changelog.Debian.gz \
              $(DOCDIR)/copyright \
              $(DOCDIR)/$(GPGFILE) \
+             $(DOCDIR)/microsoft.pol \
              $(DOCDIR)/$(LISTFILE) \
              $(LINTIANOVERRIDES)
 	find $(FAKEROOT) -type d | xargs chmod 0755
@@ -83,6 +89,8 @@ install-clean:
 	-rm -rf $(FAKEROOT)
 
 install-deps: install-clean	
-	mkdir -p $(LISTDIR) $(GPGDIR)
+	mkdir -p $(LISTDIR) $(GPGDIR) $(VERIFYKEYDIR) $(VERIFYPOLICYDIR)
 	install -m 644 SOURCES/$(LISTFILE) $(LISTDIR)/$(LISTFILE)
 	install -m 644 SOURCES/$(GPGFILE) $(GPGDIR)/$(GPGFILE)
+	gpg -o - --dearmor $(GPGDIR)/$(GPGFILE) | install -m 644 /dev/stdin $(VERIFYKEYDIR)/microsoft.gpg
+	install -m 644 SOURCES/microsoft.pol $(VERIFYPOLICYDIR)/microsoft.pol
