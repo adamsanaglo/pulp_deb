@@ -2,6 +2,8 @@
   href: index.md
 - name: Publisher Onboarding
   href: publisher_onboarding.md
+- name: Repo / Release / Distribution Creation
+  href: repo_create.md
 - name: Fetch API Logs
   href: fetch_api_logs.md
 - name: Checksum Mismatch
