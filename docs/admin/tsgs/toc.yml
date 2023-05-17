@@ -24,3 +24,5 @@
   href: ecr.md
 - name: Edge Cache VMs (aka mirrors)
   href: edge_cache.md
+- name: Clear File from Edge Cache
+  href: clear_file_from_edge_cache.md

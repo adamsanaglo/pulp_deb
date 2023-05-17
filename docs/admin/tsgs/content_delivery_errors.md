@@ -6,6 +6,10 @@ This section summarizes issues that customers may raise regarding their ability 
 
 **Resolution:** Refer to the [Deb Package Not Found in Metadata](deb_metadata.md) TSG.
 
+## Checksum Mismatch
+**Symptom**: Customers experience a checksum mismatch while syncing repo metadata or installing a package.
+**Resolution**: Refer to the [Checksum Mismatch TSG](checksum_mismatch.md).
+
 ## DNS Errors
 **Symptom:** One or more customers indicate that they cannot resolve the hostname for packages.microsoft.com.
 

@@ -27,8 +27,9 @@ This will normally be indicated by a Customer Reported Incident (CRI).
 2. Determine if the issue resides centrally or only on the mirrors.
     - Check https://pmc-distro.trafficmanager.net/; see if the timestamps/checksums match what's present on https://packages.microsoft.com/.
     - If the checksums differ on pmc-distro, that could indicate a caching issue.
-        - For rpm repos, the cache will naturally update over-time, and the mismatch should mitigate itself.
-        - For deb repos, check the [deb Metadata TSG](deb_metadata.md).
+        - For **rpm repo metadata**, the cache will naturally update over-time, and the mismatch should mitigate itself.
+        - For **deb repo metadata**, check the [deb Metadata TSG](deb_metadata.md).
+        - For **packages**, refer to the [TSG to clear files from edge cache](clear_file_from_edge_cache.md).
 3. Try to re-publish the repo, which will force the metadata to be regenerated.
     ```bash
     $ pmc repo publish --force $REPO_NAME
