@@ -26,8 +26,9 @@ If you're in the msazure org, select "Azure Artifacts feed in this organization"
 If you're outside the msazure org, select "Azure Artifacts in another organization" and enter
 "azure-feed://msazure/Compute-PMC@Release" as your feed.
 
-After your Azure Artifacts feed has been set up, when you search for Python packages from upstream
-sources, you should see the pmc-cli package.
+To check to see if the upstream is set up correct, go to your Azure Artifacts feed page.
+Hit the "Search Upstream Sources" button, select "Python", and enter "pmc-cli" in the search box.
+If configured properly, you should see various versions of the pmc-cli package.
 
 To use the Azure Artifacts feed in a pipeline, you must give the build service permissions to your
 Azure Artifact feed. The project-scoped identity will usually be named "{project name} Build Service
@@ -43,11 +44,11 @@ client](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference
 - task: PipAuthenticate@1
   inputs:
     artifactFeeds: 'myproject/myfeed'
-- script: pip install "pmc-cli>0.0"
+- script: pip install pmc-cli
 ```
 
-
-If you encounter any problems, [reach out to the Azure Artifacts team for
+If you run into installation problems, you can use "pip install -vvv pmc-cli" to help debug.
+Also, you can [reach out to the Azure Artifacts team for
 help](https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/azure-artifacts/office-hours).
 
 ### Installing directly
@@ -62,7 +63,7 @@ Alternatively, you can simply install the pmc-cli with a single command but you 
 personal access token](https://msazure.visualstudio.com/_usersSettings/tokens):
 
 ```bash
-pip install --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC%40Release/pypi/simple/ "pmc-cli>0.0"
+pip install --index-url https://msazure.pkgs.visualstudio.com/_packaging/Compute-PMC%40Release/pypi/simple/ pmc-cli
 ```
 
 ## Configuration file
