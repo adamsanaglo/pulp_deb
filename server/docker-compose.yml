@@ -44,6 +44,7 @@ services:
         - ./setup.cfg:/pmcserver/setup.cfg
         - ./tests:/pmcserver/tests
         - ./migrations:/pmcserver/migrations
+        - ./dev_assets:/pmcserver/dev_assets
       ports:
         - "8000:8000"
       env_file:
