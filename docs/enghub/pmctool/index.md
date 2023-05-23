@@ -31,10 +31,8 @@ Hit the "Search Upstream Sources" button, select "Python", and enter "pmc-cli" i
 If configured properly, you should see various versions of the pmc-cli package.
 
 To use the Azure Artifacts feed in a pipeline, you must give the build service permissions to your
-Azure Artifact feed. The project-scoped identity will usually be named "{project name} Build Service
-({org name})" and the org-scoped identity will usually be "Project Collection Build Service ({org
-name})". To do this, open your Azure Artifacts feed, go to settings, then the Permissions
-settings, and add a user.
+Azure Artifact feed. See the [Azure Artifacts docs on how to do
+this](https://learn.microsoft.com/en-us/azure/devops/artifacts/feeds/feed-permissions?view=azure-devops#pipelines-permissions).
 
 After you have set up your Azure Artifact feed, you can use [the PipAuthenticate task to
 authenticate and then download the pmc-cli
@@ -48,6 +46,11 @@ client](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference
 ```
 
 If you run into installation problems, you can use "pip install -vvv pmc-cli" to help debug.
+
+You may get an error message such as "User '464e3c60-f66b-11ed-b67e-0242ac120002' lacks permission to complete this action.",
+You can use the ADO api to look up the user (e.g. `https://vssps.dev.azure.com/{YOUR ORG HERE}/_apis/identities/464e3c60-f66b-11ed-b67e-0242ac120002`).
+This will give you the user name which you can then add to your feed as a Contributor.
+
 Also, you can [reach out to the Azure Artifacts team for
 help](https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/azure-artifacts/office-hours).
 
