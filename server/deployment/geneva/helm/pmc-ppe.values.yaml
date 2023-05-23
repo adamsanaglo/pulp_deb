@@ -1,0 +1,45 @@
+# Values for AKSGenevaSample with support for keyvault certificates.
+# Some of this information is duplicated in prod.sh, but it's much easier to just duplicate it
+# than figure out how to dynamically set these values in `helm`.
+
+gcs_environment: "DiagnosticsProd"
+gcs_account: PMClogs
+gcs_metrics_account: PMCmetrics
+gcs_region: westus
+gcs_namespace: PMClogs
+# Refers to the "version" of the xml config file in Jarvis. If the name of the config is something
+# like "Version 1.2v0", then "1.2" is what we want here. An alternate way of getting this is to
+# click on it to go to the detail view; there will be something like "[Version: 1.2]" at the top.
+gcs_config_version: "1.2"
+
+# Their azsecpack-initializer container only works with Ubuntu Nodes.
+# We already have it installed anyway.
+secpack:
+  exclude: true
+# Leave metric_endpoint commented out for PROD environment. Uncomment it for INT environment.
+# metricEndpoint: https://global.ppe.microsoftmetrics.com/
+
+# Configuration for CSI secure store driver which will retrieve the cert for AzSecPack and MDSD.
+csiSecretProvider:
+  use_pod_identity: false
+  use_msi: true
+
+# Where to get the cert for mdsd, mdm and azsecpack
+cert:
+  keyvaultName: pmc-ppe-keyvault-51689                # This is the keyvault name where the cert is stored.
+  tenantId: 72f988bf-86f1-41af-91ab-2d7cd011db47      # This is MSFT AAD tenant id.
+  msi_client_id: e5a9e26e-ecff-4ea9-b9c5-4f4aba580f64 # This is the User assigned identity to the pods; which needs to be authorized in AKV for list,get permissions. Can be empty, if only one identity is configured.
+  genevaCertName: geneva                              # This is the name of the certificate in AKV.
+  genevaCertSAN: "prod.geneva.keyvault.geneva.prod.pmc" # This is the Subject Alternate Name of the cert above.
+  pemFileName: genevacert.pem                         # This is the file name where the cert will be stored and shared with the containers.
+
+# You should override these with the latest version of the Geneva images available here:
+# https://eng.ms/docs/products/geneva/collect/references/linuxcontainers
+mdsd:
+  dockerTag: mariner_20230517.1
+
+fluentd:
+  dockerTag: mariner_20230517.1
+
+mdm:
+  dockerTag: 2.2023.505.1124-45da18-20230505t1700

@@ -1,0 +1,200 @@
+# Copied from https://msazure.visualstudio.com/One/_git/Compute-Runtime-Tux-GenevaContainers?path=%2Fdocker_geneva_samples%2FAKSGenevaSample%2FDeployment%2FGeneva%2Fchart%2Ftemplates%2Fgeneva-services.yaml
+# and de-templated so we aren't forced to run in `helm` with a values file.
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: geneva-kvcert
+  namespace: geneva
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"
+    userAssignedIdentityID: "fc014d0c-899a-4c94-91d0-1cf08425bced"
+    keyvaultName: pmcprod
+    objects: |
+      array:
+        - |
+          objectName: "geneva"
+          objectType: secret
+          objectAlias: "geneva.pem"
+    tenantId: "33e01921-4d64-4f8c-a055-5bdaffd5e33d"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: geneva-services
+  namespace: geneva
+  labels:
+    app: geneva-services
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      name: geneva-services
+  template:
+    metadata:
+      namespace: geneva
+      labels:
+        name: geneva-services
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+        # MDSD
+        - name: mdsd
+          image: linuxgeneva-microsoft.azurecr.io/genevamdsd:mariner_20230517.1
+          env:
+          - name: MDSD_AKV_CERTIFICATE_STORE_PATH
+            value: /geneva/geneva_auth
+          - name: MONITORING_GCS_AUTH_ID_TYPE
+            value: AuthKeyVault
+          - name: MDSD_DAEMON_TEMPORARY_ELEVATION_DISABLED
+            value: "true"
+          - name: MONITORING_GCS_AUTH_ID
+            value: "prod.geneva.keyvault.geneva.prod.pmc"
+          - name: TENANT
+            value: "westus"
+          - name: ROLE
+            value: "PMClogs"
+          - name: ROLEINSTANCE
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MONITORING_TENANT
+            value: "westus"
+          - name: MONITORING_ROLE
+            value: "PMClogs"
+          - name: MONITORING_ROLE_INSTANCE
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MONITORING_GCS_ENVIRONMENT
+            value: "DiagnosticsProd"
+          - name: MONITORING_GCS_ACCOUNT
+            value: "PMClogs"
+          - name: MONITORING_GCS_REGION
+            value: "westus"
+          - name: MONITORING_GCS_NAMESPACE
+            value: "PMClogs"
+          - name: MONITORING_CONFIG_VERSION
+            value: "1.2"
+          - name: DOCKER_LOGGING
+            value: "true"
+          volumeMounts:
+            - name: "keyvault-auth-vol"
+              mountPath: /geneva/geneva_auth
+              readOnly: true
+            - name: var-log-geneva-services-vol
+              mountPath: /geneva/geneva_logs
+            - name: mdsd-run-vol
+              mountPath: /var/run/mdsd
+        # FluentD
+        - name: fluentd
+          image: linuxgeneva-microsoft.azurecr.io/genevafluentd_td-agent:mariner_20230517.1
+          env:
+            - name: FLUENTD_CONF
+              value: /etc/fluentd/fluentd.conf
+          volumeMounts:
+            - name: fluentd-conf-vol
+              mountPath: /etc/fluentd
+            - name: fluentd-buffer-vol
+              mountPath: "/var/log/td-agent"
+            - name: mdsd-run-vol
+              mountPath: "/var/run/mdsd"
+            - name: docker-log-vol
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+            - name: var-log-vol
+              mountPath: /var/log
+            - name: run-journal-vol
+              mountPath: /run/log/journal
+              readOnly: true
+        # MDM
+        - name: mdm
+          image: linuxgeneva-microsoft.azurecr.io/genevamdm:2.2023.505.1124-45da18-20230505t1700
+          env:
+          - name: MDM_ACCOUNT
+            value: "PMCmetrics"
+          - name: MDM_INPUT
+            value: statsd_udp
+          - name: MDM_LOG_LEVEL
+            value: "Info"
+          - name: CERT_FILE
+            value: /tmp/geneva_mdm/geneva.pem
+          - name: KEY_FILE
+            value: /tmp/geneva_mdm/geneva.pem
+          volumeMounts:
+            - name: "keyvault-auth-vol"
+              mountPath: /tmp/geneva_mdm
+              readOnly: true
+      volumes:
+        - name: keyvault-auth-vol
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: geneva-kvcert
+        - name: mdsd-run-vol
+          emptyDir: {}
+        - name: fluentd-conf-vol
+          configMap:
+            name: fluentd-conf
+        - name: fluentd-buffer-vol
+          emptyDir: {}
+        - name: docker-log-vol
+          hostPath:
+            path: /var/lib/docker/containers
+        - name: run-journal-vol
+          hostPath:
+            path: /run/log/journal
+        - name: var-log-vol
+          hostPath:
+            path: /var/log
+        - name: var-log-geneva-services-vol
+          hostPath:
+            path: /var/log/geneva-services
+        - name: etw-vol
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: geneva-services
+  namespace: geneva
+  labels:
+    app: geneva-services
+spec:
+  type: ClusterIP
+  ports:
+    - name: mdm-statsd-udp
+      protocol: UDP
+      port: 8125
+      targetPort: 8125
+  selector:
+    name: geneva-services
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: geneva-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods", "namespaces"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: geneva-read-global
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: geneva
+roleRef:
+  kind: ClusterRole
+  name: geneva-reader
+  apiGroup: rbac.authorization.k8s.io
+
