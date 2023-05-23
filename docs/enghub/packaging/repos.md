@@ -5,7 +5,7 @@
 
 In general, no, you should not do that.
 That may be acceptable if your software is Edge, or something else that has its own update mechanism built-in.
-In general though the linux world operates on the bases of subscribing to repositories that they want to consume packages out of, and then they have client-side tooling to search for and install particular things that they care about.
+In general though the linux world operates on the basis of subscribing to repositories that they want to consume packages out of, and then they have client-side tooling to search for and install particular things that they care about.
 This is the same way phone app stores works except you're not limited to the Apple / Google stores, in the linux world you can easily add other repos to expand the list of available software.
 
 This has a few benefits:

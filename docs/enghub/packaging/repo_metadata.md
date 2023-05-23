@@ -14,6 +14,8 @@ This is beginning to change in both places.
 Microsoft, out of an abundance of caution and a commitment to supply-chain security, is going to always sign _both_ the packages _and_ the repodata.
 Even if Customers (or Microsoft support personnel) are emailing individual packages to people, it will still be possible to verify that this is in fact a Microsoft package.
 And Customers will also be able to verify that the repo package listing itself is actually what we intended and has not been modified.
+PMC's public GitHub README [explains how to verify](https://github.com/microsoft/linux-package-repositories#signature-verification)
+Microsoft's individual-DEB signatures.
 
 ## RPM Repositories
 ### Anatomy of a .repo File
@@ -38,11 +40,12 @@ If desired it is possible to temporarily enable a repo for a single command by d
 ### The Repo Matadata
 RPM repos are flat, meaning that every client that enables this repo will have the same content available to it (the one exception being that there can be many package architectures in the repo that are not applicable to every system).
 This repo file is instructing the package manager to look for a `repodata/repomd.xml` file under that `baseurl`.
-And, since `repo_gpgcheck` is enabled, it will also look for a `.asc` GPG detached-signature, and a `.key` public-key, and verify that this `repomd.xml` file was in fact created by the expected party.
+And, since `repo_gpgcheck` is enabled, it will also look for a `.asc` GPG detached-signature, and verify that this `repomd.xml` file was in fact created by a trusted party.
 The `repomd.xml` file is fairly small and just contains a list of other metadata files.
 The "primary" file (whose exact name changes because it is prepended with its hash) contains the list of packages available in this repo and the url to find them.
 
 So if your tooling wanted to know what packages were available in this repo (and where to download them from) it would ideally follow the same process.
+This is the guaranteed interface for an RPM repo.
 1. Download and parse `$baseurl/repodata/repomd.xml`
 1. Download and parse the "primary" file.
 
@@ -57,7 +60,8 @@ deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-prod.gpg] ht
 You can define multiple repos in one file.
 The closest equivalent to defining a disabled repo is to simply comment it out with a `#`, but unfortunately there is no way to temporarily enable it like an RPM repo.
 One workaround would be to define the list file somewhere it would _not be picked up by default_, and explicitly point the package manager to it with `apt-get update -o Dir::Etc::sourcelist=/path/to/repo.list` or similar.
-[Adding it and then removing it](https://askubuntu.com/questions/1301894/how-can-i-enable-a-repository-or-target-temporarily-and-easily-disable-it-withou) is the closest you can come.
+[Or you can add and then immediately remove it](https://askubuntu.com/questions/1301894/how-can-i-enable-a-repository-or-target-temporarily-and-easily-disable-it-withou),
+but that's the closest you can come.
 
 This sample `.list` file expects Microsoft's public key to already be on the filesystem.
 The `packages-microsoft-prod.deb` package (built and maintained by PMC) will install that key in that location.

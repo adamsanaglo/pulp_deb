@@ -81,4 +81,8 @@ $ dpkg-deb -I amlfs-lustre-client-2.15.1-24-gbaa21ca_5.15.0-1037-azure_amd64.deb
 
 Here we see the same information as the RPM example.
 The `amlfs-lustre-client` package is requiring the specific matching-version `lustre-client` and `kmod-lustre-client` packages.
-It's incorrect to name them that way though, because unlike in the RPM example here the packages names have _already_ been updated to include a specific version (so these packages will not be seen as an upgrade to a generically-named `lustre-client` package) and the old `lustre-client` package has been marked as a `Conflict` so they cannot be co-installed on the same system.
+We're using slightly incorrect terminology to say that those are their names though, because unlike
+in the RPM example here the packages names have _already_ been updated to include a specific version
+(so these packages will not be seen as an upgrade to a generically-named `lustre-client` package)
+and the old `lustre-client` package has been marked as a `Conflict` so they cannot be co-installed
+on the same system.

@@ -35,7 +35,8 @@ In general:
    More on this in the package-type-specific sections.
 1. Try to avoid depending on the html directory listings if at all possible.
    Directory listing doesn't even _need_ to be _turned on_ for repositories, though we do have it turned on for Customer convenience.
-   What you can do instead is parse the actual repo data that `yum`/`apt-get` consume, because that is guaranteed to work and contain correct and expected data.
+   What you can do instead is [parse the actual repo data](https://eng.ms/docs/cloud-ai-platform/azure-core/azure-management-and-platforms/control-plane-bburns/pmc-package-ingestion/pmc-onboardingreference/packaging/repo_metadata)
+   that `yum`/`apt-get` consume, because that is guaranteed to work and contain correct and expected data.
    In particular, look at the `Packages` files in apt repos and the "primary" file that `repomd.xml` references in yum repos.
 1. If you have questions of course contact us.
 
