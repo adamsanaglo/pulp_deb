@@ -113,7 +113,8 @@ def _validate_package_exists_in_repo(repo_id: str, exists: bool) -> None:
         assert json.loads(result.stdout)["count"] == (1 if exists else 0)
 
 
-def test_remove_releases(apt_repo: Any, deb_package: Any, deb_src_package: Any) -> None:
+def test_remove_releases(new_apt_repo: Any, deb_package: Any, deb_src_package: Any) -> None:
+    apt_repo = new_apt_repo
     cmd = ["repo", "release", "create", apt_repo["id"]]
     result = invoke_command(cmd + ["jammy"])
     assert result.exit_code == 0

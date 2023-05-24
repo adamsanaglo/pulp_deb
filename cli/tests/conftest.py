@@ -27,7 +27,7 @@ def config_file() -> Path:
     return config_path
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def settings(config_file: Path) -> Any:
     profiles = tomli.load(config_file.open("rb"))
     return next(iter(profiles.values()))
@@ -68,37 +68,43 @@ def _object_manager(
                 assert result.exit_code == 0, f"Failed to delete {response['id']}: {result.stderr}."
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def repo() -> Generator[Any, None, None]:
     with _object_manager(repo_create_cmd(gen_repo_attrs()), Role.Repo_Admin) as r:
         yield r
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def apt_repo() -> Generator[Any, None, None]:
     with _object_manager(repo_create_cmd(gen_repo_attrs(RepoType.apt)), Role.Repo_Admin) as r:
         yield r
 
 
 @pytest.fixture()
+def new_apt_repo() -> Generator[Any, None, None]:
+    with _object_manager(repo_create_cmd(gen_repo_attrs(RepoType.apt)), Role.Repo_Admin) as r:
+        yield r
+
+
+@pytest.fixture(scope="session")
 def yum_repo() -> Generator[Any, None, None]:
     with _object_manager(repo_create_cmd(gen_repo_attrs(RepoType.yum)), Role.Repo_Admin) as r:
         yield r
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def file_repo() -> Generator[Any, None, None]:
     with _object_manager(repo_create_cmd(gen_repo_attrs(RepoType.file)), Role.Repo_Admin) as r:
         yield r
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def python_repo() -> Generator[Any, None, None]:
     with _object_manager(repo_create_cmd(gen_repo_attrs(RepoType.python)), Role.Repo_Admin) as r:
         yield r
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def distro() -> Generator[Any, None, None]:
     attrs = gen_distro_attrs()
     cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
@@ -106,7 +112,7 @@ def distro() -> Generator[Any, None, None]:
         yield d
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def apt_distro() -> Generator[Any, None, None]:
     attrs = gen_distro_attrs(DistroType.apt)
     cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
@@ -114,7 +120,7 @@ def apt_distro() -> Generator[Any, None, None]:
         yield d
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def yum_distro() -> Generator[Any, None, None]:
     attrs = gen_distro_attrs(DistroType.yum)
     cmd = ["distro", "create", attrs["name"], attrs["type"], attrs["base_path"]]
@@ -122,7 +128,7 @@ def yum_distro() -> Generator[Any, None, None]:
         yield d
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def orphan_cleanup() -> Generator[None, None, None]:
     # We cannot simply delete content once created (Pulp doesn't have API for that) so instead
     # we must call the "orphan cleanup" api endpoint with a time of zero, forcing all orphans
@@ -137,7 +143,7 @@ def orphan_cleanup() -> Generator[None, None, None]:
         assert result.exit_code == 0, f"Failed to call orphan cleanup: {result.stderr}."
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def release(orphan_cleanup: None, apt_repo: Any) -> Generator[Any, None, None]:
     # create the release
     attrs = gen_release_attrs()
@@ -161,20 +167,20 @@ def release(orphan_cleanup: None, apt_repo: Any) -> Generator[Any, None, None]:
     yield release
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def account_one() -> Generator[Any, None, None]:
     with _object_manager(account_create_command(), Role.Account_Admin) as o:
         yield o
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def account_two() -> Generator[Any, None, None]:
     """Generate multiple accounts."""
     with _object_manager(account_create_command(), Role.Account_Admin) as o:
         yield o
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def repo_access(
     account_one: Dict[str, Any], apt_repo: Dict[str, Any]
 ) -> Generator[Any, None, None]:
@@ -183,11 +189,12 @@ def repo_access(
     def _my_cmd(action: str) -> List[str]:
         return ["access", "repo", action, account_one["name"], apt_repo["name"]]
 
-    with _object_manager(_my_cmd("grant"), Role.Account_Admin, cleanup_cmd=_my_cmd("revoke")) as o:
+    # Cleaned up when the account is deleted
+    with _object_manager(_my_cmd("grant"), Role.Account_Admin, cleanup_cmd=False) as o:
         yield o
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def package_access(
     account_one: Dict[str, Any], apt_repo: Dict[str, Any]
 ) -> Generator[Any, None, None]:
@@ -196,7 +203,8 @@ def package_access(
     def _my_cmd(action: str) -> List[str]:
         return ["access", "package", action, account_one["name"], apt_repo["name"], "vim"]
 
-    with _object_manager(_my_cmd("grant"), Role.Account_Admin, cleanup_cmd=_my_cmd("revoke")) as o:
+    # Cleaned up when the account is deleted
+    with _object_manager(_my_cmd("grant"), Role.Account_Admin, cleanup_cmd=False) as o:
         yield o
 
 
@@ -235,13 +243,13 @@ def _package_manager(
         yield p
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def deb_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("signed-by-us.deb") as p:
         yield p[0]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def deb_src_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager(
         "hello_2.10-2ubuntu2.dsc",
@@ -251,37 +259,37 @@ def deb_src_package(orphan_cleanup: None) -> Generator[Any, None, None]:
         yield p[0]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def zst_deb_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("signed-by-us-zst-compressed.deb") as p:
         yield p[0]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def rpm_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("signed-by-us.rpm") as p:
         yield p[0]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def file_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("hello.txt", file_type="file") as p:
         yield p[0]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def python_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("helloworld-0.0.1-py3-none-any.whl") as p:
         yield p[0]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def forced_unsigned_package(orphan_cleanup: None) -> Generator[Any, None, None]:
     with _package_manager("unsigned.rpm", unsigned=True) as p:
         yield p[0]
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def task() -> Generator[Any, None, None]:
     # do something, anything, that results in at least one task being created
     cmd = ["orphan", "cleanup"]

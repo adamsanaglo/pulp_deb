@@ -175,9 +175,7 @@ def test_invalid_deb_package_upload() -> None:
 
 
 def test_deb_src_package_upload_no_artifacts() -> None:
-    result = invoke_command(
-        package_upload_command("hello_2.10-2ubuntu2.dsc"), role=Role.Package_Admin
-    )
+    result = invoke_command(package_upload_command("apt_2.2.4.dsc"), role=Role.Package_Admin)
     assert result.exit_code != 0
     assert "A source file is listed in the DSC file but is not yet available" in result.stdout
 

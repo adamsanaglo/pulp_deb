@@ -53,8 +53,14 @@ class Account(ModelBase, table=True):
     icm_service: str
     icm_team: str
     contact_email: str
-    repos: List["RepoAccess"] = Relationship(back_populates="account")
-    packages: List["OwnedPackage"] = Relationship(back_populates="account")
+    repos: List["RepoAccess"] = Relationship(
+        back_populates="account",
+        sa_relationship_kwargs={"cascade": "delete, delete-orphan"},
+    )
+    packages: List["OwnedPackage"] = Relationship(
+        back_populates="account",
+        sa_relationship_kwargs={"cascade": "delete, delete-orphan"},
+    )
     signature: str
 
     def serialize(self) -> str:

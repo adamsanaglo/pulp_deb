@@ -89,6 +89,7 @@ def test_update(repo: Any) -> None:
     assert result.exit_code == 0, f"{cmd} failed: {result.stderr}"
     response = json.loads(result.stdout)
     assert response["name"] == new_name
+    repo["name"] = new_name
 
 
 def test_update_with_name(repo: Any) -> None:
@@ -98,6 +99,7 @@ def test_update_with_name(repo: Any) -> None:
     assert result.exit_code == 0, f"{cmd} failed: {result.stderr}"
     response = json.loads(result.stdout)
     assert response["name"] == new_name
+    repo["name"] = new_name
 
 
 def _build_package_update_command(
@@ -315,21 +317,24 @@ def test_update_packages_invalid(yum_repo: Any) -> None:
     assert "add_packages and remove_packages cannot both be empty" in result.stdout
 
 
-def test_publish(repo: Any) -> None:
+def test_publish(new_apt_repo: Any) -> None:
+    repo = new_apt_repo
     result = invoke_command(["repo", "publish", repo["id"]])
     assert result.exit_code == 0, f"repo publish {repo['id']} failed: {result.stderr}"
     response = json.loads(result.stdout)
     assert response["state"] == "completed"
 
 
-def test_publish_with_name(repo: Any) -> None:
+def test_publish_with_name(new_apt_repo: Any) -> None:
+    repo = new_apt_repo
     result = invoke_command(["repo", "publish", repo["name"]])
     assert result.exit_code == 0, f"repo publish {repo['name']} failed: {result.stderr}"
     response = json.loads(result.stdout)
     assert response["state"] == "completed"
 
 
-def test_republish(repo: Any) -> None:
+def test_republish(new_apt_repo: Any) -> None:
+    repo = new_apt_repo
     # first one succeeds
     result = invoke_command(["repo", "publish", repo["id"]])
     assert result.exit_code == 0, f"repo publish {repo['id']} failed: {result.stderr}"
