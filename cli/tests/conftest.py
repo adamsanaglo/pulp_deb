@@ -22,7 +22,7 @@ from .utils import (
 @pytest.fixture(autouse=True, scope="session")
 def config_file() -> Path:
     config_path = Path.cwd() / "tests" / "settings.toml"
-    assert config_path.is_file(), f"Could not find {settings}."
+    assert config_path.is_file(), f"Could not find {config_path}."
     os.environ["PMC_CLI_CONFIG"] = str(config_path)
     return config_path
 

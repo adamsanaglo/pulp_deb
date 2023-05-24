@@ -1,6 +1,7 @@
 import re
 
 import jwt
+from aiocache import cached  # type: ignore
 from cryptography.exceptions import InvalidSignature
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm.exc import NoResultFound
@@ -21,9 +22,15 @@ ISSUERS = {
 ALGORITHMS = ["RS256"]
 
 
+@cached(ttl=1800)  # type: ignore
+async def get_jwks_client() -> jwt.PyJWKClient:
+    """Cache the jwt client for half an hour so its own internal token cache actually works."""
+    return jwt.PyJWKClient(JWKS_URL, lifespan=1800)
+
+
 async def authenticate(request: Request) -> str:
     """Authenticate a request and return the oid."""
-    jwks_client = jwt.PyJWKClient(JWKS_URL)
+    jwks_client: jwt.PyJWKClient = await get_jwks_client()
     auth_header = request.headers.get("Authorization", "")
 
     # parse the auth token
