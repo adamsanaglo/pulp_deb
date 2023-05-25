@@ -61,6 +61,14 @@ make test
 make lint
 ```
 
+We by default run these integration tests in three parallel threads, because they're fairly slow.
+However that does also make them less reliable with a possibility of occasional random failures.
+To run them sequentially for greater reliability you can turn off parallel execution:
+
+```
+pytest -n 0
+```
+
 You can also run an individual test with pytest:
 
 ```

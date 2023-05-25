@@ -1,5 +1,5 @@
 import json
-from collections import Iterable
+from collections.abc import Iterable
 from random import choice
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4

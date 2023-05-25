@@ -6,6 +6,7 @@ from typing import Any, Dict, Generator, List, Optional, Union
 
 import pytest
 import tomli
+from xdist.scheduler.loadscope import LoadScopeScheduling  # type: ignore
 
 from pmc.schemas import DistroType, RepoType, Role
 
@@ -17,6 +18,27 @@ from .utils import (
     invoke_command,
     repo_create_cmd,
 )
+
+
+class CustomScheduler(LoadScopeScheduling):  # type: ignore
+    """
+    Running integration tests in parallel just does not tend to work very well, especially if they
+    weren't designed for it, like these weren't. However if we only run three threads, and split
+    the tests by module, sending repository and package tests to their own thread since they're
+    the slowest, that seems to work _pretty_ well.
+    """
+
+    def _split_scope(self, nodeid):  # type: ignore
+        if "test_repository.py" in nodeid:
+            return "group1"
+        if "test_package.py" in nodeid:
+            return "group2"
+        return "group3"
+
+
+def pytest_xdist_make_scheduler(config, log):  # type: ignore
+    """Use the pytest-xdist hook to tell it to use our custom scheduler."""
+    return CustomScheduler(config, log)
 
 
 @pytest.fixture(autouse=True, scope="session")
