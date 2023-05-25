@@ -92,6 +92,12 @@ $ pmc repo package update --add-packages $PKG_ID1,$PKG_ID2 $REPO_NAME
 $ pmc repo package update --add-packages $PKG_ID $REPO_NAME $RELEASE
 ```
 
+When adding packages to an apt repo (but not yum/rpm), it is necessary to specify the release name
+(also called "dist").
+Releases for an apt repo can be found by visiting the dists folder (e.g.
+<https://packages.microsoft.com/repos/microsoft-ubuntu-focal-prod/dists/>) or by using the cli:
+`pmc repo release list <repo name or id>`.
+
 ### Publish the Repository
 In order for the changes to take effect, the repo must be published. This will cause metadata to be generated and signed. The new content will then be made available publicly.
 
