@@ -4,4 +4,5 @@
   href: removing.md
 - name: Publishing packages via Azure Devops
   href: ado.md
-  
+- name: PMC REST API for publishers
+  href: api.md
