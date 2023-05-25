@@ -35,25 +35,53 @@ There are some prerequisite tasks that must be performed before your team can be
 
 **Note**: These steps must be performed on a **SAW**. OneCert is *only* available via SAW.
 
-Access to the PMC publishing service is secured via client-side certificate associated with an AD Service Principal.
+Access to the PMC publishing service is secured via client-side certificate associated with an AAD Service Principal.
 You must generate a certificate to be used by your publishing workflow when it uses the PMC CLI.
-The recommended way to generate a certificate, per Azure Policy, is [OneCert](https://aka.ms/onecert). This will result in an auto-rotating certificate, which will save you time in the long-term.
+The recommended way to generate a certificate, per Azure Policy, is [OneCert](https://aka.ms/onecert).
+This will result in an auto-rotating certificate, which will save you time in the long-term.
 
-1. In OneCert, register a domain for the client authentication certificate as documented [here](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/key-vault-dsms/onecert/docs/registering-a-domain-in-onecert) ([Example](OneCert.png))
-    1. Select AME as the Private Issuer (V2).
-    1. Set your Service Tree ID to the one associated with your [IcM incident queue](#creating-an-icm-incident-queue).
-    1. Under Cloud Settings, specify the Azure Subscription ID in which your KeyVault does (or will) reside.
-    1. Specify one or more Owners (who can modify this registration in the future)
-    1. **NOTE:** This should be a name that uniquely identifies your team/project/scope.
-    1. **NOTE:** The domain name will not be exported and should not end in .net, .com, etc.
-2. Generate a new Certificate in KeyVault, using the Subject/Domain name from step 1. See documentation [here](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/key-vault-dsms/onecert/docs/requesting-a-onecert-certificate-with-keyvault).
-    1. This may require adding the OneCert issuer to your KeyVault, as described in the above link.
-    1. Be sure to choose PEM format (not PFX). The PMC CLI is only compatible with PEM formatted certificates.
-
-
-The domain name should be chosen to collect authentication certificates in buckets tied to their purpose.
+#### *Select a Domain Name for Client Authentication*
+In this section you will choose a **domain name** for your authentication certificate.
+The domain name *should* be chosen to collect authentication certificates in buckets tied to their purpose.
 For example, a team might have multiple pipelines to build and publish packages.
-That team might choose `*.pmcclient.prod.ourteam` as the domain for certs that authenticate Service Principals which publish packages to the Prod environment of packages.microsoft.com, and `*.pmcclient.internal.ourteam` for publishing to the Tux-Dev environment.
+That team might choose `*.pmcclient.prod.ourteam` as the domain for certs that authenticate Service Principals which publish packages to the Prod environment of packages.microsoft.com, and `*.pmcclient.internal.ourteam` for publishing to the Tux-Dev environment. It ultimately doesn't matter what name is used here, as long as it's uniquely associated with your team and, in some way, reflects your team/product name.
+
+The domain doesn't need to *exist*, (no CNAME or DNS registration).
+The domain name will not be exported and should not end in .net, .com, etc.
+Please don't use *packages.microsoft.com*, it is already in use :)
+
+#### *Register with OneCert*
+1. In OneCert, register a domain for the client authentication certificate as documented [here](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/key-vault-dsms/onecert/docs/registering-a-domain-in-onecert) ([Example](OneCert.png))
+    1. **Domain Name**: Select a name that's uniquely associated with your team.
+        - See the paragraph above if you don't know what name to use here.
+    1. **Issuer (v2)**: Select **Private Issuer** -> **AME**
+        - Leave *Public Issuer* blank
+    1. **Service Tree ID**: Enter your ID from [Service Tree](https://servicetree.msftcloudes.com/#/)
+        - You should have used this already when [creating the IcM incident queue](#creating-an-icm-incident-queue).
+    1. **Cloud Settings**: This section defines which subscriptions will be allowed to generate the cert. Once configured, any KeyVaults within these subscriptions will be able to generate this cert.
+        - Select **Public** (our API exists in Public Azure).
+        - Enter the **ID(s) of one or more Azure subscriptions** *that you own* where you want the cert to be generated/reside.
+    1. **Owners**: Specify one or more Owners (who can modify this registration in the future)
+        - Be sure to set at least one other owner, as team members tend to change over time.
+
+#### *Generate Certificate in KeyVault*
+2. Generate a new Certificate in KeyVault, using the Subject/Domain name from the steps above. Reference the [OneCert documentation](https://eng.ms/docs/products/onecert-certificates-key-vault-and-dsms/key-vault-dsms/onecert/docs/requesting-a-onecert-certificate-with-keyvault) and [this example](keyvault.png).
+    
+    1. **Method of Generation**: Generate
+    1. **Certificate Name**: This is up to you.
+    1. **Type of Certificate Authority (CA)**: Certificate issued by an integrated CA
+    1. **Certificate Authority (CA)**: OneCertV2-Private CA
+        - You may have to add this CA if it's the first time you've used it.\
+        Follow the steps in the Portal, it's fairly simple.
+    1. **Subject**: Use the domain name you registered in OneCert.
+        - This should begin with `CN=`, i.e. `CN=pmcclient.prod.ourteam`
+    1. **Validity Period**: 12 months
+    1. **Content-Type**: PEM (pmc cli is currently incompatible with PFX/PKCS12 certs).
+    1. **Lifetime Action Type**: Automatically Renew at a **given number of days before expiry**
+    1. **Number of Days Before Expiry**: 275 (Renews every 90 days)
+
+
+
 
 ### Create the Service Principal
 

@@ -6,6 +6,7 @@ Geneva, and so are likely only applicable in Prod and only needed for a 1-time s
 Logs are being streamed to DGrep.
 To query, go to [the DGrep portal](https://portal.microsoftgeneva.com/logs/dgrep), select
 `endpoint` -> `Diagnostics PROD` and `namespace` -> `PMClogs`.
+Alternatively, use [this link](https://portal.microsoftgeneva.com/s/4B85A28B) to navigate directly to the PMC API logs.
 Select the "events" of the types of containers you're interested in, and the appropriate time
 filter.
 Note that logs are "live" but on about an inconsistent 1-15-minute delay.

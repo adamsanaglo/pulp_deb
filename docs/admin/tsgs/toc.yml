@@ -8,7 +8,7 @@
   href: fetch_api_logs.md
 - name: Checksum Mismatch
   href: checksum_mismatch.md
-- name: Contend Delivery Errors
+- name: Content Delivery Errors
   href: content_delivery_errors.md
 - name: Deb Package Not Found in Metadata
   href: deb_metadata.md
@@ -28,3 +28,5 @@
   href: edge_cache.md
 - name: Clear File from Edge Cache
   href: clear_file_from_edge_cache.md
+- name: Kubectl
+  href: kubectl.md
