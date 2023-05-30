@@ -904,6 +904,10 @@ class ReleaseCreate(BaseModel):
         allow_population_by_field_name = True
 
 
+class ReleaseUpdate(BaseModel):
+    add_architectures: Optional[List[str]] = None
+
+
 class ReleaseResponse(ReleaseCreate):
     id: ReleaseId
     description: Optional[str]

@@ -63,6 +63,25 @@ def create(
 
 
 @releases.restricted_command()
+def update(
+    ctx: typer.Context,
+    repository: str = repo_option,
+    id: str = id_or_name(
+        "repositories/%(repository)s/releases", typer.Argument(..., help="The release name or id.")
+    ),
+    add_architectures: str = typer.Option(
+        None, help=f"{LIST_SEPARATOR.title}-separated list of architectures to add to the release."
+    ),
+) -> None:
+    data = {}
+    if add_architectures:
+        data["add_architectures"] = add_architectures.split(LIST_SEPARATOR)
+
+    resp = client.patch(f"/repositories/{repository}/releases/{id}/", json=data)
+    handle_response(ctx.obj, resp)
+
+
+@releases.restricted_command()
 def delete(
     ctx: typer.Context,
     repository: str = repo_option,

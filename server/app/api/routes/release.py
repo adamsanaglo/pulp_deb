@@ -6,11 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.api.auth import requires_repo_admin
 from app.core.schemas import (
     DebRepoId,
+    NoOpTask,
     PackageId,
     Pagination,
     ReleaseCreate,
     ReleaseId,
     ReleaseListResponse,
+    ReleaseUpdate,
     TaskResponse,
 )
 from app.services.pulp.api import ReleaseApi, RepositoryApi
@@ -62,6 +64,19 @@ async def create_release(repo_id: DebRepoId, release: ReleaseCreate) -> Any:
         raise HTTPException(status_code=409, detail="Release already exists.")
 
     return await ReleaseApi.create(params)
+
+
+@router.patch(
+    "/repositories/{repo}/releases/{id}/",
+    dependencies=[Depends(requires_repo_admin)],
+    response_model=TaskResponse,
+)
+async def update_release(repo: DebRepoId, id: ReleaseId, release: ReleaseUpdate) -> Any:
+    if release.add_architectures:
+        architectures = await ReleaseApi.add_architectures(id, release.add_architectures)
+        return await RepositoryApi.update_content(repo, add_content=architectures)
+    else:
+        return NoOpTask
 
 
 @router.delete(

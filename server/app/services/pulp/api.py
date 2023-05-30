@@ -733,9 +733,11 @@ class ReleaseApi(PulpApi):
         return await cls._add_items(ReleaseComponentApi, "component", release, components)
 
     @classmethod
-    async def add_architectures(cls, release: ReleaseId, components: List[str]) -> List[ContentId]:
+    async def add_architectures(
+        cls, release: ReleaseId, architectures: List[str]
+    ) -> List[ContentId]:
         """Create a set of architectures for a release."""
-        return await cls._add_items(ReleaseArchitectureApi, "architecture", release, components)
+        return await cls._add_items(ReleaseArchitectureApi, "architecture", release, architectures)
 
     @classmethod
     async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:

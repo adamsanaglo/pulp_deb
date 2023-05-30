@@ -113,6 +113,29 @@ def _validate_package_exists_in_repo(repo_id: str, exists: bool) -> None:
         assert json.loads(result.stdout)["count"] == (1 if exists else 0)
 
 
+def test_release_add_architecture(new_apt_repo: Any) -> None:
+    result = invoke_command(["repo", "releases", "create", new_apt_repo["id"], "test"])
+    result = invoke_command(
+        [
+            "repo",
+            "releases",
+            "update",
+            new_apt_repo["id"],
+            "test",
+            "--add-architectures",
+            "flux,hal",
+        ]
+    )
+
+    result = invoke_command(["repo", "releases", "list", new_apt_repo["id"], "--limit", "1"])
+    assert result.exit_code == 0, f"release list failed: {result.stderr}"
+    response = json.loads(result.stdout)
+    assert len(response["results"]) == 1
+
+    rel = response["results"][0]
+    assert sorted(rel["architectures"]) == ["amd64", "arm64", "armhf", "flux", "hal"]
+
+
 def test_remove_releases(new_apt_repo: Any, deb_package: Any, deb_src_package: Any) -> None:
     apt_repo = new_apt_repo
     cmd = ["repo", "release", "create", apt_repo["id"]]
