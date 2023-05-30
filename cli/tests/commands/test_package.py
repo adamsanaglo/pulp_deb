@@ -83,6 +83,8 @@ def test_rpm_list(rpm_package: Any) -> None:
     _assert_package_list_empty("rpm", {"version": "0.0.0.0.0.0.0.0.1"})
     _assert_package_list_not_empty("rpm", {"release": rpm_package["release"]})
     _assert_package_list_empty("rpm", {"release": "9el1"})
+    _assert_package_list_not_empty("rpm", {"arch": rpm_package["arch"]})
+    _assert_package_list_empty("rpm", {"arch": "fluxcapacitor"})
     # Tests hashing and sha-filter. This file is uploaded by the rpm_package fixture.
     _assert_package_list_not_empty("rpm", {"file": "tests/assets/signed-by-us.rpm"})
 

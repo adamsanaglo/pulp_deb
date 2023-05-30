@@ -153,7 +153,7 @@ def rpm_list(
         name=name,
         epoch=epoch,
         version=version,
-        architecture=arch,
+        arch=arch,
         sha256=sha256,
     )
     _list(PackageType.rpm, ctx, params)
