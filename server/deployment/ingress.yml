@@ -105,7 +105,7 @@ data:
     access_log  /dev/stdout custom;
 
     server { # Server to handle incoming requests for the api
-        listen              443 ssl; # 'ssl' parameter tells NGINX to decrypt the traffic
+        listen              443 ssl so_keepalive=60s:60s:10; # 'ssl' parameter tells NGINX to decrypt the traffic
         server_name         $api_hostname;
         ssl_certificate     /mnt/secrets/$api_cert_name;
         ssl_certificate_key /mnt/secrets/$api_cert_name;
@@ -122,6 +122,7 @@ data:
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
         add_header X-Content-Type-Options nosniff;
         client_max_body_size 3G;
+        types_hash_max_size 4096;
 
         location /nginx_status {
             access_log off;
@@ -132,7 +133,10 @@ data:
 
         location / {
             proxy_pass http://pmcserver;
-            proxy_read_timeout 300s;
+            proxy_socket_keepalive on;
+            proxy_read_timeout 600s;
+            # Some packages can be large and take a while to upload. This 10-minute timeout needs
+            # to be coordinated in several places, here, the cli, and the listen directive.
         }
     }
 ---
