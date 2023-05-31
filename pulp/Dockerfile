@@ -129,6 +129,7 @@ RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0012-Initial-
 # 2) The ContentRelationshipFilter base class now passes down a RepositoryVersion.content QuerySet instead of a filtered PackageReleaseComponents QuerySet.
 #    So this patch now _should not_ add a new arg on _filter, but should instead do whatever SourcePackageReleaseComponents filtering is necessary inside the _filter definitions.
 RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0013-Adding-source-package-release-filter-support.patch
+RUN patch -d /usr/lib/python3.9/site-packages/ -p1 < /tmp/pulp_deb/0014-Fixed-KeyError-during-publish-for-unmatched-arch.patch # https://github.com/pulp/pulp_deb/issues/777
 
 # Apply our pulp_rpm patches until upstream accepts/releases our merge requests
 COPY container-assets/pulp_rpm /tmp/pulp_rpm

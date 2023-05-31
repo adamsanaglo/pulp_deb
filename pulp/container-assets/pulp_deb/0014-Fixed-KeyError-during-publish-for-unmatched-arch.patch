@@ -1,0 +1,39 @@
+From 09182497cf52b0aae01f0cc6f03b5d71c399e777 Mon Sep 17 00:00:00 2001
+From: David Davis <daviddavis@users.noreply.github.com>
+Date: Tue, 30 May 2023 07:37:29 -0400
+Subject: [PATCH] Fixed KeyError during publish for unmatched arch
+
+fixes #777
+---
+ CHANGES/777.bugfix               |  2 ++
+ pulp_deb/app/tasks/publishing.py | 16 ++++++++++++----
+ 2 files changed, 14 insertions(+), 4 deletions(-)
+ create mode 100644 CHANGES/777.bugfix
+
+diff --git a/pulp_deb/app/tasks/publishing.py b/pulp_deb/app/tasks/publishing.py
+index 68034a54..54abb0df 100644
+--- a/pulp_deb/app/tasks/publishing.py
++++ b/pulp_deb/app/tasks/publishing.py
+@@ -257,10 +257,18 @@ def add_package(self, package):
+             )
+             published_artifact.save()
+         package_serializer = Package822Serializer(package, context={"request": None})
+-        package_serializer.to822(self.component).dump(
+-            self.package_index_files[package.architecture][0]
+-        )
+-        self.package_index_files[package.architecture][0].write(b"\n")
++
++        try:
++            package_serializer.to822(self.component).dump(
++                self.package_index_files[package.architecture][0]
++            )
++        except KeyError:
++            log.warn(
++                f"Published {package.relative_path} with architecture '{package.architecture}' "
++                f"that is not available for {self.parent.distribution} ({self.component})."
++            )
++        else:
++            self.package_index_files[package.architecture][0].write(b"\n")
+ 
+     def finish(self):
+         # Publish Packages files

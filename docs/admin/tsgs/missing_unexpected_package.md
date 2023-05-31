@@ -27,3 +27,26 @@ Diagnosing this is fairly straight-forward
 Generally speaking, there's no instance where the PMC API will *put* a package in the wrong repo. Typically, the publisher simply mixed their build/release jobs incorrectly, causing artifacts from build `foo` to land in repo `bar`.
 
 Use the steps in the [Fetch API Logs TSG](fetch_api_logs.md) to inspect the API logs and determine to which repo the package was published, using filenames and timestamps to assist.
+
+## Package missing from Packages file
+
+A deb package will not show up in a Packages file if its architecture is not listed among those
+supported by the deb release.
+This is because [we aren't validating architectures when packages are added to the releases for deb
+repos](https://msazure.visualstudio.com/One/_queries/edit/24125672),
+and we only publish Packages files for the architectures defined for the release.
+So if a deb package is added to a release and its architecture isn't in the defined set,
+it will show up in the "pool" directory but not any of the Packages files.
+
+Typically releases support amd64, arm64, armhf by default.
+To check what architectures a release supports, use the command:
+
+```bash
+pmc repo release list <repo id or name>
+```
+
+To add a new architecture to a release, use the pmc repo release update command:
+
+```bash
+pmc repo release update <repo id or name> <release> --add-architectures i386,ppc64
+```
