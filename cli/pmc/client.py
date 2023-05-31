@@ -29,7 +29,7 @@ else:
         PYGMENTS_STYLE = "native"
 
 
-TaskHandler = Optional[Callable[[str], Any]]
+TaskHandler = Optional[Callable[[str], requests.Response]]
 
 
 class ApiClient:
@@ -142,7 +142,9 @@ def _extract_ids(resp_json: Any) -> Union[str, List[str], None]:
     return None
 
 
-def poll_task(task_id: str, task_handler: TaskHandler = None, quiet: bool = False) -> Any:
+def poll_task(
+    task_id: str, task_handler: TaskHandler = None, quiet: bool = False
+) -> requests.Response:
     resp = client.get(f"/tasks/{task_id}/")
     # While waiting for long tasks, we occasionally encounter an issue where our auth token
     # expires /right after/ we make a request and we get a 401. In that case let's simply try

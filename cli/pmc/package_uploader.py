@@ -102,6 +102,7 @@ class PackageUploader:
         resp = client.post("/packages/", params=data, files=files)
         task_resp = poll_task(resp.json().get("task"), quiet=self.context.quiet)
         task = task_resp.json()
+        task["correlation_id"] = task_resp.request.headers.get("x-correlation-id", None)
 
         try:
             raise_if_task_failed(task)

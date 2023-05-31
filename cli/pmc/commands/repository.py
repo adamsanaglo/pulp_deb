@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 
+import requests
 import typer
 
 from pmc.client import client, handle_response, poll_task
@@ -164,7 +165,7 @@ def update(
 ) -> None:
     """Update a repository."""
 
-    def show_func(task: Any) -> Any:
+    def show_func(task: Any) -> requests.Response:
         return client.get(f"/repositories/{id}/")
 
     data: Dict[str, Any] = {}

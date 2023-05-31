@@ -89,7 +89,7 @@ def _load_config(ctx: typer.Context, value: Optional[Path]) -> Optional[Path]:
 
 def format_exception(exception: BaseException) -> Dict[str, Any]:
     """Build an error dict from an exception."""
-    if isinstance(exception, requests.HTTPError):
+    if isinstance(exception, requests.RequestException):
         if exception.response.status_code == 401:
             message = "Unauthorized, ensure that you have logged in by setting the msal options"
         else:
@@ -115,6 +115,8 @@ def format_exception(exception: BaseException) -> Dict[str, Any]:
             "message": exception.original_message,
             "command_traceback": exception.original_traceback,
         }
+        if exception.correlation_id:
+            err["correlation_id"] = exception.correlation_id
     elif isinstance(exception, ValidationError):
         # config validation error
         err = {

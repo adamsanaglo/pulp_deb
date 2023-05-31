@@ -1,0 +1,1 @@
+More errors should now correctly display a correlation_id, making debugging easier.

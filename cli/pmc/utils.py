@@ -32,6 +32,7 @@ class PulpTaskFailure(Exception):
         error = task["error"]
         self.original_traceback = error["traceback"]
         self.original_message = error["description"]
+        self.correlation_id = task.get("correlation_id", None)
         super().__init__()
 
 
