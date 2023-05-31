@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 <!-- towncrier release notes start -->
 
+## [1.3.0](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/1.3.0) - 2023-05-31
+
+
+### Features
+
+- Added more information to unauthorized 401 errors via the detail field. [#17954949](https://msazure.visualstudio.com/One/_workitems/edit/17954949)
+- Added a warning message if not all results are shown. [#20461004](https://msazure.visualstudio.com/One/_workitems/edit/20461004)
+- Added ability to use file descriptors (e.g. /proc/self/fd) for --msal-cert-path. [#24103185](https://msazure.visualstudio.com/One/_workitems/edit/24103185)
+
+
+### Bug fixes
+
+- Fixed bug where the `--arch` filter for `pmc package rpm list` didn't work. [#24107975](https://msazure.visualstudio.com/One/_workitems/edit/24107975)
+
+
 ## [1.2.0](https://msazure.visualstudio.com/One/_artifacts/feed/Compute-PMC/PyPI/pmc-cli/overview/1.2.0) - 2023-04-25
 
 
