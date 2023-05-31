@@ -2,6 +2,7 @@ import re
 
 import jwt
 from aiocache import cached  # type: ignore
+from aioshutil import sync_to_async
 from cryptography.exceptions import InvalidSignature
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm.exc import NoResultFound
@@ -22,15 +23,19 @@ ISSUERS = {
 ALGORITHMS = ["RS256"]
 
 
+class AsyncPyJWKClient(jwt.PyJWKClient):
+    async_get_signing_key_from_jwt = sync_to_async(jwt.PyJWKClient.get_signing_key_from_jwt)
+
+
 @cached(ttl=1800)  # type: ignore
-async def get_jwks_client() -> jwt.PyJWKClient:
+async def get_jwks_client() -> AsyncPyJWKClient:
     """Cache the jwt client for half an hour so its own internal token cache actually works."""
-    return jwt.PyJWKClient(JWKS_URL, lifespan=1800)
+    return AsyncPyJWKClient(JWKS_URL, lifespan=1800)
 
 
 async def authenticate(request: Request) -> str:
     """Authenticate a request and return the oid."""
-    jwks_client: jwt.PyJWKClient = await get_jwks_client()
+    jwks_client: AsyncPyJWKClient = await get_jwks_client()
     auth_header = request.headers.get("Authorization", "")
 
     # parse the auth token
@@ -40,12 +45,12 @@ async def authenticate(request: Request) -> str:
 
     # find the signing key
     try:
-        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        signing_key = await jwks_client.async_get_signing_key_from_jwt(token)
     except jwt.DecodeError as e:
         raise HTTPException(status_code=401, detail=f"Failed to parse auth token: {e}.")
     except jwt.exceptions.PyJWKClientConnectionError:
         # if we encountered a connection error, retry the request once
-        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        signing_key = await jwks_client.async_get_signing_key_from_jwt(token)
     except jwt.PyJWKClientError as e:
         raise HTTPException(status_code=401, detail=f"Failed to retrieve signing key: {e}.")
 

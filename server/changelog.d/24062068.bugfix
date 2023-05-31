@@ -1,0 +1,1 @@
+Speed up every request slightly by allowing the auth client to actually use its cache.

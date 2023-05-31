@@ -1,0 +1,1 @@
+Resolve an issue where clients could receive a 502 when the server was under heavy load.
