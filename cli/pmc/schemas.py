@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 import click
 import typer
-from pydantic import AnyHttpUrl, BaseModel, FilePath, StrictStr, root_validator, validator
+from pydantic import AnyHttpUrl, BaseModel, StrictStr, root_validator, validator
 from pydantic.main import ModelMetaclass
 
 FINISHED_TASK_STATES = ("skipped", "completed", "failed", "canceled")
@@ -139,19 +139,31 @@ class Config(BaseModel):
     msal_client_id: NonEmptyStr
     msal_scope: NonEmptyStr
     msal_cert: Optional[str]
-    msal_cert_path: Optional[FilePath]
+    msal_cert_path: Optional[Path]
     msal_SNIAuth: bool = True
     msal_authority: NonEmptyStr
 
-    @validator("msal_cert_path", pre=True)
-    def expand_path(cls, v: str) -> str:
-        """Pre-validator to expand msal_cert_path."""
+    @validator("msal_cert_path")
+    def validate_path(cls, v: Optional[str]) -> Optional[Path]:
+        """
+        Validator to expand and validate msal_cert_path.
+
+        Ideally we'd use FilePath from pydantic to validate the msal_cert_path but it doesn't
+        recognize file descriptors (e.g. <(cat $msal_cert_path)) as files so we'll do our own
+        validation and just ensure the location exists and is not a dir.
+        """
+        if v is None:
+            return v
+
         try:
             path = Path(v).expanduser()
-            return str(path)
-        except Exception:
-            # we encountered a problem; just use the original value and let validation handle it
-            return v
+        except (RuntimeError, TypeError) as e:
+            raise ValueError(e)
+
+        if path.is_dir() or not path.exists():
+            raise ValueError("must point to a valid file.")
+
+        return path
 
     @root_validator(pre=False, skip_on_failure=True)
     def validate_msal_cert(cls, values: Dict[str, Any]) -> Dict[str, Any]:
