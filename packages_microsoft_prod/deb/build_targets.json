@@ -57,7 +57,8 @@
       "22.04": {
         "alias": "jammy",
         "additional_channels": {
-          "mssql-server-2022": "SQL Server 2022"
+          "mssql-server-2022": "SQL Server 2022",
+          "mssql-server-preview": "SQL Server Preview"
         }
       },
       "22.10": {

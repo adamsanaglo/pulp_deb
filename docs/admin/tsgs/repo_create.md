@@ -50,6 +50,7 @@ apt/yum variants.
 The below will need to be repeated for each repo you have to create.
 
 This doc assumes you have the following `pmc` profiles/permissions available:
+
 | Profile Name | Permission    |
 | ------------ | ----------    |
 | [default]    | Repo_Admin    |
@@ -58,8 +59,7 @@ This doc assumes you have the following `pmc` profiles/permissions available:
 
 ## If PMC v3 still exists and we are expecting to sync content between the two
 1. Create the repo/release in v3 first by following this TSG:
-   [Create Repo](onenote:https://microsoft.sharepoint.com/teams/LinuxRepoAdmins/Shared%20Documents/General/Linux%20Repo%20Admins/TSGs.one#Create%20Repo&section-id={141D6D0F-3F3B-4599-8B63-2A78840930C5}&page-id={70EA69C6-E006-401B-9B44-343EAB7BE57E}&end)
-   ([Web view](https://microsoft.sharepoint.com/teams/LinuxRepoAdmins/_layouts/OneNote.aspx?id=%2Fteams%2FLinuxRepoAdmins%2FShared%20Documents%2FGeneral%2FLinux%20Repo%20Admins&wd=target%28TSGs.one%7C141D6D0F-3F3B-4599-8B63-2A78840930C5%2FCreate%20Repo%7C70EA69C6-E006-401B-9B44-343EAB7BE57E%2F%29)).
+   [Create Repo](https://microsoft.sharepoint.com/teams/LinuxRepoAdmins/_layouts/OneNote.aspx?id=%2Fteams%2FLinuxRepoAdmins%2FShared%20Documents%2FGeneral%2FLinux%20Repo%20Admins&wd=target%28TSGs.one%7C141D6D0F-3F3B-4599-8B63-2A78840930C5%2FCreate%20Repo%7C70EA69C6-E006-401B-9B44-343EAB7BE57E%2F%29).
 1. Create a "Remote" in PMCv4 to tell it where the v4 repo should sync from.  
    `NAME` here should be the same as the repo name by convention, and the `--distributions` and
    `--architectures` options are required if this is an apt repo. Examples:

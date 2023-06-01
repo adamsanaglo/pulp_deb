@@ -31,7 +31,8 @@
       },
       "9.0": {
         "additional_channels": {
-          "mssql-server-2022": "SQL Server 2022"
+          "mssql-server-2022": "SQL Server 2022",
+          "mssql-server-preview": "SQL Server Preview"
         }
       }
     }
