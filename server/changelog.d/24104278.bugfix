@@ -1,2 +1,0 @@
-Resolve a server configuration issue where clients could receive a 104, 504, or eventually time out
-at 10 minutes if their request took longer than 5 minutes to process.

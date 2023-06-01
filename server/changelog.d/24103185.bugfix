@@ -1,2 +1,0 @@
-Fixed publish error that was being raised when there was a deb package that had an architecture that
-wasn't in the list of architectures for its release.

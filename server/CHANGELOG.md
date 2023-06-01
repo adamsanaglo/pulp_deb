@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 <!-- towncrier release notes start -->
 
+## [1.0.2](https://msazure.visualstudio.com/One/_git/Compute-PMC?version=GTserver-1.0.2) - 2023-05-31
+
+
+### Bug fixes
+
+- Speed up every request slightly by allowing the auth client to actually use its cache. [#24062068](https://msazure.visualstudio.com/One/_workitems/edit/24062068)
+- Resolve an issue where clients could receive a 502 when the server was under heavy load. [#24095858](https://msazure.visualstudio.com/One/_workitems/edit/24095858)
+- Fixed publish error that was being raised when there was a deb package that had an architecture that
+  wasn't in the list of architectures for its release. [#24103185](https://msazure.visualstudio.com/One/_workitems/edit/24103185)
+- Resolve a server configuration issue where clients could receive a 104, 504, or eventually time out
+  at 10 minutes if their request took longer than 5 minutes to process. [#24104278](https://msazure.visualstudio.com/One/_workitems/edit/24104278)
+
+
 ## [1.0.1](https://msazure.visualstudio.com/One/_git/Compute-PMC?version=GTserver-1.0.1) - 2023-05-22
 
 
