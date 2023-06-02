@@ -35,11 +35,18 @@ summarize and make some things more clear, the workflow I recommend is to:
 1. `make build`
 1. `make run`. Note: it returns fairly quickly but takes several minutes to actually become ready.
 1. `./lint.sh <project>`. Runs lint commands *in the container*.
-1. `./test.sh <project>`. See [the docs](https://github.com/pulp/oci_env#debugging-functional-tests)
+1. `./test.sh <project> [--setup] [<test_name>]`. "--setup" is required the first time after a
+   rebuild to initialize test dependencies.
+   For example:
+   ```
+   ./test.sh pulp_deb --setup test_sync_optimize_skip_unchanged_package_index
+   ./test.sh pulp_deb test_sync_optimize_skip_unchanged_package_index
+   ./test.sh pulp_deb  # runs all tests
+   ```
+   See [the docs](https://github.com/pulp/oci_env#debugging-functional-tests)
    for more information about debugging tests. Runs test commands *in the container*.
    > **NOTE:** Getting pulp tests to run locally currently seems finicky. 
-   > There are some errors during the setup / installation, and it's unclear if that's expected.
-   > And some of them seem to fail, and it's unclear if that's expected.
+   > Some tests seem to fail locally but _don't_ fail upstream, and it's unclear if that's expected.
    > Feel free to hack on it and make it better if you have time.
 1. Test against `localhost:5001`.
 1. If you need database changes:
