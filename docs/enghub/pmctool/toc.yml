@@ -4,3 +4,5 @@
   href: docker.md
 - name: Changelog
   href: CHANGELOG.md
+- name: Errors
+  href: errors.md
