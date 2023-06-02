@@ -7,12 +7,14 @@ These steps explain how to deploy the API code/containers for packages.microsoft
 2. Open a PR with your changes. You can see [this example PR](https://msazure.visualstudio.com/One/_git/Compute-PMC/pullrequest/8007633).
 3. After merging all desired updates into `main`, [tag it](https://msazure.visualstudio.com/One/_git/Compute-PMC/tags) with a tag like `server-x.y.z` to match the release number.
 4. This will trigger an Official build with [this job](https://msazure.visualstudio.com/One/_build?definitionId=265881&_a=summary). The output will be container images which can be deployed to various environments.
+5. Once the job is finished, a Releases tab should appear with the release job you'll need below.
 
 **NOTE**: To ensure you have the latest config changes, always ensure that whatever checkout you're working with is up to date by running `git pull`.
 
 ## Deploy to PPE
 1. Check the release job to ensure the tag container has been pushed to the PPE ACR.
-2. From an arbitrary system attached to corpnet, run update.sh as follows.
+2. From an arbitrary system connected to corpnet, run `az login` and then `az account set -n CSD-Apt-Linux-NonER-PPE`.
+3. cd into the `server/deployment` subdirectory and then run update.sh as follows.
 This will pull the latest containers from ACR and start them in PPE.
 ```bash
 ./update.sh ppe
@@ -25,10 +27,10 @@ This will pull the latest containers from ACR and start them in PPE.
 **NOTE**: Since Expressroute is incompatible with AKS, the containers run on dedicated VM's using docker-compose.
 1. Push the latest container images to the Tux-Dev ACR using this release job.
 2. For each of the following tux systems
-    a. SSH in from a corp IP (network access is restricted to Corp)
-    b. Su to root (`sudo su - root`)
-    c. Navigate to /root/src/Compute-PMC/tux-sync
-    d. Run tux-sync.sh. (it is expected that the status check at the end will fail on tux-ingest-public)
+    1. SSH in from a corp IP (network access is restricted to Corp)
+    2. Su to root (`sudo su - root`)
+    3. Navigate to /root/src/Compute-PMC/tux-sync
+    4. Run tux-sync.sh. (it is expected that the status check at the end will fail on tux-ingest-public)
 
 |Server|IP|
 |------|--|
