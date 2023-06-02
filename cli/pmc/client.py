@@ -110,6 +110,17 @@ class ClientSession(requests.Session):
 
         response = super().request(method, url, *args, **kwargs)
 
+        if response.status_code in (104, 502, 503, 504):
+            # These error codes are likely due to a transient issue, and retrying the request will
+            # probably succeed. We think we've eliminated the major reasons these would arise, but
+            # ensuring Publishers feel as little pain as possible with randomly failing pipelines is
+            # still a worthy goal. Retry the request once.
+            if self.context.debug:
+                typer.echo(
+                    f"Response: {str(method)} {str(url)} - Status {response.status_code}. Retrying."
+                )
+            response = super().request(method, url, *args, **kwargs)
+
         if self.context.debug:
             typer.echo(f"Response: {str(method)} {str(url)} - Status {response.status_code}")
 

@@ -1,0 +1,1 @@
+The cli will now automatically (and invisibly) retry failures that are likely to be transient.
