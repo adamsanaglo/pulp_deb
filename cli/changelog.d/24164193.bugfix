@@ -1,0 +1,2 @@
+Fixed the printing of error messages so that the error json struct is (a) valid json and (b) output
+to stdout instead of stderr. The actual error message will be printed to stderr.

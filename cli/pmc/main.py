@@ -253,10 +253,10 @@ def run() -> None:
         typer.echo("", err=True)
 
         err = format_exception(exc)
-        if sys.stderr.isatty():
-            output = json.dumps(err, indent=3)
-        else:
-            output = str(err)
-        typer.echo(output, err=True)
+        if "message" in err:
+            typer.echo(err["message"], err=True)
+
+        output = json.dumps(err, indent=(3 if sys.stderr.isatty() else None))
+        typer.echo(output)
 
         exit(1)
