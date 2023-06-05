@@ -30,7 +30,7 @@ data:
   PULP_DB_ENCRYPTION_KEY: "/mnt/secrets/pulpSymmetricKey"
   PULP_TOKEN_AUTH_DISABLED: "true"
   PULP_TELEMETRY: "false"
-  PULP_CONTENT_ORIGIN: "http://${destination_env}:80"
+  PULP_CONTENT_ORIGIN: "https://${destination_env}:443"
   POSTGRES_SERVICE_HOST: $pg_server
   PULP_DATABASES__default__HOST: $pg_server
   SIGNER_HOST: "localhost"
