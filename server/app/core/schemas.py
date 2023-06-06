@@ -536,6 +536,7 @@ class RepositoryCreate(BaseModel):
     remote: Optional[RemoteId]
     sqlite_metadata: Optional[bool] = None
     retain_repo_versions: Optional[int]
+    signing_service_release_overrides: Optional[Dict[str, str]]
 
     @validator("sqlite_metadata")
     def validate_sqlite_metadata(
@@ -561,6 +562,7 @@ class RepositoryUpdate(BaseModel):
     remote: Union[RemoteId, EmptyStr, None]
     sqlite_metadata: Optional[bool] = None
     retain_repo_versions: Optional[int]
+    signing_service_release_overrides: Optional[Dict[str, str]]
 
 
 class RepositoryResponse(BaseModel):
@@ -572,6 +574,14 @@ class RepositoryResponse(BaseModel):
     remote: Optional[RemoteId]
     latest_version: RepoVersionId
     signing_service: Optional[str]
+    signing_service_release_overrides: Optional[Dict[str, str]]
+
+    def dict(self, *args: Any, **kwargs: Any) -> Any:
+        # Most keys are set, even if they're None. Except for signing_service_release_overrides,
+        # which we explicitly do not set if it's empty. Don't include that field by default for
+        # repos that don't care (vast majority).
+        kwargs["exclude_unset"] = True
+        return super().dict(*args, **kwargs)
 
 
 class RpmRepositoryResponse(RepositoryResponse):

@@ -164,14 +164,17 @@ class SigningService(PulpApi):
 
 class RepositoryApi(PulpApi):
     SS = "signing_service"
+    SSRO = "signing_service_release_overrides"
     MSS = "metadata_signing_service"
 
     @staticmethod
-    async def _set_gpg_fields(data: Dict[str, Any], type: str) -> None:
+    async def _set_gpg_and_signing_service_fields(data: Dict[str, Any], type: str) -> None:
         signing_service = data.pop(RepositoryApi.SS, None)
         services = await SigningService.list_relevant(type)
-        if signing_service not in services:
-            raise Exception("Requested signing service is not registered in pulp.")
+        if signing_service and signing_service not in services:
+            raise Exception(
+                f"Requested signing service '{signing_service}' is not registered in pulp."
+            )
 
         if signing_service and type == RepoType.yum:
             data[RepositoryApi.MSS] = services[signing_service]
@@ -179,6 +182,21 @@ class RepositoryApi(PulpApi):
             data["repo_gpgcheck"] = 1
         elif signing_service:  # deb
             data[RepositoryApi.SS] = services[signing_service]
+
+        service_overrides = data.pop(RepositoryApi.SSRO, {})
+        if service_overrides and type == RepoType.apt:
+            data[RepositoryApi.SSRO] = {}
+            for release, service in service_overrides.items():
+                if service == "":
+                    # removing
+                    data[RepositoryApi.SSRO][release] = service
+                    continue
+
+                if service not in services:
+                    raise Exception(
+                        f"Requested signing service '{service}' is not registered in pulp."
+                    )
+                data[RepositoryApi.SSRO][release] = services[service]
 
     @staticmethod
     async def _translate_signing_service(repo: Dict[str, Any]) -> None:
@@ -191,13 +209,22 @@ class RepositoryApi(PulpApi):
 
         _translate_key(RepositoryApi.SS)
         _translate_key(RepositoryApi.MSS)
+        if RepositoryApi.SSRO in repo:
+            if not repo[RepositoryApi.SSRO]:
+                # For repos that don't have overrides set (vast majority) don't set the key on the
+                # pydantic model.
+                repo.pop(RepositoryApi.SSRO)
+            else:
+                # Else translate the href of the signing service into a name.
+                for key, value in repo[RepositoryApi.SSRO].items():
+                    repo[RepositoryApi.SSRO][key] = services.get(value, value)
 
     @classmethod
     async def create(cls, data: Dict[str, Any], **endpoint_args: Any) -> Any:
         """Call the create endpoint."""
         type = data.pop("type")
         if type in [RepoType.yum, RepoType.apt]:
-            await cls._set_gpg_fields(data, type)
+            await cls._set_gpg_and_signing_service_fields(data, type)
         resp = await cls.post(cls.endpoint("create", type=type), json=data)
         ret = translate_response(resp.json())
         await cls._translate_signing_service(ret)
@@ -212,8 +239,8 @@ class RepositoryApi(PulpApi):
 
     @classmethod
     async def update(cls, id: RepoId, data: Dict[str, Any]) -> Any:  # type: ignore
-        if cls.SS in data:
-            await cls._set_gpg_fields(data, id.type)
+        if cls.SS in data or cls.SSRO in data:
+            await cls._set_gpg_and_signing_service_fields(data, id.type)
         return await super().update(id, data)
 
     @classmethod

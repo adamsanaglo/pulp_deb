@@ -72,6 +72,19 @@ def list(
     handle_response(ctx.obj, resp)
 
 
+def _parse_release_signing_service_overrides(
+    data: Dict[str, Any], release_signing_services: str, remove: bool = False
+) -> None:
+    data["signing_service_release_overrides"] = {}
+    overrides = release_signing_services.split(LIST_SEPARATOR)
+    for override in overrides:
+        if remove:
+            data["signing_service_release_overrides"][override] = ""
+        else:
+            key, value = override.split("=")
+            data["signing_service_release_overrides"][key] = value
+
+
 @app.restricted_command()
 def create(
     ctx: typer.Context,
@@ -92,9 +105,15 @@ def create(
     ),
     sqlite_metadata: Optional[bool] = sqlite_metadata_option,
     retain_repo_versions: Optional[int] = typer.Option(None, help=RETAIN_REPO_VERSIONS_HELP),
+    release_signing_services: Optional[str] = typer.Option(
+        None,
+        help="If some of an apt repository's releases should be signed with a different signing "
+        "service than the repo default, specify them here in <release>=<service> form, separated "
+        f"by {LIST_SEPARATOR}",
+    ),
 ) -> None:
     """Create a repository."""
-    data = {
+    data: Dict[str, Any] = {
         "name": name,
         "type": repo_type,
         "remote": remote,
@@ -118,6 +137,9 @@ def create(
             service = RepoSigningService.esrp
 
         data["signing_service"] = service
+
+    if repo_type == RepoType.apt and release_signing_services:
+        _parse_release_signing_service_overrides(data, release_signing_services)
 
     repo_resp = client.post("/repositories/", json=data)
     handle_response(ctx.obj, repo_resp)
@@ -162,6 +184,17 @@ def update(
     ),
     sqlite_metadata: Optional[bool] = sqlite_metadata_option,
     retain_repo_versions: Optional[str] = typer.Option(None, help=RETAIN_REPO_VERSIONS_HELP),
+    add_release_signing_services: Optional[str] = typer.Option(
+        None,
+        help="If some of an apt repository's releases should be signed with a different signing "
+        "service than the repo default, specify them here in <release>=<service> form, separated "
+        f"by {LIST_SEPARATOR}",
+    ),
+    revert_release_signing_services: Optional[str] = typer.Option(
+        None,
+        help="To revert already-set release-specific signing services, specify the releases here "
+        f"separated by {LIST_SEPARATOR}",
+    ),
 ) -> None:
     """Update a repository."""
 
@@ -173,6 +206,10 @@ def update(
         data["name"] = name
     if signing_service:
         data["signing_service"] = signing_service
+    if add_release_signing_services:
+        _parse_release_signing_service_overrides(data, add_release_signing_services)
+    if revert_release_signing_services:
+        _parse_release_signing_service_overrides(data, revert_release_signing_services, remove=True)
     if remote is not None:
         if remote == "":
             data["remote"] = None  # unset remote
