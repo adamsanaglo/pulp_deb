@@ -186,6 +186,7 @@ def release(orphan_cleanup: None, apt_repo: Any) -> Generator[Any, None, None]:
     assert result.exit_code == 0, f"release list failed: {result.stderr}"
     release = json.loads(result.stdout)["results"][0]
     release["repository_id"] = apt_repo["id"]  # add repo id to response so tests can use it
+    release["repository_name"] = apt_repo["name"]  # add repo name to response so tests can use it
     yield release
 
 

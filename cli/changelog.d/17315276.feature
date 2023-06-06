@@ -1,0 +1,1 @@
+"pmc package upload-and-add" command allows Publishers to upload package(s) and add them to repo(s) without having to track package ids.

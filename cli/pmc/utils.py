@@ -12,11 +12,11 @@ import typer
 from click.exceptions import UsageError
 
 from pmc.client import client
-from pmc.constants import CLI_VERSION
+from pmc.constants import CLI_VERSION, NamedString
 from pmc.schemas import CONFIG_PATHS, FileConfig
 
 PulpTask = Dict[str, Any]
-ParamType = Union[typer.core.TyperOption, typer.core.TyperArgument]
+ParamType = Union[typer.core.TyperOption, typer.core.TyperArgument, NamedString]
 
 
 class UnsupportedFileType(Exception):

@@ -40,10 +40,10 @@ def create(
     codename: Optional[str] = typer.Argument(None, help="Codename for the release."),
     suite: Optional[str] = typer.Argument(None, help="Suite for the release (e.g. stable)."),
     components: str = typer.Option(
-        None, help=f"{LIST_SEPARATOR.title}-separated list of components."
+        None, help=f"{LIST_SEPARATOR.Name}-separated list of components."
     ),
     architectures: str = typer.Option(
-        None, help=f"{LIST_SEPARATOR.title}-separated list of architectures."
+        None, help=f"{LIST_SEPARATOR.Name}-separated list of architectures."
     ),
 ) -> None:
     """Create a release for a repository."""
@@ -70,7 +70,8 @@ def update(
         "repositories/%(repository)s/releases", typer.Argument(..., help="The release name or id.")
     ),
     add_architectures: str = typer.Option(
-        None, help=f"{LIST_SEPARATOR.title}-separated list of architectures to add to the release."
+        None,
+        help=f"{LIST_SEPARATOR.Name}-separated list of architectures to add to the release.",
     ),
 ) -> None:
     data = {}

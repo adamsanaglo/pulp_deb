@@ -245,3 +245,19 @@ def test_duplicate_file_package(deb_package: Any) -> None:
     result = invoke_command(package_upload_command("signed-by-us.deb"), role=Role.Package_Admin)
     assert result.exit_code == 0
     assert json.loads(result.stdout)[0]["id"] == deb_package["id"]
+
+
+def test_upload_and_add_package(deb_package: Any, release: Any) -> None:
+    grant_access = ["access", "repo", "grant", "Publisher", release["repository_name"]]
+    result = invoke_command(grant_access, role=Role.Account_Admin)
+    assert result.exit_code == 0
+
+    upload_command = [
+        "package",
+        "upload-and-add",
+        str(Path.cwd() / "tests" / "assets" / "signed-by-us.deb"),
+        f"{release['repository_name']}={release['name']}",
+    ]
+    result = invoke_command(upload_command, role=Role.Publisher)
+    assert result.exit_code == 0
+    assert '"state": "completed"' in result.stdout
