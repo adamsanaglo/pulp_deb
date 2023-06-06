@@ -108,3 +108,64 @@ A closed-source Microsoft binary published on PMC will often include or depend o
 ## Removing Packages
 
 [!INCLUDE [remove-faq](include/remove-faq.md)]
+
+## What's actually happening behind the scenes?
+
+The PMC service is built on [pulp](https://pulpproject.org/), an open-source tool for enabling distribution of software packages.
+While a package repo appears to the outside world to be a well-structured static site, pulp uses a database and blob storage under the covers to implement a web service that provides the expected view.
+PMC then layers a global caching proxy atop the origin web site exposed by pulp.
+
+These answers roughly describe how things work for normal publisher actions made via the v4 API.
+The precise details of what gets synthesized when and how caches are managed may be a bit more complicated than as they're described below, but those differences aren't visible to publishers or to end users of PMC.
+
+### What's actually happening when I upload a package?
+
+When you upload a package, pulp writes it to a blob in an Azure storage account.
+The blob is named with the checksum of the file's contents; the name of the file you uploaded is not saved anywhere.
+Pulp creates a database record to correlate the package ID to the checksum so it can find the file in storage.
+That record also includes the metadata extracted from the file and the standardized name for the package, based on the metadata, according to the package type.
+
+### What happens if I upload a package with the same metadata and checksum but a different name?
+
+When the file is uploaded, pulp computes the checksum, extracts the metadata, sees that it already has a database entry for a file with that checksum and metadata, and discards the upload.
+Effectively, you've performed an somewhat-expensive no-op.
+
+### What happens if I upload a package with the same metadata but a different checksum?
+
+A package is unique based on metadata and checksum; two files with the same metadata but different checksums are considered to be two distinct files, so upload behaves normally.
+
+### What happens when I add a package to a repo?
+
+Pulp creates a database record associating the package_id to the repo as a pending "add" the next time the repo is published.
+
+### What happens when I add a package to a repo with the same metadata but a different checksum?
+
+Pulp does check to see if a file with the same metadata is already associated with the repo; if that's the case, the newly-added file supercedes the previous one.
+This is perfectly reasonable if the previous file had been uploaded and added to a repo but the repo hadn't yet been published.
+__This is a bad thing if an already-published version of the repo included the previous file; doing this would leave two different files "in the wild" with the same metadata.__
+If you need to change a file that has already been published, you must also change the metadata (i.e. increment the package version) to avoid breaking users.
+
+### What happens when I publish a repo?
+
+Pulp applies the list of pending changes (newly published packages or deleted packages) to the set of packages available in the most recently published version of the repo.
+The updated list of packages is used to generate the repo metadata files expected by the various package clients.
+This generated repo metadata includes full PMC-relative URLs for packages which use the standardized package names constructed when the package was added to the repo.
+
+The generated metadata files are digitally signed by ESRP.
+This is a slow, expensive operation which can take upwards of 30 minutes of wall-clock time.
+__We strongly recommend publishers perform all desired package add and remove operations against a repo before publishing that repo.__
+
+Pulp creates database records which map from the generated URLs to the blobs in storage.
+
+### What happens when a user browses a folder in the repo?
+
+When the PMC cache receives a GET request for a directory, it proxies that request to the origin service provided by pulp.
+Pulp uses its database records to synthesize a web page which provides the requested directory listing.
+The cache sends that synthesized page to the user and saves it in local cache for a relatively short time (minutes).
+
+### What happens when a package client requests a file (repo metadata or package)?
+
+When the PMC cache receives a GET request for a file, it proxies that request to the origin service provided by pulp.
+Pulp uses its database records to map the URL to the name of the blob in storage and sends an HTTP redirect pointing to the blob.
+The cache follows the redirect, fetches the actual content from storage, and sends it to the user.
+The cache also saves it in local cache with a very long time-to-live (a year).
